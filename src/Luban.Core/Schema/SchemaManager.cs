@@ -70,6 +70,26 @@ public class SchemaManager
         return schemaLoader;
     }
 
+    /// <summary>
+    /// [EsyLuban] CreateSchemaLoader 的非抛异常版本。
+    ///
+    /// 自包含表定义要求把整个数据目录配进 schemaFiles，而这类目录里难免混有
+    /// 非 schema 文件（例如 path 校验用的 .unity 资源）。对未注册扩展名，
+    /// 调用方应当跳过而不是中断整个加载流程。
+    /// </summary>
+    public bool TryCreateSchemaLoader(string extName, string type, ISchemaCollector collector, out ISchemaLoader schemaLoader)
+    {
+        schemaLoader = null;
+        if (!_schemaLoaders.TryGetValue((extName, type), out var loader))
+        {
+            return false;
+        }
+        schemaLoader = loader.Creator();
+        schemaLoader.Type = type;
+        schemaLoader.Collector = collector;
+        return true;
+    }
+
     public void RegisterSchemaLoaderCreator(string type, string extName, int priority, Func<ISchemaLoader> creator)
     {
         if (_schemaLoaders.TryGetValue((extName, type), out var loader))

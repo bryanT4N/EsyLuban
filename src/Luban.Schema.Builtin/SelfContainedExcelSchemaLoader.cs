@@ -27,6 +27,14 @@ public class SelfContainedExcelSchemaLoader : SchemaLoaderBase
             return;
         }
 
+        // schema 定义表本身（__beans__ / __enums__ / __tables__）虽然 A1 也是 ##export，
+        // 但它们由 bean/enum schema loader 处理，不是数据表，这里必须跳过，
+        // 否则会因 B1 无表元数据而报错。
+        if (IsSchemaDefinitionFile(actualFile))
+        {
+            return;
+        }
+
         using var stream = new FileStream(actualFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         // 与上游 SheetLoadUtil 保持同一套 Excel 读取实现（ExcelDataReader），
         // 避免额外引入第三方 Excel 库。注意 reader 是前向只读的：
@@ -72,10 +80,24 @@ public class SelfContainedExcelSchemaLoader : SchemaLoaderBase
         } while (reader.NextResult());
     }
 
+    private static readonly HashSet<string> s_schemaDefinitionFileNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "__beans__", "__enums__", "__tables__",
+    };
+
     /// <summary>
-    /// 解析 Sheet 元数据
+    /// 判断是否为 schema 定义表（而非数据表）
     /// </summary>
-    private RawTable ParseSheetMetadata(string sheetName, string b1Content, string fileName)
+    internal static bool IsSchemaDefinitionFile(string filePath)
+    {
+        return s_schemaDefinitionFileNames.Contains(Path.GetFileNameWithoutExtension(filePath));
+    }
+
+    /// <summary>
+    /// 解析 Sheet 元数据。
+    /// SelfContainedTableImporter 复用同一实现，确保两条入口对 B1 的解释完全一致。
+    /// </summary>
+    internal static RawTable ParseSheetMetadata(string sheetName, string b1Content, string fileName)
     {
         if (string.IsNullOrWhiteSpace(b1Content))
         {
@@ -148,7 +170,7 @@ public class SelfContainedExcelSchemaLoader : SchemaLoaderBase
     /// <summary>
     /// 获取相对于 dataDir 的路径
     /// </summary>
-    private string GetRelativePathToDataDir(string absolutePath)
+    private static string GetRelativePathToDataDir(string absolutePath)
     {
         // 获取 dataDir（与上游 DefaultTableImporter 取同一来源）
         string dataDir = FileUtil.Standardize(GenerationContext.GlobalConf.InputDataDir);

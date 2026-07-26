@@ -641,6 +641,7 @@ public static class SheetLoadUtil
             return null;
         }
         var cells = ParseRawSheetContent(reader, orientRow, true);
+        RemoveExportMarkRow(cells);
         var title = ParseTitle(cells, reader.MergeCells, orientRow);
 
         int typeRowIndex = cells.FindIndex(IsTypeRow);
