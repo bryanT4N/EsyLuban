@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<table>
+  <record>
+    <id>1</id>
+    <name>ABC</name>
+    <code>1</code>
+    <rangeVal>3</rangeVal>
+    <setVal>AA</setVal>
+  </record>
+</table>

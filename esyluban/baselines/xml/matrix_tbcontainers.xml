@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<table>
+  <record>
+    <id>1</id>
+    <nums>
+      <ele>1</ele>
+      <ele>2</ele>
+      <ele>3</ele>
+    </nums>
+    <tags>
+      <ele>A</ele>
+      <ele>B</ele>
+    </tags>
+    <props>
+      <ele>
+        <key>1</key>
+        <value>apple</value>
+      </ele>
+      <ele>
+        <key>2</key>
+        <value>banana</value>
+      </ele>
+    </props>
+    <innerList>
+      <ele>
+        <id>1</id>
+        <name>Alpha</name>
+      </ele>
+      <ele>
+        <id>2</id>
+        <name>Beta</name>
+      </ele>
+    </innerList>
+  </record>
+</table>

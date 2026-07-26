@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<table>
+  <record>
+    <x1>1101001101</x1>
+    <x2>150</x2>
+    <x3>500</x3>
+    <x4>50</x4>
+    <x5>10</x5>
+    <x6>4</x6>
+    <x7>
+      <ele>1</ele>
+      <ele>2</ele>
+      <ele>3</ele>
+      <ele>4</ele>
+    </x7>
+  </record>
+</table>

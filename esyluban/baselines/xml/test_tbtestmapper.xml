@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<table>
+  <record>
+    <id>1</id>
+    <audio_type>1</audio_type>
+    <v2>
+      <x>1</x>
+      <y>2</y>
+    </v2>
+  </record>
+  <record>
+    <id>2</id>
+    <audio_type>1</audio_type>
+    <v2>
+      <x>1</x>
+      <y>3</y>
+    </v2>
+  </record>
+</table>

@@ -36,6 +36,12 @@ set NEGATIVE_OUTPUT_DIR=%EXAMPLE_ROOT%\TestOutputs\negatives
 set NEGATIVE_LOG=%EXAMPLE_ROOT%\TestOutputs\negative_tests.log
 set MAIN_LOG=%EXAMPLE_ROOT%\TestOutputs\main_export.log
 set CONTEXTMENU_OUT=%EXAMPLE_ROOT%\TestOutputs\contextmenu
+set OUTPUT_DIR_XML=%EXAMPLE_ROOT%\TestOutputs\xml
+set OUTPUT_DIR_CODE=%EXAMPLE_ROOT%\TestOutputs\code_cs
+set BASELINE_DIR_XML=%ESY_ROOT%\baselines\xml
+set BASELINE_DIR_CODE=%ESY_ROOT%\baselines\code_cs
+set COMPARE_REPORT_XML=%EXAMPLE_ROOT%\TestOutputs\compare_report_xml.json
+set COMPARE_REPORT_CODE=%EXAMPLE_ROOT%\TestOutputs\compare_report_code.json
 set COMPARE_PS1=%~dp0compare_baseline.ps1
 
 set FAILED=0
@@ -49,7 +55,7 @@ if not exist "!LUBAN_EXE!" (
 rem Wipe outputs first. Luban only touches the output directory at save time,
 rem so a failure during schema/load leaves the previous run's files in place --
 rem the baseline would then match yesterday's output and report success.
-for %%D in ("!OUTPUT_DIR!" "!OUTPUT_DIR_NO_L10N!" "!NEGATIVE_OUTPUT_DIR!") do (
+for %%D in ("!OUTPUT_DIR!" "!OUTPUT_DIR_NO_L10N!" "!NEGATIVE_OUTPUT_DIR!" "!OUTPUT_DIR_XML!" "!OUTPUT_DIR_CODE!") do (
   if exist "%%~D" rmdir /s /q "%%~D"
 )
 
@@ -157,6 +163,26 @@ if exist "!NEGATIVE_DIR!" (
 
 popd
 
+rem Formats other than json had zero coverage: 16 dataTargets, only json was
+rem ever exercised -- while the real integration project uses xml. All 29
+rem codeTargets were untested too, which also means B1's mode / index were
+rem invisible to the baselines, since they shape generated code rather than
+rem json data. Both outputs are deterministic (verified byte-identical across
+rem consecutive runs), so they can be baselined like the json ones.
+echo [EXAMPLE] generate xml outputs -- via gen.bat
+call "!LUBAN_DIR!\gen.bat" -t all -d xml -x outputDataDir="!OUTPUT_DIR_XML!"
+if errorlevel 1 (
+  echo [FAIL] xml export returned !errorlevel!
+  set /a FAILED+=1
+)
+
+echo [EXAMPLE] generate C# code -- via gen.bat
+call "!LUBAN_DIR!\gen.bat" -t all -c cs-simple-json -x outputCodeDir="!OUTPUT_DIR_CODE!"
+if errorlevel 1 (
+  echo [FAIL] code generation returned !errorlevel!
+  set /a FAILED+=1
+)
+
 rem The right-click chain: forwarder -> impl -> --listTables -> -o export.
 rem
 rem This is the entry point designers actually use, and until now nothing
@@ -192,6 +218,16 @@ if errorlevel 1 set /a FAILED+=1
 powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
   -BaselineDir "!BASELINE_DIR_COVERAGE!" -OutputDir "!OUTPUT_DIR_NO_L10N!" ^
   -ReportPath "!COMPARE_REPORT_COVERAGE!" -Label "coverage baseline"
+if errorlevel 1 set /a FAILED+=1
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
+  -BaselineDir "!BASELINE_DIR_XML!" -OutputDir "!OUTPUT_DIR_XML!" ^
+  -ReportPath "!COMPARE_REPORT_XML!" -Label "xml baseline"
+if errorlevel 1 set /a FAILED+=1
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
+  -BaselineDir "!BASELINE_DIR_CODE!" -OutputDir "!OUTPUT_DIR_CODE!" ^
+  -ReportPath "!COMPARE_REPORT_CODE!" -Label "code baseline"
 if errorlevel 1 set /a FAILED+=1
 
 rem Owned files silently swallowed by .gitignore are invisible until someone

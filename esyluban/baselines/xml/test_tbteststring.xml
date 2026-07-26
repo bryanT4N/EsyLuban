@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<table>
+  <record>
+    <id>\a</id>
+    <s1>asfas</s1>
+    <s2>aaa
+bbb</s2>
+    <cs1>
+      <id>1</id>
+      <s2>asf</s2>
+      <s3>aaa</s3>
+    </cs1>
+    <cs2>
+      <id>1</id>
+      <s2>asf</s2>
+      <s3>aaa</s3>
+    </cs2>
+    <css>
+      <ele>1</ele>
+      <ele>2</ele>
+      <ele>  3</ele>
+      <ele>    </ele>
+    </css>
+    <css2>
+      <ele>1</ele>
+      <ele>2</ele>
+      <ele>3</ele>
+    </css2>
+  </record>
+  <record>
+    <id>2</id>
+    <s1>aaa\nbbb</s1>
+    <s2>aaa		bbb</s2>
+    <cs1>
+      <id>2</id>
+      <s2></s2>
+      <s3>bbb</s3>
+    </cs1>
+    <cs2>
+      <id>2</id>
+      <s2></s2>
+      <s3>bbb</s3>
+    </cs2>
+    <css>
+      <ele>1</ele>
+      <ele>'2'</ele>
+      <ele>' '</ele>
+      <ele>'  '</ele>
+      <ele>'   '</ele>
+    </css>
+    <css2>
+      <ele>1</ele>
+      <ele>2</ele>
+      <ele> </ele>
+      <ele>  </ele>
+      <ele>   </ele>
+    </css2>
+  </record>
+  <record>
+    <id>3</id>
+    <s1>升级到10级""</s1>
+    <s2>cccc</s2>
+    <cs1>
+      <id>3</id>
+      <s2>asdfas</s2>
+      <s3></s3>
+    </cs1>
+    <cs2>
+      <id>3</id>
+      <s2>asdfas</s2>
+      <s3></s3>
+    </cs2>
+    <css>
+      <ele>1</ele>
+      <ele>'ab'</ele>
+      <ele>'null'</ele>
+    </css>
+    <css2>
+      <ele>1</ele>
+      <ele>ab</ele>
+      <ele>null</ele>
+    </css2>
+  </record>
+  <record>
+    <id>4</id>
+    <s1>\abc</s1>
+    <s2></s2>
+    <cs1>
+      <id>4</id>
+      <s2></s2>
+      <s3></s3>
+    </cs1>
+    <cs2>
+      <id>4</id>
+      <s2></s2>
+      <s3></s3>
+    </cs2>
+    <css />
+    <css2>
+      <ele>asdas'"</ele>
+      <ele>'"</ele>
+    </css2>
+  </record>
+  <record>
+    <id>5</id>
+    <s1>升级到10级
+abc</s1>
+    <s2></s2>
+    <cs1>
+      <id>3</id>
+      <s2>asdfas</s2>
+      <s3></s3>
+    </cs1>
+    <cs2>
+      <id>3</id>
+      <s2>asdfas</s2>
+      <s3></s3>
+    </cs2>
+    <css />
+    <css2 />
+  </record>
+</table>

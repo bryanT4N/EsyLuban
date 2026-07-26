@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<table>
+  <record>
+    <id>1</id>
+    <name>Alpha</name>
+    <quality>1</quality>
+    <textKey>苹果</textKey>
+    <res>Assets/Scenes/SampleScene.unity</res>
+    <enabled>true</enabled>
+    <score>1.5</score>
+    <count>100</count>
+    <created>1735660800</created>
+    <notDefault>1</notDefault>
+  </record>
+</table>

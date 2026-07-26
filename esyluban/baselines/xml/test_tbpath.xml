@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<table>
+  <record>
+    <id>1</id>
+    <res>Assets/Scenes/SampleScene.unity</res>
+  </record>
+  <record>
+    <id>2</id>
+    <res>abc</res>
+  </record>
+  <record>
+    <id>3</id>
+    <res></res>
+  </record>
+</table>

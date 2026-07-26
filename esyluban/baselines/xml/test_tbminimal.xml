@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<table>
+  <record>
+    <id>1</id>
+    <name>alpha</name>
+  </record>
+  <record>
+    <id>2</id>
+    <name>beta</name>
+  </record>
+</table>
