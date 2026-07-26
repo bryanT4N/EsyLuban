@@ -98,19 +98,24 @@ B1: full_name="item.TbItem" & index="uid" & mode="list" & comment="道具表"
 #### A3.4 `input` 的定位语法（进阶，通常由程序员配置）
 
 不写 `input` 时它就指向本 sheet 自己，**大多数表用不到它**。
-只有两种情况需要写：数据在别的文件里，或一个文件里有多张表需要点名 sheet。
 
-注意顺序是 **sheet 名在前、文件路径在后**，与常见的 `文件#锚点` 相反：
+**一个 Excel 里放多张表也不需要写 `input`** —— 每个 sheet 各自写好 A1/B1，
+导表时会逐个 sheet 识别，各自成为一张表。
+
+只有一种情况需要写：**数据不在声明它的这个 sheet 里**。常见三类：
 
 ```
-input="通用道具表@item/道具系统表.xlsx"     该文件里名为「通用道具表」的 sheet
-input="multi_index@test/list.xlsx"          一个文件里的多张表之一
-input="a.json,*@b.json"                     逗号分隔多个数据源，合成一张表
+input="ai/behaviortrees"                    数据是整个目录下的多个文件
+input="table3@test/composite_tables.json"   数据在别的文件、别的格式里
+input="a.csv,b.csv,c.csv"                   逗号分隔多个数据源，合成一张表
 ```
+
+第二类要注意顺序是 **sheet 名在前、文件路径在后**，与常见的 `文件#锚点` 相反：
+`table3@test/composite_tables.json` 表示"该 json 里名为 table3 的那部分数据"。
 
 理解方式：`@` 把一条路径切成「逻辑位置」和「物理落点」——
-`item/通用道具表@道具系统表.xlsx` 读作"逻辑上是 item 下的『通用道具表』这张表，
-物理上躺在 道具系统表.xlsx 里"。因此 sheet 名占据路径的一段，写在 `@` 左边。
+读作"逻辑上是这张表，物理上躺在那个文件里"。因此 sheet 名占据路径的一段，
+写在 `@` 左边。
 
 这是上游 Luban 的既有约定（`FileUtil.SplitFileAndSheetName`），
 `luban.conf` 的 `schemaFiles`、L10N 配置也都用同一套写法。

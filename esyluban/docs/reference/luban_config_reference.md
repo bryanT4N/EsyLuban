@@ -211,15 +211,29 @@ EsyLuban 新规范: Excel/CSV 表**不再依赖 `__tables__.xlsx`**, 以 Sheet �
 - `mode` 默认 `map`
 - B1 支持引号与 `\"` 转义
 
-### 1.4 `sheet名@文件路径` 定位语法
+### 1.4 `input` 何时需要写，以及 `sheet名@文件路径` 定位语法
 
-上游既有约定（`FileUtil.SplitFileAndSheetName`），`input`、`schemaFiles`、
+**`input` 缺省即指向声明它的那个 sheet 自己。** 一个 Excel 内放多张表**不需要**
+写 `input` —— 每个 sheet 各自带 A1/B1，importer 会逐个 sheet 识别成独立的表。
+
+只有**数据不在声明它的 sheet 里**时才需要写。实际用到的三类（统计自 dev 工程）：
+
+```
+ai/behaviortrees                       数据是整个目录下的多个文件
+table3@test/composite_tables.json      数据在别的文件、别的格式里
+a.csv,b.csv,c.csv                      逗号分隔多数据源，合成一张表
+```
+
+> dev 工程中 50 处写了 `input` 的表里，**36 处（72%）其实指向 sheet 自己**，
+> 属于迁移工具无脑生成的冗余 —— 例如 `test/list.xlsx` 的三个 sheet 各写了
+> `not_index@test/list.xlsx` 一类的自引用。新表不必照抄。
+
+定位语法为上游既有约定（`FileUtil.SplitFileAndSheetName`），`input`、`schemaFiles`、
 L10N 配置共用同一套写法。**顺序是 sheet 在前、文件在后**，与常见的 `文件#锚点` 相反：
 
 ```
-通用道具表@item/道具系统表.xlsx        该文件里名为「通用道具表」的 sheet
-item/通用道具表@道具系统表.xlsx        与上一行等价（sheet 名占据路径的一段）
-a.json,*@b.json                        逗号分隔多数据源，合成一张表
+table3@test/composite_tables.json      该 json 里名为 table3 的那部分数据
+test/table3@composite_tables.json      与上一行等价（sheet 名占据路径的一段）
 ```
 
 `@` 把一条路径切成「逻辑位置」与「物理落点」：前者是这张表在模块树中的位置，
