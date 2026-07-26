@@ -1,14 +1,33 @@
 @echo off
-setlocal
+setlocal EnableExtensions EnableDelayedExpansion
+
+rem Usage: install_luban_context_menu.bat [suite]
+rem
+rem   suite  optional name that keeps several tool sets side by side.
+rem          It is appended to the registry key names, the menu captions and
+rem          the ProgramData folder, so installing with different suite names
+rem          never overwrites one another. Omit it for the default install.
+rem
+rem   install_luban_context_menu.bat            -> "Luban Export (Data)"
+rem   install_luban_context_menu.bat MyGame     -> "Luban Export (Data) - MyGame"
 
 set SCRIPT_DIR=%~dp0
 set ROOT_DIR=%SCRIPT_DIR%..\..
-set GLOBAL_DIR=%ProgramData%\EsyLuban
+set SUITE=%~1
 
+set GLOBAL_DIR=%ProgramData%\EsyLuban
 set MENU_NAME_DATA=LubanExportData
-set MENU_LABEL_DATA=Luban Export (Data)
 set MENU_NAME_CODE=LubanExportCode
-set MENU_LABEL_CODE=Luban Export (Code)
+set "MENU_LABEL_DATA=Luban Export (Data)"
+set "MENU_LABEL_CODE=Luban Export (Code)"
+
+if not "%SUITE%"=="" (
+  set GLOBAL_DIR=%ProgramData%\EsyLuban\!SUITE!
+  set MENU_NAME_DATA=LubanExportData_!SUITE!
+  set MENU_NAME_CODE=LubanExportCode_!SUITE!
+  set "MENU_LABEL_DATA=Luban Export (Data) - !SUITE!"
+  set "MENU_LABEL_CODE=Luban Export (Code) - !SUITE!"
+)
 
 set SCRIPT_DATA=%GLOBAL_DIR%\run_luban_context_menu_data.bat
 set SCRIPT_CODE=%GLOBAL_DIR%\run_luban_context_menu_code.bat
