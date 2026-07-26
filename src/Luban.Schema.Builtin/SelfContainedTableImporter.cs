@@ -128,9 +128,25 @@ public class SelfContainedTableImporter : ITableImporter
                 string a1 = reader.GetValue(0)?.ToString()?.Trim() ?? "";
                 string b1 = reader.FieldCount > 1 ? reader.GetValue(1)?.ToString()?.Trim() ?? "" : "";
 
-                // 只有 A1 恰为 ##export 才导出；##export=false 表示显式关闭。
-                if (a1 != "##export")
+                // A1 恰为 ##export 才导出；##export=false 表示显式关闭。
+                //
+                // 大小写不敏感：策划手打出 ##Export 的概率不低，而此前它会让整张表
+                // 无声消失 —— 没有报错、没有告警，导出照常成功，只是少了一张表。
+                // 对"看着像想写 export 却不合法"的写法给一句告警，是因为这类 A1
+                // 几乎不可能是有意为之；而 ##var 这类正常的非自包含表仍静默跳过。
+                string a1Lower = a1.ToLowerInvariant();
+                if (a1Lower.StartsWith("##export="))
                 {
+                    continue;
+                }
+                if (a1Lower != "##export")
+                {
+                    if (a1Lower.StartsWith("##") && a1Lower.Contains("export"))
+                    {
+                        s_logger.Warn("sheet '{}'@{} 的 A1 是 '{}'，不是有效的 ##export 标记，该表未被导出。"
+                                      + " 有效写法只有 ##export 与 ##export=false。",
+                            sheetName, file, a1);
+                    }
                     continue;
                 }
 

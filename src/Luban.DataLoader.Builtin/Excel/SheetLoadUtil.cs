@@ -502,7 +502,9 @@ public static class SheetLoadUtil
         // 它不是 meta 行本身 —— 真正的 meta 行（##var / ##column 等）在其下一行。
         // 必须在此跳过，而不能等读完再从结果里剔除：orientRow 就是在这里定下的，
         // 若把 ##export 当 meta 行，纵向表（##column）会被误判为横向表。
-        if (metaStr != null && metaStr.StartsWith("##export"))
+        // 大小写不敏感，与 SelfContainedTableImporter 的 A1 判断保持一致：
+        // 两处若不一致，##Export 会被一处认、另一处不认，行号偏移随之错位。
+        if (metaStr != null && metaStr.StartsWith("##export", StringComparison.OrdinalIgnoreCase))
         {
             if (!reader.Read() || reader.FieldCount == 0)
             {
