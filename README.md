@@ -1,4 +1,17 @@
 
+> ## 这是 EsyLuban —— Luban 的一个 fork
+>
+> 在上游 Luban 之上增加**自包含表定义**：每张 Excel 用 `A1=##export` 与 `B1` 元数据
+> 自我描述，不再需要集中式的 `__tables__.xlsx`；配套 Windows 右键菜单实现局部导表。
+>
+> **自有内容全部位于 [`esyluban/`](./esyluban/) 目录，仓库根保持为上游原物。**
+> 入口文档：[esyluban/README.md](./esyluban/README.md)　·　
+> 完全手册：[esyluban/docs/guides/esyluban_beginner_guide.md](./esyluban/docs/guides/esyluban_beginner_guide.md)
+>
+> clone 后请先运行 `esyluban\scripts\build.bat` 构建运行时（不进版本控制）。
+>
+> 以下为上游 Luban 的原始 README。
+
 - [README 中文](./README.md)
 - [README English](./README_EN.md)
 
