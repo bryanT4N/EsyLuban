@@ -171,7 +171,10 @@ public class SelfContainedTableImporter : ITableImporter
             InputFiles = new List<string> { input },
             Mode = mode,
             ReadSchemaFromFile = readSchemaFromFile,
-            Index = GetOptional(metadata, "index", "id"),
+            // index 缺省时留空，交由上游 DefTable 按"取 bean 的第一个字段"处理。
+            // 不要在这里臆测默认值（例如 "id"）—— 那会遮蔽上游语义，并让首字段
+            // 不叫 id 的表（如 ai.Blackboard 的 name）平白报"index 字段不存在"。
+            Index = GetOptional(metadata, "index", ""),
             Comment = GetOptional(metadata, "comment", ""),
             Groups = ParseGroups(GetOptional(metadata, "group", "")),
             Tags = DefUtil.ParseAttrs(GetOptional(metadata, "tags", "")),
