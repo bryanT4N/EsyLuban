@@ -85,12 +85,39 @@ public static class SheetLoadUtil
             return null;
         }
         var cells = ParseRawSheetContent(reader, orientRow, false);
+        RemoveExportMarkRow(cells);
         ValidateTitles(cells);
         var title = ParseTitle(cells, reader.MergeCells, orientRow);
         cells.RemoveAll(c => IsNotDataRow(c));
         return new RawSheet() { Title = title, SheetName = reader.Name, Cells = cells };
     }
 
+
+    /// <summary>
+    /// [EsyLuban] 剔除自包含表定义的 A1 标记行（##export / ##export=false）。
+    ///
+    /// 上游格式中，首行既是 meta 行又是主标题行（A1=##var，B1 起为列名）。
+    /// 自包含格式在其之上插入了一行 ##export，该行只有 A1 有值。若不剔除，
+    /// 它会被 ParseTitle 当作主标题行，使列范围塌缩为 1 列，进而让多列限定
+    /// 标题（如 *fields）的子列报 "缺失列 alias"。
+    /// </summary>
+    private static void RemoveExportMarkRow(List<List<Cell>> rows)
+    {
+        if (rows.Count == 0)
+        {
+            return;
+        }
+        var firstRow = rows[0];
+        if (firstRow.Count == 0)
+        {
+            return;
+        }
+        string tag = firstRow[0].Value?.ToString()?.Trim()?.ToLower();
+        if (!string.IsNullOrEmpty(tag) && tag.StartsWith("##export"))
+        {
+            rows.RemoveAt(0);
+        }
+    }
 
     private static readonly HashSet<string> s_knownSpecialTags = new()
     {
@@ -101,6 +128,9 @@ public static class SheetLoadUtil
         "comment",
         "column",
         "group",
+        // [EsyLuban] 自包含表定义的 A1 标记（##export / ##export=false）。
+        // 由 SelfContainedExcelSchemaLoader 在 schema 阶段解析，此处仅放行标题校验。
+        "export",
     };
 
     private const char s_sep = '#';
@@ -433,6 +463,13 @@ public static class SheetLoadUtil
                 {
                     break;
                 }
+                // [EsyLuban] 自包含表定义：A1 用 ##export / ##export=false 声明该 sheet 是否导出。
+                // 该属性由 SelfContainedExcelSchemaLoader 在 schema 阶段解析并决定导出与否，
+                // 数据加载阶段只需放行，不做任何处理。
+                case "export":
+                {
+                    break;
+                }
                 case "column":
                 case "vertical":
                 {
@@ -441,7 +478,7 @@ public static class SheetLoadUtil
                 }
                 default:
                 {
-                    throw new Exception($"非法单元薄 meta 属性定义 {attr}, 合法属性有: +,var,row,column,table=<tableName>");
+                    throw new Exception($"非法单元薄 meta 属性定义 {attr}, 合法属性有: +,var,row,column,export,table=<tableName>");
                 }
             }
         }

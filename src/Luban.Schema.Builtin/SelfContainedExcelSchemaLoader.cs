@@ -1,7 +1,7 @@
 // Copyright 2025 EZLuban
 // Licensed under MIT License
 
-using NPOI.SS.UserModel;
+using ExcelDataReader;
 using Luban.RawDefs;
 using Luban.Utils;
 using Luban.Defs;
@@ -28,69 +28,58 @@ public class SelfContainedExcelSchemaLoader : SchemaLoaderBase
         }
 
         using var stream = new FileStream(actualFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        var workbook = WorkbookFactory.Create(stream);
+        // 与上游 SheetLoadUtil 保持同一套 Excel 读取实现（ExcelDataReader），
+        // 避免额外引入第三方 Excel 库。注意 reader 是前向只读的：
+        // 每张 sheet 只需读第一行即可拿到 A1/B1。
+        using var reader = ExcelReaderFactory.CreateReader(stream);
 
-        // 遍历所有 Sheet
-        for (int i = 0; i < workbook.NumberOfSheets; i++)
+        do
         {
-            var sheet = workbook.GetSheetAt(i);
-            
+            string sheetName = reader.Name;
+
             // 如果指定了 Sheet 名，只处理该 Sheet
-            if (!string.IsNullOrEmpty(requestedSheetName) && sheet.SheetName != requestedSheetName)
+            if (!string.IsNullOrEmpty(requestedSheetName) && sheetName != requestedSheetName)
             {
                 continue;
             }
 
-            // 检查是否是自包含 Sheet
-            if (IsSelfContainedSheet(sheet))
+            // 读首行，取 A1 与 B1
+            if (!reader.Read() || reader.FieldCount == 0)
             {
-                try
-                {
-                    var table = ParseSheetMetadata(sheet, actualFile);
-                    Collector.Add(table);
-                    s_logger.Info($"Loaded self-contained table: {table.Name} from {actualFile}@{sheet.SheetName}");
-                }
-                catch (Exception ex)
-                {
-                    s_logger.Error(ex, $"Failed to parse self-contained sheet: {actualFile}@{sheet.SheetName}");
-                    throw;
-                }
+                continue;
             }
-        }
-    }
+            string a1 = reader.GetValue(0)?.ToString()?.Trim() ?? "";
+            string b1 = reader.FieldCount > 1 ? reader.GetValue(1)?.ToString()?.Trim() ?? "" : "";
 
-    /// <summary>
-    /// 检查是否是自包含 Sheet
-    /// </summary>
-    private bool IsSelfContainedSheet(ISheet sheet)
-    {
-        var a1Row = sheet.GetRow(0);
-        if (a1Row == null) return false;
+            // A1 恰为 ##export 才是需要导出的自包含表；
+            // ##export=false 表示显式关闭导出，这里直接跳过。
+            if (a1 != "##export")
+            {
+                continue;
+            }
 
-        var a1Cell = a1Row.GetCell(0);
-        if (a1Cell == null) return false;
-
-        string a1Value = a1Cell.StringCellValue?.Trim() ?? "";
-        return a1Value == "##export";
+            try
+            {
+                var table = ParseSheetMetadata(sheetName, b1, actualFile);
+                Collector.Add(table);
+                s_logger.Info($"Loaded self-contained table: {table.Name} from {actualFile}@{sheetName}");
+            }
+            catch (Exception ex)
+            {
+                s_logger.Error(ex, $"Failed to parse self-contained sheet: {actualFile}@{sheetName}");
+                throw;
+            }
+        } while (reader.NextResult());
     }
 
     /// <summary>
     /// 解析 Sheet 元数据
     /// </summary>
-    private RawTable ParseSheetMetadata(ISheet sheet, string fileName)
+    private RawTable ParseSheetMetadata(string sheetName, string b1Content, string fileName)
     {
-        var b1Row = sheet.GetRow(0);
-        var b1Cell = b1Row?.GetCell(1);
-        
-        if (b1Cell == null)
-        {
-            throw new Exception($"Sheet '{sheet.SheetName}' has ##export but B1 is empty!");
-        }
-
-        string b1Content = b1Cell.StringCellValue?.Trim() ?? "";
         if (string.IsNullOrWhiteSpace(b1Content))
         {
-            throw new Exception($"Sheet '{sheet.SheetName}' B1 content is empty!");
+            throw new Exception($"Sheet '{sheetName}' has ##export but B1 is empty!");
         }
 
         // 使用 B1Parser 解析元数据
@@ -114,11 +103,11 @@ public class SelfContainedExcelSchemaLoader : SchemaLoaderBase
         {
             // 计算相对路径
             string relativePath = GetRelativePathToDataDir(fileName);
-            input = $"{relativePath}@{sheet.SheetName}";
+            input = $"{relativePath}@{sheetName}";
         }
 
         // 处理 mode
-        TableMode mode = TableMode.Map;  // 默认值
+        TableMode mode = TableMode.MAP;  // 默认值
         if (metadata.ContainsKey("mode"))
         {
             mode = ParseMode(metadata["mode"]);
@@ -161,8 +150,8 @@ public class SelfContainedExcelSchemaLoader : SchemaLoaderBase
     /// </summary>
     private string GetRelativePathToDataDir(string absolutePath)
     {
-        // 获取 dataDir（从配置中）
-        string dataDir = FileUtil.Standardize(Context.DataInputDir);
+        // 获取 dataDir（与上游 DefaultTableImporter 取同一来源）
+        string dataDir = FileUtil.Standardize(GenerationContext.GlobalConf.InputDataDir);
         string standardizedPath = FileUtil.Standardize(absolutePath);
 
         if (standardizedPath.StartsWith(dataDir))
@@ -191,9 +180,9 @@ public class SelfContainedExcelSchemaLoader : SchemaLoaderBase
     {
         return modeStr.ToLower() switch
         {
-            "map" => TableMode.Map,
-            "list" => TableMode.List,
-            "one" => TableMode.One,
+            "map" => TableMode.MAP,
+            "list" => TableMode.LIST,
+            "one" => TableMode.ONE,
             _ => throw new Exception($"Invalid mode: {modeStr}. Expected: map, list, or one")
         };
     }
