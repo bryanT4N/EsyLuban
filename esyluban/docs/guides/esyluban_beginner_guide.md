@@ -81,7 +81,7 @@ B1: full_name="item.TbItem" & index="uid" & mode="list" & comment="道具表"
 ```
 ┌────────┬───────────────────────────────────────────────────────────────────────┐
 │ A1     │ ##export                                                              │
-│ B1     │ full_name="item.TbItem" & value_type="item.Item" & index="id" & mode="map" & output="item_tbitem" │
+│ B1     │ full_name="item.TbItem"                                               │
 ├────────┼────────┬──────────┬────────┬──────────┬──────────┐
 │ ##var  │ id     │ name     │ price  │ quality  │ desc     │
 │ ##type │ int    │ string   │ int    │ int      │ text     │
@@ -170,7 +170,7 @@ map 的写法比较容易出错，**必须按程序员提供的模板填写**。
 示例（单例表写法）：
 ```
 A1: ##export
-B1: full_name="global.TbGlobal" & value_type="global.Global" & mode="one"
+B1: full_name="global.TbGlobal" & mode="one"
 
 ##var  openLevel  maxBag
 ##type int        int
@@ -193,10 +193,14 @@ B1: full_name="global.TbGlobal" & value_type="global.Global" & mode="one"
 ### A5. 你可以放心忽略的内容
 
 以下内容由程序员负责配置，你不需要修改：  
-- `B1` 中的字段（full_name/value_type/index/mode 等）  
-- 输出目录、校验参数、本地化参数  
+- 输出目录、校验参数、本地化参数（都在 `luban.conf` 里）  
+- 字段类型上的校验标签，如 `string#path=unity`、`#sep=;`  
 
-**原则：策划只写数据，不改结构与配置。**  
+B1 里你会用到的只有 `full_name`（表的名字），偶尔加 `mode="one"`（单例表）。  
+其余字段（`value_type` / `index` / `output` / `input` 等）都有默认值，
+需要偏离默认时由程序员补写。
+
+**原则：策划照模板写数据，不改字段类型与配置。**  
 
 ---
 
@@ -221,11 +225,13 @@ B1: full_name="global.TbGlobal" & value_type="global.Global" & mode="one"
 
 ### A8. 策划常用表模板（拿来就用）
 
+> B1 里**只有 `full_name` 必须写**。下面模板里出现的其它字段，都是"确实需要偏离默认"时才加的。
+
 #### A8.1 道具表（最常见）
 
 ```
 A1: ##export
-B1: full_name="item.TbItem" & value_type="item.Item" & index="id" & mode="map" & output="item_tbitem"
+B1: full_name="item.TbItem"
 
 ##var  id  name   price  iconPath               desc
 ##type int string int    string#path=unity      text
@@ -234,23 +240,26 @@ B1: full_name="item.TbItem" & value_type="item.Item" & index="id" & mode="map" &
 
 注意：  
 - `string#path=unity` 是程序员配置的校验标签，策划不要改  
+- 值类型（`item.Item`）、主键（第一个字段 `id`）、输出文件名（`item_tbitem`）都是自动的，不用写  
 
 #### A8.2 全局表（单例）
 
 ```
 A1: ##export
-B1: full_name="global.TbGlobal" & value_type="global.Global" & mode="one" & output="global_tbglobal"
+B1: full_name="global.TbGlobal" & mode="one"
 
 ##var  openLevel  maxBag
 ##type int        int
 10     200
 ```
 
+> 单例表只有 `mode="one"` 需要写 —— 默认是 `map`（按主键查的普通表）。
+
 #### A8.3 运营奖励表（列表）
 
 ```
 A1: ##export
-B1: full_name="mail.TbRewards" & value_type="mail.Reward" & index="id" & mode="map" & output="mail_tbrewards"
+B1: full_name="mail.TbRewards"
 
 ##var  id  rewards#sep=;
 ##type int list,int
@@ -258,6 +267,7 @@ B1: full_name="mail.TbRewards" & value_type="mail.Reward" & index="id" & mode="m
 ```
 
 > list 写法依赖 `#sep`，按模板填写，不要改结构。  
+> 这里的 `list` 指字段类型；若要整张表以列表形式导出（无主键），才写 `mode="list"`。  
 
 ---
 
@@ -284,6 +294,39 @@ B1: full_name="mail.TbRewards" & value_type="mail.Reward" & index="id" & mode="m
 - 配置如何影响导出  
 - 参数应该如何写（推荐/不推荐）  
 - 可执行的实战示例  
+
+---
+
+### B0. 环境准备（clone 之后第一件事）
+
+**Luban 运行时不进版本控制**，clone 下来 `esyluban/runtime/` 是空的。
+必须先构建，否则 `gen.bat` / `check.bat` / 右键菜单都会报
+`Luban runtime not found`：
+
+```
+esyluban\scripts\build.bat
+```
+
+它从仓库的 `src/` 构建出完整运行时（含各语言代码生成器）到 `esyluban/runtime/`。
+需要 .NET SDK（本项目在 .NET 9 上验证）。
+
+为什么不把 dll 提交进仓库：60 个二进制每次重建都会在 git 历史里留下新 blob，
+仓库体积会随开发次数线性且不可逆地膨胀。
+
+**工具只存这一份。** 各示例工程的 `Tools/Luban/` 里只有自己的 `luban.conf` 与
+`gen/check.bat`，它们会向上搜索定位共享运行时。因此工具更新后**不需要**再往
+各工程复制副本。
+
+其它常用入口：
+
+```
+esyluban\scripts\test\run_full_tests_example.bat   全量回归 + 双基线比对
+esyluban\scripts\test\run_unit_tests.bat           B1Parser 单元测试
+esyluban\scripts\contextmenu\install_luban_context_menu.bat   安装右键菜单（需管理员）
+```
+
+> 注册表指向的是 `%ProgramData%\EsyLuban` 下的脚本副本，
+> 所以改动 `scripts/contextmenu/` 下的脚本后，需**重新运行一次安装脚本**才生效。
 
 ---
 
@@ -340,7 +383,7 @@ B1: full_name="mail.TbRewards" & value_type="mail.Reward" & index="id" & mode="m
     "server.outputCodeDir=../../TestOutputs/code/server",
     "editor.outputCodeDir=../../TestOutputs/code/editor",
     "cs-simple-json.outputCodeDir=../../TestOutputs/code/cs-simple-json",
-    "pathValidator.rootDir=../../DataTables/Assets",
+    "pathValidator.rootDir=../../DataTables",
     "l10n.provider=default",
     "l10n.textFile.path=../../DataTables/l10n/texts.xlsx",
     "l10n.textFile.keyFieldName=key",
@@ -1268,7 +1311,7 @@ JSON 输出结构示意：
 
 ```
 A1: ##export
-B1: full_name="demo.TbExample" & value_type="demo.Example" & index="id" & mode="map" & output="demo_tbexample"
+B1: full_name="demo.TbExample"
 
 ##var  id  name  type  desc
 ##type int string int   text
