@@ -59,6 +59,12 @@
 - `tableImporter.name` / `tableImporter.filePattern` / `tableImporter.tableNamespaceFormat`  
   / `tableImporter.tableNameFormat` / `tableImporter.valueTypeNameFormat`
 - `tableImporter.scanPath` 仅扫描指定文件/目录 (支持绝对或相对 dataDir)
+
+> **EsyLuban 无需配置 `tableImporter.name`。** `SelfContainedTableImporter` 以
+> `[TableImporter("default", Priority = 100)]` 覆盖了上游按 `#xxx` 文件名模式导表的
+> 默认实现 —— 自包含表定义是本 fork 的唯一形态，不该作为可选项暴露给使用者。
+> `filePattern` / `tableNameFormat` 等几项只对上游那套文件名模式有意义，本 fork 用不到。
+> 需要退回上游行为时，显式配置 `tableImporter.name` 为其它已注册的 importer 名即可。
 - `l10n.provider` / `l10n.textFile.path` / `l10n.textFile.keyFieldName`  
   / `l10n.textFile.languageFieldName` / `l10n.convertTextKeyToValue`
 
@@ -349,9 +355,12 @@ EnumItem 列表:
 #### `esyluban/scripts/test/run_full_tests_example.bat`
 - 示例项目全覆盖测试入口:
   - 生成 `TestOutputs/json`（带 L10N）与 `TestOutputs/json_nol10n`（不带 L10N）。
-  - 无 L10N 输出与核心基线对比：`luban_examples_pristine/Projects/GenerateDatas/json` -> `TestOutputs/compare_report.json`。
+  - 无 L10N 输出与核心基线对比：`esyluban/baselines/core` -> `TestOutputs/compare_report.json`。
   - 无 L10N 输出与覆盖基线对比：`esyluban/baselines/coverage` -> `TestOutputs/compare_report_coverage.json`。
   - 负例用例会单独运行，**仅记录日志不影响整体导出**，日志为 `TestOutputs/negative_tests.log`。
+    负例以 `group="t"` 隔离、由 `test` 目标筛选，**不要再额外限制
+    `tableImporter.scanPath`** —— schema 是全局加载的，只导入负例目录会让跨表引用
+    悬空，运行在到达待测校验器前就中止。
 
 #### `scripts/run_luban_context_menu_data.bat` / `scripts/run_luban_context_menu_code.bat`
 - 全局右键菜单入口脚本（数据/代码），自动寻址 `Tools/Luban`（向上最多 5 层）。

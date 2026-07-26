@@ -167,10 +167,18 @@ DefaultSchemaCollector 支持三种定义形式:
 `full_name`, `value_type`, `index`, `mode`, `group`, `comment`, `read_schema_from_file`, `input`, `output`, `tags`
 
 **解析规则要点**
-- `read_schema_from_file` 未写时默认 `true`。
-- `input` 未写时默认 `sheet@file`。
+- **`full_name` 是唯一必填项**，其余字段均有缺省（2026-07 起）。
+- `value_type` 未写时由表名推导：`TbItem` -> `Item`。
+- `output` 未写时由全名生成：`item.TbItem` -> `item_tbitem`。
+- `index` 未写时留空，交由上游取值类型的第一个字段。
+- `mode` 未写时为 `map`。
+- `read_schema_from_file` 未写时默认 **`false`**（结构来自 XML 或 `__beans__`）。
+- `input` 未写时指向本 sheet 自己，等价于 `sheet@file`；
+  注意只写文件路径（不带 `@sheet`）表示读该文件**全部 sheet**，与缺省不等价。
 - B1 支持双引号值, 引号内允许 `&` 字符; `\"` 可转义引号。
 - `##export=false` 时直接跳过该 Sheet。
+
+> 详细的缺省语义与适用场景见 `docs/esyluban_beginner_guide.md` A3.1 / A3.4。
 
 ### 2.6 Excel 紧凑格式 (Compact Format)
 
@@ -449,7 +457,7 @@ flowchart TD
 - 数据目录: `esyluban/examples/dev/DataTables/`
 - 输出目录: `esyluban/examples/dev/TestOutputs/`
 - 无 L10N 输出: `esyluban/examples/dev/TestOutputs/json_nol10n`
-- 核心基线: `luban_examples_pristine/Projects/GenerateDatas/json`
+- 核心基线: `esyluban/baselines/core`（源自上游 luban_examples 未迁移版本的输出，已固化）
 - 覆盖基线: `esyluban/baselines/coverage`
 - 对比报告:
   - 核心一致性: `esyluban/examples/dev/TestOutputs/compare_report.json`

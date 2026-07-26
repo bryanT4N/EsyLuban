@@ -32,7 +32,7 @@ esyluban/
 │  └─ release/     发布示例工程：干净用例 + Unity 集成演示
 ├─ baselines/
 │  ├─ core/        53 个 json，核心一致性基线（源自上游 luban_examples）
-│  └─ coverage/    55 个 json，覆盖一致性基线（由 dev 工程输出刷新）
+│  └─ coverage/    56 个 json，覆盖一致性基线（由 dev 工程输出刷新）
 ├─ scripts/
 │  ├─ build.bat    从 ../src 构建运行时
 │  ├─ test/        回归测试、基线刷新、覆盖矩阵报告
