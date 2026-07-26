@@ -61,10 +61,19 @@ git diff --name-status origin/main -- src
 | `src/Luban.Core/Utils/B1Parser.cs` | 解析 B1 的表元数据串 |
 | `src/Luban.Schema.Builtin/SelfContainedTableImporter.cs` | `[TableImporter(Priority=100)]`，扫描并发现自包含表 |
 | `src/Luban.Schema.Builtin/SelfContainedSchemaCollector.cs` | `[SchemaCollector(Priority=100)]`，加载内联 `__beans__` / `__enums__` |
+| `src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs` | `[OutputSaver("local", Priority=100)]`，给输出目录清理加安全闸 |
 | `src/Luban.Tests/` | B1Parser 单元测试 |
 
 `Priority=100` 是关键：Luban 按优先级选取扩展点实现，高优先级的同名实现会覆盖内置的，
 因此无需改动上游的注册代码。
+
+`SafeLocalFileSaver` 拦的是 `cleanUpOutputDir` 的静默批量删除：内置实现会无条件
+删掉输出目录里一切"不属于本次产物"的文件，不管本次是否真的产出了东西。有四条
+互不相干的路径通向这个后果（group 全被过滤、多 dataTarget 共用目录、`-o` 局部
+导出、输出目录混放了其他资源），且全部退出码为 0。闸门的判据是「本次产物数」与
+「将删除数」的关系——产物为 0、或删得比产出的还多，就告警并跳过清理。
+正常全量导出里要删的只是废弃表的残留，数量远小于产物数，不受影响。
+确需强清用 `-x forceCleanUpOutputDir=1`。
 
 ### 环境准备
 
