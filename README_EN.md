@@ -8,7 +8,7 @@
 > **All fork-owned content lives under [`esyluban/`](./esyluban/); the repository root
 > stays as upstream.**
 > Entry point: [esyluban/README.md](./esyluban/README.md)　·　
-> Full manual (Chinese): [esyluban/docs/guides/esyluban_beginner_guide.md](./esyluban/docs/guides/esyluban_beginner_guide.md)
+> Full manual (Chinese): [esyluban/docs/esyluban_beginner_guide.md](./esyluban/docs/esyluban_beginner_guide.md)
 >
 > After cloning, run `esyluban\scripts\build.bat` first to build the runtime
 > (it is not under version control).

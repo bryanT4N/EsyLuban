@@ -40,12 +40,14 @@ esyluban/
 │  └─ authoring/   建表模板、矩阵用例生成、xlsx 迁移
 ├─ templates/      新建工程用的 luban.conf / gen.bat / check.bat 模板
 ├─ docs/
-│  ├─ guides/      完全手册（A 部分给策划，B 部分给程序员）
-│  ├─ reference/   Luban 配置参考、源码分析
-│  ├─ dev/         优化日志、覆盖矩阵、全链路集成、结构设计
-│  └─ archive/     已废弃的分析稿、历史迁移报告
+│  ├─ esyluban_beginner_guide.md   完全手册（A 给策划，B 给程序员）
+│  └─ internal/    仅供维护者：Luban 参考、源码分析、开发记录、归档
 └─ sandbox/        自包含加载器开发期的手工验证沙盒
 ```
+
+**随项目发布的文档只有三份**：本文件、`docs/esyluban_beginner_guide.md`、
+以及 `examples/README.md`（数据出处与 MIT 归属，合规必需）。
+`docs/internal/` 下的内容面向维护者，判断标准见 `docs/internal/README.md`。
 
 ---
 
@@ -92,10 +94,13 @@ esyluban\scripts\contextmenu\install_luban_context_menu.bat
 
 ```
 A1 = ##export                （或 ##export=false 关闭导出）
-B1 = full_name="test.TbFoo" & value_type="Foo" & index="id" & mode="map" & input="test/foo.xlsx"
+B1 = full_name="test.TbFoo"
 ```
+
+**`full_name` 是 B1 唯一必填项。** `value_type`（由表名推导 `TbFoo` → `Foo`）、
+`output`、`input`、`index`、`mode` 等都有缺省，仅在需要偏离默认时才写。
 
 原 `##var` / `##type` / `##group` / `##comment` 行整体下移一行。
 同一 Excel 内还可用 `__enums__` / `__beans__` 子表定义文件级作用域的枚举与 bean。
 
-详见 `docs/guides/esyluban_beginner_guide.md`。
+详见 `docs/esyluban_beginner_guide.md`。

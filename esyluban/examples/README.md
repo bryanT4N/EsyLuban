@@ -10,7 +10,7 @@
 - **迁移时间**：2026-01-22 / 23
 - **迁移做了什么**：把上游集中式的 `__tables__.xlsx` 表定义，改写为每张 Excel 自己的
   `A1=##export` + `B1` 元数据。**数据内容基本未改，改的是"表定义写在哪里"。**
-- **迁移记录**：`esyluban/docs/archive/migration_report_20260122.json`
+- **迁移记录**：`esyluban/docs/internal/archive/migration_report_20260122.json`
   （逐文件记录，共处理 215 项）
 
 正因为数据来自上游，回归测试的**核心基线**才有意义：
@@ -63,5 +63,5 @@ EsyLuban 改为**按用途分**，是 2026-01-24 从单一的 `EsyLuban_Example`
 ## 顺带一提
 
 上游"每个工程各有一套 `gen.bat`、要手动进目录去跑"，正是 EsyLuban 立项时记录的
-痛点之一（见 `docs/archive/esyluban_complete_analysis_aborted.md`）。
+痛点之一（见 `docs/internal/archive/esyluban_complete_analysis_aborted.md`）。
 现在的做法是：运行时全仓库共享一份，配置随工程走，再由右键菜单直接导出所选范围。

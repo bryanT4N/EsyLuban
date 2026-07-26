@@ -6,7 +6,7 @@
 >
 > **自有内容全部位于 [`esyluban/`](./esyluban/) 目录，仓库根保持为上游原物。**
 > 入口文档：[esyluban/README.md](./esyluban/README.md)　·　
-> 完全手册：[esyluban/docs/guides/esyluban_beginner_guide.md](./esyluban/docs/guides/esyluban_beginner_guide.md)
+> 完全手册：[esyluban/docs/esyluban_beginner_guide.md](./esyluban/docs/esyluban_beginner_guide.md)
 >
 > clone 后请先运行 `esyluban\scripts\build.bat` 构建运行时（不进版本控制）。
 >
