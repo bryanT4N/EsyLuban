@@ -1,0 +1,6 @@
+<module name="tag">
+	<bean name="TestTag">
+		<var name="id" type="int" />
+		<var name="value" type="string" />
+	</bean>
+	</module>

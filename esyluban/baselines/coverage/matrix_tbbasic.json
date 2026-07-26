@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "name": "Alpha",
+    "quality": 1,
+    "textKey": "/apple",
+    "res": "Scenes/SampleScene.unity",
+    "enabled": true,
+    "score": 1.5,
+    "count": 100,
+    "created": 1735660800,
+    "notDefault": 1
+  }
+]

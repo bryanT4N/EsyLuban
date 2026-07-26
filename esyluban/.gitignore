@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────
+# EsyLuban 子树忽略规则
+#
+# 本文件是【新增文件】，规则只作用于 esyluban/ 子树。
+# 上游根目录的 .gitignore 一字未改 —— 这是本 fork「对上游零改动」
+# 性质的一部分：需要新规则时新增分层 .gitignore，而不是修改上游的。
+# ─────────────────────────────────────────────────────────────
+
+# Luban 运行时（60+ 个二进制）。由 scripts/build.bat 从 ../src 构建产出。
+# 不进版本控制：二进制每次重建都会产生新 blob，会让仓库历史不可逆地膨胀。
+runtime/
+
+# 回归测试产物：每次 scripts/test/run_full_tests_example.bat 都会重写
+examples/dev/TestOutputs/
+
+# ── 取消上游规则对本子树的误伤 ──────────────────────────────
+# 上游 .gitignore 第 18 行的 [Rr]elease/ 是 .NET 生态用来忽略 Release 构建
+# 目录的通用规则。但 examples/release/ 只是恰好同名的示例工程，会被整个吞掉
+# —— 785 个文件全部无法跟踪，且 git 不会给出任何提示。此处显式取消。
+#
+# 之所以用否定规则而不是给目录改名：保持 dev / release 的语义对称。
+# 代价是这条规则依赖上游 .gitignore 的行为，跟进上游后值得复检：
+#   git check-ignore -v esyluban/examples/release/Tools/Luban/luban.conf
+!examples/release/
+
+# 注意：examples/release 下 Unity 工程的生成物（Assets/GenCode、Assets/GenData）
+# 【刻意保留】进版本控制 —— 它们是"发布示例"的展示内容，用于说明生成结果的样子；
+# 且 Unity 要求 .meta 与资源一一对应，忽略后工程会报缺失。

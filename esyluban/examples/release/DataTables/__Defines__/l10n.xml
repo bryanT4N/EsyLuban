@@ -1,0 +1,11 @@
+<module name="l10n">
+	<bean name="L10NDemo">
+		<var name="id" type="int" />
+		<var name="text" type="text" />
+	</bean>
+	
+	<bean name="PatchDemo">
+		<var name="id" type="int" />
+		<var name="value" type="int" />
+	</bean>
+	</module>

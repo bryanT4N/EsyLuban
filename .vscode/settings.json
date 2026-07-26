@@ -1,0 +1,54 @@
+{
+  // ─────────────────────────────────────────────────────────────
+  // EsyLuban 工作区设置（folder settings，仅作用于本文件夹根）
+  //
+  // 背景：本目录曾含 387 个 .csproj / 121 个 .sln，绝大多数是参考副本
+  // （luban/、luban_examples*/）或已移入 _trash_20260726/ 的待删物。
+  // C# 扩展（Microsoft.CodeAnalysis.LanguageServer）会对每一个 .csproj
+  // 做设计时构建，曾观察到同时拉起 17 个 dotnet 进程，并因持有文件句柄
+  // 导致目录移动静默失败（残留 obj/ 与 .csproj）。
+  //
+  // 注意：本工作区是【多根】的（另含 Desktop/SD）。因此这里刻意不使用
+  // window 作用域的 "dotnet.defaultSolution" —— 它会把整个窗口锁定到单个
+  // 解决方案，妨碍另一个根的工作。改用 resource 作用域的 files.exclude，
+  // 只对本根生效。
+  // ─────────────────────────────────────────────────────────────
+
+  // 对 VS Code 及其扩展隐藏待删目录，使 C# 扩展发现不了其中的 194 个
+  // .csproj，从而不再对它们做设计时构建。
+  // 仅影响编辑器视图，【不影响】scripts/*.bat 的文件系统访问，回归测试照常。
+  // 删除 _trash_20260726 后，可把下面这条连同本注释一并移除。
+  "files.exclude": {
+    "_trash_20260726": true
+  },
+
+  // 文件监视器排除：降低 CPU / 内存 / 句柄占用。
+  "files.watcherExclude": {
+    "**/_trash_20260726/**": true,
+    "**/obj/**": true,
+    "**/bin/**": true,
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    // Unity 工程缓存（Projects/**/Csharp_Unity_json 运行后会生成）
+    "**/Library/**": true,
+    "**/Temp/**": true,
+    "**/Logs/**": true
+  },
+
+  // 全文搜索排除：去掉待删副本与构建产物的噪音。
+  // 说明：luban/ 与 luban_examples*/ 是纯净上游参考源码与回归基线，
+  // 特意【不】排除，方便随时比对。若搜索重复结果过多，可自行加入
+  // "luban_examples": true 与 "luban_examples_migrated": true。
+  "search.exclude": {
+    "_trash_20260726": true,
+    "**/obj": true,
+    "**/bin": true,
+    "**/Library": true,
+    "**/Temp": true
+  },
+
+  // luban.conf 实为 JSONC（EsyLuban 在其中扩展了 contextMenu 段）
+  "files.associations": {
+    "luban.conf": "jsonc"
+  }
+}

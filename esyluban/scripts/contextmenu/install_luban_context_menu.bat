@@ -1,0 +1,80 @@
+@echo off
+setlocal
+
+set SCRIPT_DIR=%~dp0
+set ROOT_DIR=%SCRIPT_DIR%..\..
+set GLOBAL_DIR=%ProgramData%\EsyLuban
+
+set MENU_NAME_DATA=LubanExportData
+set MENU_LABEL_DATA=Luban Export (Data)
+set MENU_NAME_CODE=LubanExportCode
+set MENU_LABEL_CODE=Luban Export (Code)
+
+set SCRIPT_DATA=%GLOBAL_DIR%\run_luban_context_menu_data.bat
+set SCRIPT_CODE=%GLOBAL_DIR%\run_luban_context_menu_code.bat
+set SOURCE_DATA=%SCRIPT_DIR%run_luban_context_menu_data.bat
+set SOURCE_CODE=%SCRIPT_DIR%run_luban_context_menu_code.bat
+if not exist "%SOURCE_DATA%" set SOURCE_DATA=%ROOT_DIR%\scripts\contextmenu\run_luban_context_menu_data.bat
+if not exist "%SOURCE_CODE%" set SOURCE_CODE=%ROOT_DIR%\scripts\contextmenu\run_luban_context_menu_code.bat
+
+set RUN_CMD_DATA="\"%SCRIPT_DATA%\" \"%%1\""
+set RUN_CMD_CODE="\"%SCRIPT_CODE%\" \"%%1\""
+set RUN_CMD_DATA_BG="\"%SCRIPT_DATA%\" \"%%V\""
+set RUN_CMD_CODE_BG="\"%SCRIPT_CODE%\" \"%%V\""
+
+if not exist "%GLOBAL_DIR%" (
+  mkdir "%GLOBAL_DIR%" >nul 2>nul
+)
+if not exist "%SOURCE_DATA%" (
+  echo Missing source script: %SOURCE_DATA%
+  echo If nothing happens, run as Administrator.
+  pause
+  exit /b 1
+)
+if not exist "%SOURCE_CODE%" (
+  echo Missing source script: %SOURCE_CODE%
+  echo If nothing happens, run as Administrator.
+  pause
+  exit /b 1
+)
+copy /Y "%SOURCE_DATA%" "%SCRIPT_DATA%" >nul
+if %errorlevel% neq 0 (
+  echo Failed to copy: %SCRIPT_DATA%
+  echo If nothing happens, run as Administrator.
+  pause
+  exit /b 1
+)
+copy /Y "%SOURCE_CODE%" "%SCRIPT_CODE%" >nul
+if %errorlevel% neq 0 (
+  echo Failed to copy: %SCRIPT_CODE%
+  echo If nothing happens, run as Administrator.
+  pause
+  exit /b 1
+)
+
+rem cleanup old single menu
+reg delete "HKLM\Software\Classes\Directory\shell\LubanExport" /f >nul 2>nul
+reg delete "HKLM\Software\Classes\*\shell\LubanExport" /f >nul 2>nul
+
+reg delete "HKLM\Software\Classes\Directory\shell\%MENU_NAME_DATA%" /f >nul 2>nul
+reg delete "HKLM\Software\Classes\*\shell\%MENU_NAME_DATA%" /f >nul 2>nul
+reg delete "HKLM\Software\Classes\Directory\shell\%MENU_NAME_CODE%" /f >nul 2>nul
+reg delete "HKLM\Software\Classes\*\shell\%MENU_NAME_CODE%" /f >nul 2>nul
+
+reg add "HKLM\Software\Classes\Directory\shell\%MENU_NAME_DATA%" /ve /d "%MENU_LABEL_DATA%" /f >nul
+reg add "HKLM\Software\Classes\Directory\shell\%MENU_NAME_DATA%\command" /ve /d %RUN_CMD_DATA% /f >nul
+reg add "HKLM\Software\Classes\*\shell\%MENU_NAME_DATA%" /ve /d "%MENU_LABEL_DATA%" /f >nul
+reg add "HKLM\Software\Classes\*\shell\%MENU_NAME_DATA%\command" /ve /d %RUN_CMD_DATA% /f >nul
+reg add "HKLM\Software\Classes\Directory\Background\shell\%MENU_NAME_DATA%" /ve /d "%MENU_LABEL_DATA%" /f >nul
+reg add "HKLM\Software\Classes\Directory\Background\shell\%MENU_NAME_DATA%\command" /ve /d %RUN_CMD_DATA_BG% /f >nul
+
+reg add "HKLM\Software\Classes\Directory\shell\%MENU_NAME_CODE%" /ve /d "%MENU_LABEL_CODE%" /f >nul
+reg add "HKLM\Software\Classes\Directory\shell\%MENU_NAME_CODE%\command" /ve /d %RUN_CMD_CODE% /f >nul
+reg add "HKLM\Software\Classes\*\shell\%MENU_NAME_CODE%" /ve /d "%MENU_LABEL_CODE%" /f >nul
+reg add "HKLM\Software\Classes\*\shell\%MENU_NAME_CODE%\command" /ve /d %RUN_CMD_CODE% /f >nul
+reg add "HKLM\Software\Classes\Directory\Background\shell\%MENU_NAME_CODE%" /ve /d "%MENU_LABEL_CODE%" /f >nul
+reg add "HKLM\Software\Classes\Directory\Background\shell\%MENU_NAME_CODE%\command" /ve /d %RUN_CMD_CODE_BG% /f >nul
+
+echo Context menus installed (global). (HKLM)
+echo If nothing happens, run as Administrator.
+pause
