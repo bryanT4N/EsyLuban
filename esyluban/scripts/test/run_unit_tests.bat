@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 
 rem ---------------------------------------------------------------
 rem Run EsyLuban unit tests (B1Parser).
@@ -19,7 +19,7 @@ set REPO_ROOT=%ESY_ROOT%\..
 set TEST_PROJ=%REPO_ROOT%\src\Luban.Tests\Luban.Tests.csproj
 
 if not exist "%TEST_PROJ%" (
-  echo [ERROR] Test project not found: %TEST_PROJ%
+  echo [ERROR] Test project not found: !TEST_PROJ!
   exit /b 1
 )
 

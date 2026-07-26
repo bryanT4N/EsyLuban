@@ -2,9 +2,12 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set TARGET=%~f1
+rem Batch parameters expand at parse time, so they cannot appear
+rem inside a ( ) block. Hoist it here and use !ARG1_DIR! below.
+set "ARG1_DIR=%~dp1"
 if "%TARGET%"=="" (
-  set TARGET=%CD%
-  if "%TARGET%"=="" (
+  set TARGET=!CD!
+  if "!TARGET!"=="" (
     echo No target path provided.
     pause
     exit /b 1
@@ -13,10 +16,10 @@ if "%TARGET%"=="" (
 
 if exist "%TARGET%\*" (
   set IS_DIR=1
-  set TARGET_DIR=%TARGET%
+  set TARGET_DIR=!TARGET!
 ) else (
   set IS_DIR=0
-  set TARGET_DIR=%~dp1
+  set TARGET_DIR=!ARG1_DIR!
 )
 
 rem %2 is the Tools\Luban directory, passed in by menu_entry_data.bat which
@@ -25,9 +28,9 @@ rem on its own -- useful for testing and for calling it from a build script.
 set LUBAN_DIR=%~f2
 set PROJECT_ROOT=
 if defined LUBAN_DIR (
-  for %%I in ("%LUBAN_DIR%\..\..") do set "PROJECT_ROOT=%%~fI"
+  for %%I in ("!LUBAN_DIR!\..\..") do set "PROJECT_ROOT=%%~fI"
 ) else (
-  set CUR_DIR=%TARGET_DIR%
+  set CUR_DIR=!TARGET_DIR!
   for /l %%i in (0,1,5) do (
     if not defined LUBAN_DIR if exist "!CUR_DIR!\Tools\Luban\luban.conf" (
       set "LUBAN_DIR=!CUR_DIR!\Tools\Luban"
@@ -59,7 +62,7 @@ for /l %%i in (0,1,6) do (
 )
 if not defined LUBAN_EXE (
   echo [ERROR] Luban runtime not found.
-  echo         Expected here: %LUBAN_DIR%\runtime\Luban.exe
+  echo         Expected here: !LUBAN_DIR!\runtime\Luban.exe
   echo.
   echo         Using a release download? Extract it so that the runtime folder
   echo         sits next to luban.conf, both inside your project's Tools\Luban.
@@ -70,7 +73,7 @@ if not defined LUBAN_EXE (
 
 set SCAN_PATH=%TARGET%
 if %IS_DIR%==1 (
-  set SCAN_PATH=%TARGET_DIR%
+  set SCAN_PATH=!TARGET_DIR!
 )
 
 set DATA_TARGETS=
@@ -79,19 +82,19 @@ set EXTRA_ARGS=
 set OUTPUT_TABLE_ARGS=
 
 for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command ^
-  "$conf=Get-Content -Raw '%CONF_FILE%';" ^
+  "$conf=Get-Content -Raw '!CONF_FILE!';" ^
   "$json=$conf | ConvertFrom-Json;" ^
   "$data=$json.contextMenu.data;" ^
   "if($null -ne $data -and $data.targets){$data.targets -join ' '}"`
 ) do set DATA_TARGETS=%%A
 for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command ^
-  "$conf=Get-Content -Raw '%CONF_FILE%';" ^
+  "$conf=Get-Content -Raw '!CONF_FILE!';" ^
   "$json=$conf | ConvertFrom-Json;" ^
   "$data=$json.contextMenu.data;" ^
   "if($null -ne $data -and $data.dataTarget){$data.dataTarget}"`
 ) do set DATA_FORMAT=%%A
 for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command ^
-  "$conf=Get-Content -Raw '%CONF_FILE%';" ^
+  "$conf=Get-Content -Raw '!CONF_FILE!';" ^
   "$json=$conf | ConvertFrom-Json;" ^
   "$data=$json.contextMenu.data;" ^
   "if($null -ne $data -and $data.extraArgs){$data.extraArgs -join ' '}"`
@@ -110,11 +113,11 @@ rem Step 1: ask Luban which tables live under the selected path.
 rem Its stdout is table full names, one per line, with logging suppressed.
 rem cmd /c wrapper: inside for /f usebackq, a command starting with a quote
 rem makes cmd strip the wrong pair, and --listTables silently returns nothing.
-for /f "usebackq delims=" %%A in (`cmd /c ""%LUBAN_EXE%" --conf "%CONF_FILE%" -t %LIST_TARGET% --listTables "%SCAN_PATH%""`) do (
+for /f "usebackq delims=" %%A in (`cmd /c ""!LUBAN_EXE!" --conf "!CONF_FILE!" -t !LIST_TARGET! --listTables "!SCAN_PATH!""`) do (
   set OUTPUT_TABLE_ARGS=!OUTPUT_TABLE_ARGS! -o %%A
 )
 if "%OUTPUT_TABLE_ARGS%"=="" (
-  echo No exportable tables found under: %SCAN_PATH%
+  echo No exportable tables found under: !SCAN_PATH!
   pause
   exit /b 4
 )
@@ -126,7 +129,7 @@ rem the mapping here is what actually gives each target its own directory --
 rem otherwise every target writes to the same place and the last one wins.
 rem Read once into OUTDIR_<target> variables (cheaper than one call per target).
 for /f "usebackq tokens=1,* delims==" %%A in (`powershell -NoProfile -Command ^
-  "$c = Get-Content -Raw '%CONF_FILE%' | ConvertFrom-Json;" ^
+  "$c = Get-Content -Raw '!CONF_FILE!' | ConvertFrom-Json;" ^
   "$m = $c.contextMenu.data.outputDataDir;" ^
   "if ($m) { $m.PSObject.Properties | ForEach-Object { $_.Name + '=' + $_.Value } }"`
 ) do set "OUTDIR_%%A=%%B"
@@ -147,7 +150,7 @@ for %%t in (%DATA_TARGETS%) do (
   rem which destroys the whole point of exporting a selected subset.
   rem Full exports via gen.bat keep the cleanup, where it correctly removes
   rem leftovers from tables that no longer exist.
-  "%LUBAN_EXE%" --conf "%CONF_FILE%" -t %%t -d %DATA_FORMAT% !OUT_ARG! -x cleanUpOutputDir=0 %OUTPUT_TABLE_ARGS% %EXTRA_ARGS%
+  "!LUBAN_EXE!" --conf "!CONF_FILE!" -t %%t -d !DATA_FORMAT! !OUT_ARG! -x cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
   if errorlevel 1 (
     echo Export failed for target %%t
   ) else (

@@ -22,7 +22,7 @@ set "MENU_LABEL_DATA=Luban Export (Data)"
 set "MENU_LABEL_CODE=Luban Export (Code)"
 
 if not "%SUITE%"=="" (
-  set GLOBAL_DIR=%ProgramData%\EsyLuban\!SUITE!
+  set GLOBAL_DIR=!ProgramData!\EsyLuban\!SUITE!
   set MENU_NAME_DATA=LubanExportData_!SUITE!
   set MENU_NAME_CODE=LubanExportCode_!SUITE!
   set "MENU_LABEL_DATA=Luban Export (Data) - !SUITE!"
@@ -45,30 +45,30 @@ set RUN_CMD_DATA_BG="\"%SCRIPT_DATA%\" \"%%V\""
 set RUN_CMD_CODE_BG="\"%SCRIPT_CODE%\" \"%%V\""
 
 if not exist "%GLOBAL_DIR%" (
-  mkdir "%GLOBAL_DIR%" >nul 2>nul
+  mkdir "!GLOBAL_DIR!" >nul 2>nul
 )
 if not exist "%SOURCE_DATA%" (
-  echo Missing source script: %SOURCE_DATA%
+  echo Missing source script: !SOURCE_DATA!
   echo If nothing happens, run as Administrator.
   pause
   exit /b 1
 )
 if not exist "%SOURCE_CODE%" (
-  echo Missing source script: %SOURCE_CODE%
+  echo Missing source script: !SOURCE_CODE!
   echo If nothing happens, run as Administrator.
   pause
   exit /b 1
 )
 copy /Y "%SOURCE_DATA%" "%SCRIPT_DATA%" >nul
 if %errorlevel% neq 0 (
-  echo Failed to copy: %SCRIPT_DATA%
+  echo Failed to copy: !SCRIPT_DATA!
   echo If nothing happens, run as Administrator.
   pause
   exit /b 1
 )
 copy /Y "%SOURCE_CODE%" "%SCRIPT_CODE%" >nul
 if %errorlevel% neq 0 (
-  echo Failed to copy: %SCRIPT_CODE%
+  echo Failed to copy: !SCRIPT_CODE!
   echo If nothing happens, run as Administrator.
   pause
   exit /b 1

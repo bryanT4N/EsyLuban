@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 
 rem ---------------------------------------------------------------
 rem Build the Luban runtime from upstream src/ into esyluban/runtime/
@@ -29,13 +29,13 @@ set OUT_DIR=%ESY_ROOT%\runtime
 set PUB_ARGS=
 set FLAVOUR=framework-dependent
 if /i "%~1"=="--self-contained" (
-  set OUT_DIR=%ESY_ROOT%\runtime-sc
+  set OUT_DIR=!ESY_ROOT!\runtime-sc
   set PUB_ARGS=-r win-x64 --self-contained true
   set FLAVOUR=self-contained win-x64
 )
 
 if not exist "%PROJ%" (
-  echo [ERROR] Main project not found: %PROJ%
+  echo [ERROR] Main project not found: !PROJ!
   exit /b 1
 )
 

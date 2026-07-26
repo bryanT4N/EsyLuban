@@ -47,7 +47,7 @@ if "%VERSION%"=="" (
   rem Select-Object -First 1, not [0]: a single matching PropertyGroup makes
   rem .Version a bare string, and [0] would index into it and yield one char.
   for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command ^
-    "$p=[xml](Get-Content '%REPO_ROOT%\src\Luban\Luban.csproj');" ^
+    "$p=[xml](Get-Content '!REPO_ROOT!\src\Luban\Luban.csproj');" ^
     "$p.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1"`) do set VERSION=%%A
 )
 if "%VERSION%"=="" (
@@ -60,8 +60,8 @@ set PKG_NAME=EsyLuban-%VERSION%-win-x64%PKG_SUFFIX%
 set STAGE=%DIST_ROOT%\%PKG_NAME%
 
 if not exist "%RUNTIME_DIR%\Luban.exe" (
-  echo [ERROR] Runtime not built: %RUNTIME_DIR%\Luban.exe
-  echo         Run: %BUILD_HINT%
+  echo [ERROR] Runtime not built: !RUNTIME_DIR!\Luban.exe
+  echo         Run: !BUILD_HINT!
   exit /b 1
 )
 

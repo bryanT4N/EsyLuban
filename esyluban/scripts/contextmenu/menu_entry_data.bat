@@ -23,6 +23,9 @@ rem ---------------------------------------------------------------
 set IMPL_NAME=run_luban_context_menu_data.bat
 
 set TARGET=%~f1
+rem Batch parameters expand at parse time, so they cannot appear
+rem inside a ( ) block. Hoist it here and use !ARG1_DIR! below.
+set "ARG1_DIR=%~dp1"
 if "%TARGET%"=="" set TARGET=%CD%
 if "%TARGET%"=="" (
   echo [ERROR] No target path provided.
@@ -31,9 +34,9 @@ if "%TARGET%"=="" (
 )
 
 if exist "%TARGET%\*" (
-  set TARGET_DIR=%TARGET%
+  set TARGET_DIR=!TARGET!
 ) else (
-  set TARGET_DIR=%~dp1
+  set TARGET_DIR=!ARG1_DIR!
 )
 
 rem Locate the project by its luban.conf.
@@ -49,7 +52,7 @@ for /l %%i in (0,1,5) do (
 )
 if not defined LUBAN_DIR (
   echo [ERROR] Tools\Luban\luban.conf not found within 5 levels above:
-  echo           %TARGET_DIR%
+  echo           !TARGET_DIR!
   echo.
   echo         Expected layout:  ^<project^>\Tools\Luban\luban.conf
   pause
@@ -61,15 +64,15 @@ rem layout has example projects share one copy under esyluban\scripts.
 set IMPL=
 if exist "%LUBAN_DIR%\contextmenu\%IMPL_NAME%" set "IMPL=%LUBAN_DIR%\contextmenu\%IMPL_NAME%"
 if not defined IMPL (
-  set FIND_DIR=%PROJECT_ROOT%
+  set FIND_DIR=!PROJECT_ROOT!
   for /l %%i in (0,1,6) do (
-    if not defined IMPL if exist "!FIND_DIR!\esyluban\scripts\contextmenu\%IMPL_NAME%" set "IMPL=!FIND_DIR!\esyluban\scripts\contextmenu\%IMPL_NAME%"
+    if not defined IMPL if exist "!FIND_DIR!\esyluban\scripts\contextmenu\!IMPL_NAME!" set "IMPL=!FIND_DIR!\esyluban\scripts\contextmenu\!IMPL_NAME!"
     set "FIND_DIR=!FIND_DIR!\.."
   )
 )
 if not defined IMPL (
   echo [ERROR] Export script not found:
-  echo           %LUBAN_DIR%\contextmenu\%IMPL_NAME%
+  echo           !LUBAN_DIR!\contextmenu\!IMPL_NAME!
   echo.
   echo         contextmenu\ is a runtime dependency, not just an installer --
   echo         the right-click menu calls into it on every export. Do not

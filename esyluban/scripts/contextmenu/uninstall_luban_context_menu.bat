@@ -15,7 +15,7 @@ set GLOBAL_DIR=%ProgramData%\EsyLuban
 if not "%SUITE%"=="" (
   set MENU_NAME_DATA=LubanExportData_!SUITE!
   set MENU_NAME_CODE=LubanExportCode_!SUITE!
-  set GLOBAL_DIR=%ProgramData%\EsyLuban\!SUITE!
+  set GLOBAL_DIR=!ProgramData!\EsyLuban\!SUITE!
 )
 rem Current installs place the forwarders here. The run_* names are what older
 rem versions installed (full export scripts); remove those too.

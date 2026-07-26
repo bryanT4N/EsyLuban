@@ -4,10 +4,19 @@ setlocal EnableExtensions EnableDelayedExpansion
 rem The runtime normally sits next to this script (Tools\Luban\runtime).
 rem Searching upwards also covers the in-repo layout, where all example
 rem projects share one runtime at esyluban\runtime.
-set SCRIPT_DIR=%~dp0
-set CONF_FILE=%SCRIPT_DIR%luban.conf
+rem
+rem IMPORTANT: inside ( ) blocks always use !VAR!, never %VAR% -- see the
+rem note in gen.bat. A path containing ')' otherwise kills this script at
+rem parse time.
+rem
+rem NOTE: keep this file ASCII-only. cmd parses .bat using the system
+rem ANSI code page, so UTF-8 non-ASCII comments break execution.
 
-set FIND_DIR=%SCRIPT_DIR:~0,-1%
+set "SCRIPT_DIR=%~dp0"
+set "CONF_FILE=%SCRIPT_DIR%luban.conf"
+set "ARGS=%*"
+
+set "FIND_DIR=%SCRIPT_DIR:~0,-1%"
 set LUBAN_EXE=
 for /l %%i in (0,1,6) do (
   if not defined LUBAN_EXE if exist "!FIND_DIR!\esyluban\runtime\Luban.exe" set "LUBAN_EXE=!FIND_DIR!\esyluban\runtime\Luban.exe"
@@ -17,7 +26,7 @@ for /l %%i in (0,1,6) do (
 
 if not defined LUBAN_EXE (
   echo [ERROR] Luban runtime not found.
-  echo         Expected here: %SCRIPT_DIR%runtime\Luban.exe
+  echo         Expected here: !SCRIPT_DIR!runtime\Luban.exe
   echo.
   echo         Using a release download? Extract it so that the runtime folder
   echo         sits next to luban.conf, both inside your project's Tools\Luban.
@@ -33,17 +42,26 @@ rem writing any output -- that is what makes this a check rather than an export.
 rem
 rem With no arguments, fall back to the target shipped in the template conf.
 rem Pass -t yourself if you renamed it or added more targets.
-set CHECK_ARGS=%*
-if "%~1"=="" set CHECK_ARGS=-t client
+if "%~1"=="" set "ARGS=-t client"
 
 echo %* | findstr /i /c:"--conf" >nul
 if %errorlevel%==0 (
-  "%LUBAN_EXE%" -f %CHECK_ARGS%
+  "!LUBAN_EXE!" -f !ARGS!
 ) else (
-  "%LUBAN_EXE%" -f --conf "%CONF_FILE%" %CHECK_ARGS%
+  "!LUBAN_EXE!" -f --conf "!CONF_FILE!" !ARGS!
 )
+set "CHECK_ERR=!errorlevel!"
 
 popd
 
+if not "!CHECK_ERR!"=="0" (
+  echo.
+  echo [FAIL] validation failed, Luban exited with code !CHECK_ERR!
+  if not defined LUBAN_NO_PAUSE pause
+  exit /b !CHECK_ERR!
+)
+
+echo.
+echo [OK] validation passed
 if not defined LUBAN_NO_PAUSE pause
-endlocal
+exit /b 0
