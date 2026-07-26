@@ -1,0 +1,29 @@
+2026/01/22 17:55:27.910|INFO| ==========================================================================================
+2026/01/22 17:55:27.910|INFO|
+2026/01/22 17:55:27.910|INFO|  Luban is developed by Code Philosophy Technology Co., LTD. https://code-philosophy.com
+2026/01/22 17:55:27.910|INFO|
+2026/01/22 17:55:27.910|INFO| ==========================================================================================
+2026/01/22 17:55:27.959|INFO|load schema. collector: "default"
+2026/01/22 17:55:28.056|INFO|[SelfContained] Load called with: C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/#demo.item.xlsx
+2026/01/22 17:55:28.056|INFO|[SelfContained] Processing file: C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/#demo.item.xlsx
+2026/01/22 17:55:28.056|INFO|[SelfContained] Reader created. ResultsCount=1
+2026/01/22 17:55:28.056|INFO|[SelfContained] Checking sheet: Sheet1
+2026/01/22 17:55:28.056|INFO|[SelfContained] Sheet Sheet1: A1 = '##var'
+2026/01/22 17:55:28.056|INFO|[SelfContained] Sheet Sheet1: A1 is not '##export', skipping
+2026/01/22 17:55:28.056|INFO|[SelfContained] Load called with: C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/test_selfcontained.xlsx
+2026/01/22 17:55:28.056|INFO|[SelfContained] Processing file: C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/test_selfcontained.xlsx
+[DEBUG] dataDir = C:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\EZLuban\TestProject\Datas
+[DEBUG] absolutePath = C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/test_selfcontained.xlsx
+[DEBUG] dataDirAbsolute = C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas
+[DEBUG] fileAbsolute = C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/test_selfcontained.xlsx
+[DEBUG] Calculated relative = test_selfcontained.xlsx
+2026/01/22 17:55:28.056|INFO|[SelfContained] Reader created. ResultsCount=1
+2026/01/22 17:55:28.056|INFO|[SelfContained] Checking sheet: Sheet1
+2026/01/22 17:55:28.060|INFO|[SelfContained] Sheet Sheet1: A1 = '##export'
+2026/01/22 17:55:28.060|INFO|[SelfContained] Sheet Sheet1: Found ##export, B1 = 'full_name="demo.TbTestSelfContained" & value_type="TestItem"'
+2026/01/22 17:55:28.060|INFO|[SelfContained] Calculated relative path: 'test_selfcontained.xlsx' from 'C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/test_selfcontained.xlsx'
+2026/01/22 17:55:28.060|INFO|[SelfContained] Table demo.TbTestSelfContained: input = 'test_selfcontained.xlsx@Sheet1'
+2026/01/22 17:55:28.060|INFO|Loaded self-contained table: TbTestSelfContained from C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/test_selfcontained.xlsx@Sheet1
+2026/01/22 17:55:28.060|ERROR|===> "One or more errors occurred. (table 'TbTestSelfContained' intput path:'C:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\EZLuban\TestProject\Datas/test_selfcontained.xlsx@Sheet1' not found)"
+2026/01/22 17:55:28.060|ERROR|===> "table 'TbTestSelfContained' intput path:'C:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\EZLuban\TestProject\Datas/test_selfcontained.xlsx@Sheet1' not found"
+2026/01/22 17:55:28.060|ERROR|run failed!!!

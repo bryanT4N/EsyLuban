@@ -1,0 +1,17 @@
+2026/01/22 17:46:08.683|INFO| ==========================================================================================
+2026/01/22 17:46:08.683|INFO|
+2026/01/22 17:46:08.683|INFO|  Luban is developed by Code Philosophy Technology Co., LTD. https://code-philosophy.com
+2026/01/22 17:46:08.683|INFO|
+2026/01/22 17:46:08.683|INFO| ==========================================================================================
+2026/01/22 17:46:08.737|INFO|load schema. collector: "default"
+2026/01/22 17:46:08.840|INFO|[SelfContained] Load called with: C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/#demo.item.xlsx
+2026/01/22 17:46:08.840|INFO|[SelfContained] Processing file: C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/#demo.item.xlsx
+2026/01/22 17:46:08.840|INFO|[SelfContained] Load called with: C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/test_selfcontained.xlsx
+2026/01/22 17:46:08.840|INFO|[SelfContained] Processing file: C:/Users/BryanT/Documents/WORK_PROJECTS/APP_PROJECTS/EsyLuban/EZLuban/TestProject/Datas/test_selfcontained.xlsx
+2026/01/22 17:46:08.859|INFO|load datas begin
+2026/01/22 17:46:08.859|INFO|load datas end
+2026/01/22 17:46:08.859|INFO|validation begin
+2026/01/22 17:46:08.859|INFO|validation end
+2026/01/22 17:46:08.859|INFO|process data target:"json" begin
+2026/01/22 17:46:08.873|INFO|process data target:"json" end
+2026/01/22 17:46:08.873|INFO|bye~
