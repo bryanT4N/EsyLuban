@@ -401,6 +401,43 @@ dotnet Luban.dll --conf luban.conf -t client --listTables <文件或目录>
 右键菜单的"局部导表"正是用它先取得所选范围内的表名，再以 `-o` 精确导出——
 **全量加载 schema 保证跨表引用可解析，`-o` 只限定实际输出哪些表**。
 
+#### 让各 target 输出到各自目录
+
+右键会对 `contextMenu.data.targets` 里的每个 target 各调用一次 Luban。
+**若不配置，这几次调用会全部写入同一个 `outputDataDir`，后一个覆盖前一个，
+最终只剩最后一个 target 的结果。** 在右键配置里给出映射即可：
+
+```jsonc
+"contextMenu": {
+  "data": {
+    "targets": ["client","server","editor"],
+    "dataTarget": "json",
+    "outputDataDir": {
+      "client": "../../TestOutputs/json/client",
+      "server": "../../TestOutputs/json/server",
+      "editor": "../../TestOutputs/json/editor"
+    }
+  }
+}
+```
+
+未在映射中列出的 target，回落到 `xargs` 里的全局 `outputDataDir`。
+
+> 为什么不能在 `xargs` 里写 `client.outputDataDir`：Luban 的 xargs 命名空间
+> 绑定的是 **dataTarget / codeTarget**（`json`、`cs-simple-json`…），不是
+> `targets.name` 的那个 target。写了既不报错也不生效，只会让人误以为已按
+> target 分好目录。上面这份映射由右键脚本读取后，逐个翻译成
+> `-x outputDataDir=`，走的才是 Luban 真正支持的语义。
+
+#### ⚠ `luban.conf` 不要写 `//` 注释
+
+Luban 自身能解析带注释的 JSON，**但右键脚本读配置用的是 `powershell.exe`
+（Windows PowerShell 5.1），它的 `ConvertFrom-Json` 不支持注释**，会解析失败
+并**静默丢失全部右键配置**——菜单照常执行、退出码为 0、却什么都没导出。
+
+PowerShell 7（`pwsh`）支持注释，因此这个问题在 pwsh 下复现不出来。
+需要写说明就写在文档里，别写进 `luban.conf`。
+
 ---
 
 ### B1. 生产配置原则（必须遵守）
