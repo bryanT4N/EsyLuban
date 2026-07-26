@@ -95,6 +95,26 @@ B1: full_name="item.TbItem" & index="uid" & mode="list" & comment="道具表"
 - `desc` 用 `text` 表示本地化 key。  
 - `quality` 可以直接填枚举值或数字。  
 
+#### A3.4 `input` 的定位语法（进阶，通常由程序员配置）
+
+不写 `input` 时它就指向本 sheet 自己，**大多数表用不到它**。
+只有两种情况需要写：数据在别的文件里，或一个文件里有多张表需要点名 sheet。
+
+注意顺序是 **sheet 名在前、文件路径在后**，与常见的 `文件#锚点` 相反：
+
+```
+input="通用道具表@item/道具系统表.xlsx"     该文件里名为「通用道具表」的 sheet
+input="multi_index@test/list.xlsx"          一个文件里的多张表之一
+input="a.json,*@b.json"                     逗号分隔多个数据源，合成一张表
+```
+
+理解方式：`@` 把一条路径切成「逻辑位置」和「物理落点」——
+`item/通用道具表@道具系统表.xlsx` 读作"逻辑上是 item 下的『通用道具表』这张表，
+物理上躺在 道具系统表.xlsx 里"。因此 sheet 名占据路径的一段，写在 `@` 左边。
+
+这是上游 Luban 的既有约定（`FileUtil.SplitFileAndSheetName`），
+`luban.conf` 的 `schemaFiles`、L10N 配置也都用同一套写法。
+
 ---
 
 ### A4. 你会遇到的类型写法（含可视化例子）
@@ -328,6 +348,49 @@ esyluban\scripts\contextmenu\install_luban_context_menu.bat   安装右键菜单
 > 注册表指向的是 `%ProgramData%\EsyLuban` 下的脚本副本，
 > 所以改动 `scripts/contextmenu/` 下的脚本后，需**重新运行一次安装脚本**才生效。
 
+#### 示例工程的目录结构
+
+```
+esyluban/examples/{dev,release}/
+├─ DataTables/                 配置与数据
+│  ├─ Defines/                 XML Schema 定义（目录名不能以 _ 开头）
+│  ├─ __beans__.xlsx           全局 Bean 定义
+│  ├─ __enums__.xlsx           全局 Enum 定义
+│  └─ ...                      各类数据表 / 数据源
+├─ Projects/
+│  └─ Csharp_Unity_json/       Unity 示例工程（release 用它接收生成结果）
+└─ Tools/
+   └─ Luban/                   只放本工程自己的配置与入口
+      ├─ luban.conf
+      ├─ gen.bat
+      └─ check.bat
+```
+
+注意 `Tools/Luban/` 里**没有 Luban.dll** —— 运行时全仓库共享 `esyluban/runtime/`
+一份，由脚本向上寻址。工具更新后无需再往各工程复制副本。
+
+#### 多套工具共存（右键菜单套件名）
+
+同一台机器要装多套 EsyLuban 时，安装时传一个套件名即可避免互相覆盖：
+
+```
+install_luban_context_menu.bat MyGame      菜单显示 "Luban Export (Data) - MyGame"
+uninstall_luban_context_menu.bat MyGame    卸载须传入相同的套件名
+```
+
+套件名同时作用于注册表键名、菜单标题与 `%ProgramData%\EsyLuban\<套件名>` 目录，
+因此不同套件彼此隔离。不传则为默认安装。
+
+#### 列出某个范围内的表
+
+```
+dotnet Luban.dll --conf luban.conf -t client --listTables <文件或目录>
+```
+
+只做 schema 收集后输出表全名（每行一个，无日志），不生成任何东西。
+右键菜单的"局部导表"正是用它先取得所选范围内的表名，再以 `-o` 精确导出——
+**全量加载 schema 保证跨表引用可解析，`-o` 只限定实际输出哪些表**。
+
 ---
 
 ### B1. 生产配置原则（必须遵守）
@@ -372,16 +435,8 @@ esyluban\scripts\contextmenu\install_luban_context_menu.bat   安装右键菜单
     {"name":"all", "manager":"Tables", "groups":["c","s","e"], "topModule":"cfg"}
   ],
   "xargs": [
-    "outputDataDir=../../TestOutputs/json/all",
-    "all.outputDataDir=../../TestOutputs/json/all",
-    "client.outputDataDir=../../TestOutputs/json/client",
-    "server.outputDataDir=../../TestOutputs/json/server",
-    "editor.outputDataDir=../../TestOutputs/json/editor",
-    "test.outputDataDir=../../TestOutputs/json/test",
-    "outputCodeDir=../../TestOutputs/code/all",
-    "client.outputCodeDir=../../TestOutputs/code/client",
-    "server.outputCodeDir=../../TestOutputs/code/server",
-    "editor.outputCodeDir=../../TestOutputs/code/editor",
+    "outputDataDir=../../TestOutputs/json",
+    "outputCodeDir=../../TestOutputs/code",
     "cs-simple-json.outputCodeDir=../../TestOutputs/code/cs-simple-json",
     "pathValidator.rootDir=../../DataTables",
     "l10n.provider=default",
@@ -678,8 +733,6 @@ B1 字段决定表结构与导出行为。以下是必须掌握的链路。
 "xargs": [
   "outputCodeDir=../../Projects/Csharp_Unity_json/Assets/Gen",
   "cs-simple-json.outputCodeDir=../../Projects/Csharp_Unity_json/Assets/Gen",
-  "client.outputCodeDir=../../Projects/Csharp_Unity_json/Assets/Gen",
-  "client.outputDataDir=../../Projects/Csharp_Unity_json/Assets/StreamingAssets/cfg",
   "outputDataDir=../../Projects/Csharp_Unity_json/Assets/StreamingAssets/cfg",
   "pathValidator.rootDir=../../Projects/Csharp_Unity_json",
   "l10n.provider=default",
@@ -692,13 +745,20 @@ B1 字段决定表结构与导出行为。以下是必须掌握的链路。
 
 #### B6.2 每行的作用
 
-- `outputCodeDir`：代码输出兜底目录  
-- `client.outputCodeDir`：按 target 分离代码输出（推荐）  
-- `cs-simple-json.outputCodeDir`：按 codeTarget 分离代码输出  
-- `client.outputDataDir`：按 target 分离数据输出（推荐）  
-- `outputDataDir`：数据输出兜底目录  
-- `pathValidator.rootDir`：资源路径校验基准  
+- `outputDataDir`：数据输出目录  
+- `outputCodeDir`：代码输出目录  
+- `<codeTarget>.outputCodeDir`：按 codeTarget 分离代码输出，如 `cs-simple-json.outputCodeDir`  
+- `<dataTarget>.outputDataDir`：按 dataTarget 分离数据输出，如 `json.outputDataDir`  
+- `pathValidator.rootDir`：资源路径校验基准（指向**工程根**，不要指到 `Assets` 本身）  
 - `l10n.*`：本地化校验与静态替换  
+
+> **前缀是 dataTarget / codeTarget，不是 target。**
+> 数据输出的命名空间取自 dataTarget（`json`、`bin`…），代码输出取自 codeTarget
+> （`cs-simple-json`…）——见 `DefaultPipeline.ProcessDataTarget` 与
+> `OutputSaverBase.GetOutputDir`。
+> 因此 `client.outputDataDir` / `server.outputDataDir` 这类写法**不会生效**，
+> 它们既不报错也不起作用，只会让人误以为输出已按 target 分目录。
+> 想按 target 分离输出，应在各自的 `luban.conf` 或调用时用 `-x outputDataDir=...` 指定。
 
 #### B6.3 生成产物示例
 
@@ -1185,7 +1245,7 @@ item.Item     id    int
 
 #### B17.4 输出结果
 
-- `client.outputDataDir/item_tbitem.json`  
+- `outputDataDir/item_tbitem.json`  
 - `Tables.TbItem.Get(1001)` 可访问对应记录  
 
 ---
@@ -1235,11 +1295,15 @@ item.Item     id    int
 ```
 -x cs-bin.outputCodeDir=Gen/Cs
 -x java-bin.outputCodeDir=Gen/Java
--x client.outputDataDir=Gen/Data/Client
--x server.outputDataDir=Gen/Data/Server
+-x json.outputDataDir=Gen/Data/Json
+-x bin.outputDataDir=Gen/Data/Bin
 ```
 
-**推荐**：一个 target 一个目录。  
+**推荐**：一个 codeTarget / dataTarget 一个目录。
+
+> 前缀只能是 codeTarget / dataTarget。`-x client.outputDataDir=...` 这类按 target
+> 前缀的写法不生效也不报错——要按 target 分离输出，请给各 target 单独调用一次
+> 并用无前缀的 `-x outputDataDir=...` 指定。  
 **不推荐**：多个 target 共用 outputCodeDir/outputDataDir。  
 
 ---

@@ -40,7 +40,7 @@ esyluban/
 │  └─ authoring/   建表模板、矩阵用例生成、xlsx 迁移
 ├─ templates/      新建工程用的 luban.conf / gen.bat / check.bat 模板
 ├─ docs/
-│  ├─ guides/      新手指南、使用讲解
+│  ├─ guides/      完全手册（A 部分给策划，B 部分给程序员）
 │  ├─ reference/   Luban 配置参考、源码分析
 │  ├─ dev/         优化日志、覆盖矩阵、全链路集成、结构设计
 │  └─ archive/     已废弃的分析稿、历史迁移报告

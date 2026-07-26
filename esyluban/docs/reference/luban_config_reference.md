@@ -34,10 +34,17 @@
 
 - `outputCodeDir` 代码输出目录
 - `outputDataDir` 数据输出目录
-- `{target}.outputCodeDir` 指定某个表 target 的代码输出目录（优先级最高）
-- `{codeTarget}.outputCodeDir` 指定某个 codeTarget 的输出目录
-- `{target}.outputDataDir` 指定某个表 target 的数据输出目录（优先级最高）
-- `{dataTarget}.outputDataDir` 指定某个 dataTarget 的输出目录
+- `{codeTarget}.outputCodeDir` 指定某个 codeTarget 的代码输出目录（优先于上面的兜底项）
+- `{dataTarget}.outputDataDir` 指定某个 dataTarget 的数据输出目录（优先于上面的兜底项）
+
+> **前缀只能是 codeTarget / dataTarget，不能是 target。**
+> 输出目录的查找命名空间取自 `OutputFileManifest.TargetName`，而该值在
+> `DefaultPipeline.ProcessDataTarget` 中来自 **dataTarget**（`json`、`bin`…）、
+> 在 `ProcessCodeTarget` 中来自 **codeTarget**（`cs-simple-json`…）。
+> 因此 `client.outputDataDir`、`server.outputCodeDir` 这类写法**不会生效**，
+> 既不报错也不起作用（实测 `TestOutputs/json` 下并无 client/server 子目录，
+> 所有文件都在同一层）。需要按 target 分离输出时，应在各自的 `luban.conf`
+> 或调用时用 `-x outputDataDir=...` 指定。
 - `fileExt` / `{dataTarget}.fileExt` 指定数据后缀
 - `json.compact` 或 `compact` 输出紧凑 JSON
 - `dataExporter` 默认 `default`
@@ -191,9 +198,28 @@ EsyLuban 新规范: Excel/CSV 表**不再依赖 `__tables__.xlsx`**, 以 Sheet �
 `full_name`, `value_type`, `index`, `mode`, `group`, `comment`, `read_schema_from_file`, `input`, `output`, `tags`
 
 规则:
-- `read_schema_from_file` 默认 `true`
-- `input` 默认 `sheet@file`
+- **`full_name` 是唯一必填项**，其余字段均有缺省
+- `value_type` 缺省由表名推导（`TbItem` -> `Item`）
+- `output` 缺省由全名生成（`item.TbItem` -> `item_tbitem`，等同上游对空值的 fallback）
+- `input` 缺省指向本 sheet 自己，语法为 `sheet名@文件路径`（注意顺序，见 1.4）
+- `index` 缺省留空，交由上游取值类型的第一个字段
+- `read_schema_from_file` 默认 `false`（结构来自 XML 或 `__beans__`）
+- `mode` 默认 `map`
 - B1 支持引号与 `\"` 转义
+
+### 1.4 `sheet名@文件路径` 定位语法
+
+上游既有约定（`FileUtil.SplitFileAndSheetName`），`input`、`schemaFiles`、
+L10N 配置共用同一套写法。**顺序是 sheet 在前、文件在后**，与常见的 `文件#锚点` 相反：
+
+```
+通用道具表@item/道具系统表.xlsx        该文件里名为「通用道具表」的 sheet
+item/通用道具表@道具系统表.xlsx        与上一行等价（sheet 名占据路径的一段）
+a.json,*@b.json                        逗号分隔多数据源，合成一张表
+```
+
+`@` 把一条路径切成「逻辑位置」与「物理落点」：前者是这张表在模块树中的位置，
+后者是它实际存放的文件。
 
 ### 4.1 `__tables__.xlsx`
 
@@ -331,13 +357,8 @@ EnumItem 列表:
 推荐将输出目录、校验与 L10N 参数统一写入 `Tools/Luban/luban.conf` 的 `xargs`，脚本不再覆盖：
 ```
 "xargs": [
-  "outputDataDir=../../TestOutputs/json/all",
-  "all.outputDataDir=../../TestOutputs/json/all",
-  "client.outputDataDir=../../TestOutputs/json/client",
-  "server.outputDataDir=../../TestOutputs/json/server",
-  "editor.outputDataDir=../../TestOutputs/json/editor",
-  "test.outputDataDir=../../TestOutputs/json/test",
-  "outputCodeDir=../../TestOutputs/code/all",
+  "outputDataDir=../../TestOutputs/json",
+  "outputCodeDir=../../TestOutputs/code",
   "cs-simple-json.outputCodeDir=../../TestOutputs/code/cs-simple-json",
   "pathValidator.rootDir=../../DataTables/Assets",
   "l10n.provider=default",

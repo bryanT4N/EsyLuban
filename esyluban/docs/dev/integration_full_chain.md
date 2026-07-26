@@ -60,16 +60,8 @@ foreach (var schemaFile in globalConf.SchemaFiles)
 示例（示例项目）：
 ```json
 "xargs": [
-  "outputDataDir=../../TestOutputs/json/all",
-  "all.outputDataDir=../../TestOutputs/json/all",
-  "client.outputDataDir=../../TestOutputs/json/client",
-  "server.outputDataDir=../../TestOutputs/json/server",
-  "editor.outputDataDir=../../TestOutputs/json/editor",
-  "test.outputDataDir=../../TestOutputs/json/test",
-  "outputCodeDir=../../TestOutputs/code/all",
-  "client.outputCodeDir=../../TestOutputs/code/client",
-  "server.outputCodeDir=../../TestOutputs/code/server",
-  "editor.outputCodeDir=../../TestOutputs/code/editor",
+  "outputDataDir=../../TestOutputs/json",
+  "outputCodeDir=../../TestOutputs/code",
   "cs-simple-json.outputCodeDir=../../TestOutputs/code/cs-simple-json",
   "pathValidator.rootDir=../../DataTables/Assets",
   "l10n.provider=default",
@@ -119,17 +111,18 @@ if (_options.TryGetValue(fullOptionName, out value)) { return true; }
 ### 3.3 输出相关配置“在哪里写”
 下面这些配置**只能写在 `xargs` 或 CLI `-x`**，`luban.conf` 本体没有直接字段：
 - `outputDataDir`（全局数据输出目录）  
-  - 写法：`-x outputDataDir=...` 或 `xargs: ["outputDataDir=..."]`
-- `{target}.outputDataDir`（按表 target 的数据输出目录）  
-  - `{target}` 对应 `luban.conf` 的 `targets.name`（例如 `client`/`server`）  
-  - 写法：`-x client.outputDataDir=...`
+  - 写法：`-x outputDataDir=...` 或 `xargs: ["outputDataDir=../../TestOutputs/json"]`
 - `{dataTarget}.outputDataDir`（按 dataTarget 的数据输出目录）  
   - `{dataTarget}` 对应 `-d` 传入的名字，例如 `json`/`bin`  
   - 写法：`-x json.outputDataDir=...`
-- `outputCodeDir` / `{target}.outputCodeDir` / `{codeTarget}.outputCodeDir`  
-  - `{target}` 对应 `luban.conf` 的 `targets.name`  
-  - `{codeTarget}` 对应 `-c` 传入的名字  
-  - 写法：`-x client.outputCodeDir=...` / `-x cs-simple-json.outputCodeDir=...`
+- `outputCodeDir` / `{codeTarget}.outputCodeDir`  
+  - `{codeTarget}` 对应 `-c` 传入的名字，例如 `cs-simple-json`  
+  - 写法：`-x cs-simple-json.outputCodeDir=...`
+
+> **没有 `{target}.outputDataDir` 这回事。** 输出目录的命名空间取自
+> dataTarget / codeTarget，而非 `luban.conf` 里 `targets.name` 的那个 target。
+> `client.outputDataDir` 这类写法不生效也不报错，详见
+> `docs/reference/luban_config_reference.md` 1.2 节。
 - `fileExt` / `{dataTarget}.fileExt`（数据后缀）  
   - 写法：`-x fileExt=...` 或 `-x json.fileExt=...`
 
