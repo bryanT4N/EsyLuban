@@ -4,7 +4,8 @@
 
 本目录下**绝大部分配置表源自上游示例仓库**
 [`focus-creative-games/luban_examples`](https://github.com/focus-creative-games/luban_examples)
-（与 Luban 主仓库分开的独立仓库，其仓库根附带 LICENSE 文件，使用前请以该仓库为准）。
+—— 与 Luban 主仓库分开的独立仓库，采用 **MIT License, Copyright (c) 2020 focus creative games**
+（2026-07-26 clone 核实）。
 
 - **迁移时间**：2026-01-22 / 23
 - **迁移做了什么**：把上游集中式的 `__tables__.xlsx` 表定义，改写为每张 Excel 自己的
@@ -37,12 +38,11 @@
 **不是上游的划分。** 上游 `luban_examples` 按「目标语言 + 数据格式」分工程：
 
 ```
-luban_examples/Projects/
-├─ Csharp_Unity_json/       各自带一套 gen.bat
-├─ Csharp_Unity_bin/
-├─ Csharp_Unity_Editor_json/
-├─ Csharp_Unity_LazyLoad_bin/
-└─ Csharp_DotNet_bin/  …
+luban_examples/Projects/          （共 20+ 个，各自带一套 gen.bat）
+├─ Csharp_Unity_json/  Csharp_Unity_bin/  Csharp_Unity_Editor_json/
+├─ Csharp_DotNet_bin/  Csharp_DotNet_json/  Csharp_NewtonSoft_json/
+├─ Cpp_rawptr_bin/  Cpp_sharedptr_bin/  Dart_json/  Flatbuffers_json/
+└─ CfgValidator/  Csharp_Protobuf/  …
 ```
 
 EsyLuban 改为**按用途分**，是 2026-01-24 从单一的 `EsyLuban_Example` 拆出来的
