@@ -44,38 +44,46 @@ public class SelfContainedTableImporter : ITableImporter
     private static readonly HashSet<string> s_schemaDefinitionFileNames =
         new(StringComparer.OrdinalIgnoreCase) { "__beans__", "__enums__", "__tables__" };
 
-    public List<RawTable> LoadImportTables()
+    /// <summary>
+    /// 本次导表的扫描根：<c>tableImporter.scanPath</c> 限定范围（可为目录或单个文件），
+    /// 右键菜单的"局部导表"由此实现；留空则为整个 dataDir。
+    /// </summary>
+    internal static string GetScanRoot()
+    {
+        string scanPath = EnvManager.Current.GetOptionOrDefault("tableImporter", "scanPath", false, "");
+        return string.IsNullOrWhiteSpace(scanPath) ? GenerationContext.GlobalConf.InputDataDir : scanPath;
+    }
+
+    /// <summary>
+    /// 枚举扫描根下所有**数据表** Excel：跳过 Luban 的忽略项（'.'、'_'、'~' 开头）
+    /// 与 schema 定义表。SelfContainedSchemaCollector 复用同一枚举，
+    /// 确保"哪些文件算数据表"只有一处定义。
+    /// </summary>
+    internal static IEnumerable<string> EnumerateDataExcelFiles(string scanRoot)
     {
         string dataDir = GenerationContext.GlobalConf.InputDataDir;
 
-        // scanPath 限定扫描范围（可为目录或单个文件），右键菜单的"局部导表"由此实现；
-        // 留空则扫描整个 dataDir。
-        string scanPath = EnvManager.Current.GetOptionOrDefault("tableImporter", "scanPath", false, "");
-        string scanRoot = string.IsNullOrWhiteSpace(scanPath) ? dataDir : scanPath;
-
-        var files = new List<string>();
+        IEnumerable<string> files;
         if (File.Exists(scanRoot))
         {
-            files.Add(scanRoot);
+            files = new[] { scanRoot };
         }
         else if (Directory.Exists(scanRoot))
         {
-            files.AddRange(Directory.GetFiles(scanRoot, "*", SearchOption.AllDirectories));
+            files = Directory.GetFiles(scanRoot, "*", SearchOption.AllDirectories);
         }
         else
         {
             throw new Exception($"tableImporter.scanPath not found: {scanRoot}");
         }
 
-        var tables = new List<RawTable>();
         foreach (string file in files)
         {
             if (FileUtil.IsIgnoreFile(dataDir, file))
             {
                 continue;
             }
-            string ext = Path.GetExtension(file).TrimStart('.').ToLower();
-            if (!s_excelExts.Contains(ext))
+            if (!s_excelExts.Contains(Path.GetExtension(file).TrimStart('.').ToLower()))
             {
                 continue;
             }
@@ -83,6 +91,17 @@ public class SelfContainedTableImporter : ITableImporter
             {
                 continue;
             }
+            yield return file;
+        }
+    }
+
+    public List<RawTable> LoadImportTables()
+    {
+        string scanRoot = GetScanRoot();
+
+        var tables = new List<RawTable>();
+        foreach (string file in EnumerateDataExcelFiles(scanRoot))
+        {
             tables.AddRange(LoadTablesFromFile(file));
         }
 
@@ -147,10 +166,12 @@ public class SelfContainedTableImporter : ITableImporter
         string namespaceName = TypeUtil.GetNamespace(fullName);
         string tableName = TypeUtil.GetName(fullName);
 
-        // input 缺省时指向当前 sheet 自身
+        // input 缺省时指向当前 sheet 自身。
+        // 注意定位语法是「sheet名@文件路径」，而非「文件@sheet」
+        // （见 FileUtil.SplitFileAndSheetName）。
         string input = metadata.TryGetValue("input", out var inputValue)
             ? inputValue
-            : $"{GetRelativePathToDataDir(fileName)}@{sheetName}";
+            : $"{sheetName}@{GetRelativePathToDataDir(fileName)}";
 
         TableMode mode = metadata.TryGetValue("mode", out var modeValue) ? ParseMode(modeValue) : TableMode.MAP;
 
@@ -168,7 +189,11 @@ public class SelfContainedTableImporter : ITableImporter
             Namespace = namespaceName,
             Name = tableName,
             ValueType = valueType,
-            InputFiles = new List<string> { input },
+            // input 支持逗号分隔多个数据源，拆分规则与上游 SchemaLoaderUtil.CreateTable 一致
+            InputFiles = input.Split(',')
+                .Select(s => s.Trim())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .ToList(),
             Mode = mode,
             ReadSchemaFromFile = readSchemaFromFile,
             // index 缺省时留空，交由上游 DefTable 按"取 bean 的第一个字段"处理。

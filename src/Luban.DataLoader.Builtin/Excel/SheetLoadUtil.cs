@@ -85,39 +85,12 @@ public static class SheetLoadUtil
             return null;
         }
         var cells = ParseRawSheetContent(reader, orientRow, false);
-        RemoveExportMarkRow(cells);
         ValidateTitles(cells);
         var title = ParseTitle(cells, reader.MergeCells, orientRow);
         cells.RemoveAll(c => IsNotDataRow(c));
         return new RawSheet() { Title = title, SheetName = reader.Name, Cells = cells };
     }
 
-
-    /// <summary>
-    /// [EsyLuban] 剔除自包含表定义的 A1 标记行（##export / ##export=false）。
-    ///
-    /// 上游格式中，首行既是 meta 行又是主标题行（A1=##var，B1 起为列名）。
-    /// 自包含格式在其之上插入了一行 ##export，该行只有 A1 有值。若不剔除，
-    /// 它会被 ParseTitle 当作主标题行，使列范围塌缩为 1 列，进而让多列限定
-    /// 标题（如 *fields）的子列报 "缺失列 alias"。
-    /// </summary>
-    private static void RemoveExportMarkRow(List<List<Cell>> rows)
-    {
-        if (rows.Count == 0)
-        {
-            return;
-        }
-        var firstRow = rows[0];
-        if (firstRow.Count == 0)
-        {
-            return;
-        }
-        string tag = firstRow[0].Value?.ToString()?.Trim()?.ToLower();
-        if (!string.IsNullOrEmpty(tag) && tag.StartsWith("##export"))
-        {
-            rows.RemoveAt(0);
-        }
-    }
 
     private static readonly HashSet<string> s_knownSpecialTags = new()
     {
@@ -493,6 +466,21 @@ public static class SheetLoadUtil
             return false;
         }
         string metaStr = reader.GetValue(0)?.ToString().Trim();
+
+        // [EsyLuban] A1 的 ##export / ##export=false 只声明该 sheet 是否导出，
+        // 它不是 meta 行本身 —— 真正的 meta 行（##var / ##column 等）在其下一行。
+        // 必须在此跳过，而不能等读完再从结果里剔除：orientRow 就是在这里定下的，
+        // 若把 ##export 当 meta 行，纵向表（##column）会被误判为横向表。
+        if (metaStr != null && metaStr.StartsWith("##export"))
+        {
+            if (!reader.Read() || reader.FieldCount == 0)
+            {
+                orientRow = true;
+                return false;
+            }
+            metaStr = reader.GetValue(0)?.ToString().Trim();
+        }
+
         return TryParseMeta(metaStr, out orientRow);
     }
 
@@ -641,7 +629,6 @@ public static class SheetLoadUtil
             return null;
         }
         var cells = ParseRawSheetContent(reader, orientRow, true);
-        RemoveExportMarkRow(cells);
         var title = ParseTitle(cells, reader.MergeCells, orientRow);
 
         int typeRowIndex = cells.FindIndex(IsTypeRow);
