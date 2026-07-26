@@ -101,7 +101,9 @@ for %%t in (%TARGET_NAMES%) do (
 )
 if "%LIST_TARGET%"=="" set LIST_TARGET=client
 
-for /f "usebackq delims=" %%A in (`dotnet "%LUBAN_DLL%" --conf "%CONF_FILE%" -t %LIST_TARGET% --listOutputTables "%SCAN_PATH%"`) do (
+rem Step 1: ask Luban which tables live under the selected path.
+rem Its stdout is table full names, one per line, with logging suppressed.
+for /f "usebackq delims=" %%A in (`dotnet "%LUBAN_DLL%" --conf "%CONF_FILE%" -t %LIST_TARGET% --listTables "%SCAN_PATH%"`) do (
   set OUTPUT_TABLE_ARGS=!OUTPUT_TABLE_ARGS! -o %%A
 )
 if "%OUTPUT_TABLE_ARGS%"=="" (
@@ -113,7 +115,9 @@ if "%OUTPUT_TABLE_ARGS%"=="" (
 pushd "%LUBAN_DIR%"
 for %%t in (%TARGET_NAMES%) do (
   for %%c in (%CODE_TARGETS%) do (
-    dotnet "%LUBAN_DLL%" --conf "%CONF_FILE%" -t %%t -c %%c %OUTPUT_TABLE_ARGS% -x pipeline.exportTablesOnly=true %EXTRA_ARGS%
+    rem Step 2: full schema load (so cross-table refs resolve), but -o limits
+    rem which tables actually get exported.
+    dotnet "%LUBAN_DLL%" --conf "%CONF_FILE%" -t %%t -c %%c %OUTPUT_TABLE_ARGS% %EXTRA_ARGS%
     if errorlevel 1 (
       echo Code generation failed for target %%t code target %%c
     )

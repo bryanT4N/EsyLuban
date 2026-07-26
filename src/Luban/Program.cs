@@ -68,6 +68,13 @@ internal static class Program
         [Option('o', "outputTable", Required = false, HelpText = "output table")]
         public IEnumerable<string> OutputTables { get; set; }
 
+        // [EsyLuban] 列出指定路径下的表全名后直接退出，不做任何生成。
+        // 供右键菜单"局部导表"使用：先取得所选范围内的表名，再以 -o 精确导出它们。
+        // 之所以不能改用 tableImporter.scanPath 一步到位 —— schema 是全局加载的，
+        // 只导入所选范围会让范围外的跨表引用悬空而中止。
+        [Option("listTables", Required = false, HelpText = "list full names of tables under the given file or directory, then exit")]
+        public string ListTables { get; set; }
+
         [Option("timeZone", Required = false, HelpText = "time zone")]
         public string TimeZone { get; set; }
 
@@ -138,9 +145,23 @@ internal static class Program
             GenerationContext.GlobalConf = config;
 
 
+            var xargs = ParseXargs(config.Xargs, opts.Xargs);
+            bool listTablesOnly = !string.IsNullOrWhiteSpace(opts.ListTables);
+            if (listTablesOnly)
+            {
+                // [EsyLuban] 借 tableImporter 的扫描范围限定"所选路径下有哪些表"
+                xargs["tableImporter.scanPath"] = opts.ListTables;
+            }
+
             var launcher = new SimpleLauncher();
-            launcher.Start(ParseXargs(config.Xargs, opts.Xargs));
+            launcher.Start(xargs);
             AddCustomTemplateDirs(opts.CustomTemplateDirs);
+
+            if (listTablesOnly)
+            {
+                ListTables(opts, config);
+                return;
+            }
 
             var pipeline = PipelineManager.Ins.CreatePipeline(opts.Pipeline);
             pipeline.Run(CreatePipelineArgs(opts, config));
@@ -159,6 +180,23 @@ internal static class Program
             {
                 Environment.Exit(1);
             }
+        }
+    }
+
+    /// <summary>
+    /// [EsyLuban] 输出所选路径下的表全名，每行一个，然后结束。
+    ///
+    /// 只做 schema 收集，不编译、不校验、不生成 —— 因此即便所选范围之外存在
+    /// 跨表引用也不会中止（真正导出时仍是全量加载 schema，再以 -o 精确指定输出表）。
+    /// 表名写到 stdout，日志走 stderr，便于调用方直接按行读取。
+    /// </summary>
+    private static void ListTables(CommandOptions opts, LubanConfig config)
+    {
+        var collector = SchemaManager.Ins.CreateSchemaCollector(opts.SchemaCollector);
+        collector.Load(config);
+        foreach (var table in collector.CreateRawAssembly().Tables)
+        {
+            Console.WriteLine(TypeUtil.MakeFullName(table.Namespace, table.Name));
         }
     }
 
@@ -326,6 +364,15 @@ internal static class Program
 
         NLog.LogManager.Setup().LoadConfigurationFromFile(opts.LogConfig);
         s_logger = LogManager.GetCurrentClassLogger();
+
+        // [EsyLuban] --listTables 的 stdout 是给调用方逐行读取的表名清单，
+        // 静音日志与 banner，免得调用方还要过滤。
+        if (!string.IsNullOrWhiteSpace(opts.ListTables))
+        {
+            NLog.LogManager.Configuration = new NLog.Config.LoggingConfiguration();
+            return;
+        }
+
         PrintCopyRight();
     }
 

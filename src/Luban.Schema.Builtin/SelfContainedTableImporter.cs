@@ -215,18 +215,22 @@ public class SelfContainedTableImporter : ITableImporter
         };
     }
 
-    private static string GetRelativePathToDataDir(string absolutePath)
+    private static string GetRelativePathToDataDir(string filePath)
     {
-        string dataDir = FileUtil.Standardize(GenerationContext.GlobalConf.InputDataDir);
-        string standardizedPath = FileUtil.Standardize(absolutePath);
+        // 必须先转绝对路径再比对：tableImporter.scanPath 常以相对路径传入
+        // （右键菜单、gen.bat 都是如此），此时 filePath 也是相对的，
+        // 直接与绝对的 dataDir 做 StartsWith 会失配而退化成纯文件名，
+        // 丢掉中间目录，进而让缺省推导出的 input 指向不存在的路径。
+        string dataDir = FileUtil.Standardize(Path.GetFullPath(GenerationContext.GlobalConf.InputDataDir));
+        string fullPath = FileUtil.Standardize(Path.GetFullPath(filePath));
 
-        if (standardizedPath.StartsWith(dataDir))
+        if (fullPath.StartsWith(dataDir))
         {
-            return standardizedPath.Substring(dataDir.Length)
+            return fullPath.Substring(dataDir.Length)
                 .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                 .Replace('\\', '/');
         }
-        return Path.GetFileName(absolutePath);
+        return Path.GetFileName(filePath);
     }
 
     /// <summary>
