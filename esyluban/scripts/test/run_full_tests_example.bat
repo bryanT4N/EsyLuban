@@ -43,6 +43,12 @@ dotnet "%LUBAN_DLL%" ^
   -x all.outputDataDir="%OUTPUT_DIR_NO_L10N%" ^
   -x l10n.convertTextKeyToValue=0
 
+rem Negative cases are isolated by group "t" (see their B1 metadata), which the
+rem "test" target already filters on. Do NOT additionally restrict
+rem tableImporter.scanPath to the negatives folder: schema definitions are loaded
+rem globally, so importing only that folder leaves cross-table refs dangling
+rem (e.g. ai.Blackboard.parent_name ref ai.TbBlackboard) and the run aborts on
+rem that unrelated error before ever reaching the validators under test.
 if exist "%NEGATIVE_DIR%" (
   echo [EXAMPLE] negative tests - log only
   dotnet "%LUBAN_DLL%" ^
@@ -50,8 +56,7 @@ if exist "%NEGATIVE_DIR%" (
     -d json ^
     --conf "%CONF_FILE%" ^
     -x outputDataDir="%NEGATIVE_OUTPUT_DIR%" ^
-    -x test.outputDataDir="%NEGATIVE_OUTPUT_DIR%" ^
-    -x tableImporter.scanPath="%NEGATIVE_DIR%" > "%NEGATIVE_LOG%" 2>&1
+    -x test.outputDataDir="%NEGATIVE_OUTPUT_DIR%" > "%NEGATIVE_LOG%" 2>&1
   echo [EXAMPLE] negative log saved: %NEGATIVE_LOG%
 ) else (
   echo [EXAMPLE] negatives not found: %NEGATIVE_DIR%
