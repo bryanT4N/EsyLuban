@@ -248,11 +248,13 @@ public class B1ParserTests
     [Fact]
     public void Test_Parse_SingleFieldOnly()
     {
-        // 单个字段（不符合最小要求）
+        // 单个 full_name 即是合法的最小 B1：其余字段均有缺省语义。
         string b1 = "full_name=\"TbItem\"";
 
-        var exception = Assert.Throws<Exception>(() => B1Parser.Parse(b1));
-        Assert.Contains("value_type", exception.Message);
+        var result = B1Parser.Parse(b1);
+
+        Assert.Single(result);
+        Assert.Equal("TbItem", result["full_name"]);
     }
 
     [Fact]
