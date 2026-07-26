@@ -1,24 +1,30 @@
 """一次性迁移工具：把上游集中式 __tables__.xlsx 的表定义改写为自包含格式。
 
-⚠ 当前不可用，已被禁用。三个已知缺陷：
+⚠ 仍处于禁用状态，但原因已经变了 —— 请读完再决定是否解禁。
 
-  1. main() 缩进错误，整段 xlsx 迁移逻辑是不可达代码，直接运行会 NameError。
-  2. ensure_export_row() 插入 ##export 行后没有同步位移合并区间，
-     导致所有依赖合并单元格的写法（多行嵌套 *field、多级标题）错位一行。
-     这曾被 SheetLoadUtil 里一个对称的偏移错误抵消，因而长期无人察觉；
-     该错误已于 2026-07 修复，抵消不复存在 —— 现在这个 bug 会直接暴露。
-  3. 更严重：insert_rows(1) 后，落进陈旧合并区间的单元格会被 openpyxl
-     写成 MergedCell 占位，**值被永久删除**。被删的恰好是字段名/类型名
-     这类标题格。已在 examples 里造成 5 处损伤（20 个单元格），
-     以上游 luban_examples@879f5c5 为基准逐单元格审计后已补回。
+【已修复，且有测试保证】
 
-修复它需要：修正缩进、把 continue 之后的逻辑移到正确位置、插行后手工
-位移全部合并区间（先快照、unmerge、insert、按新坐标 merge）、保存前
-校验每个合并区左上角非空，并补一个「造带合并的表 → 迁移 → 断言值与
-合并都正确」的测试。
+  1. ensure_export_row() 插行时不再吞数据。
+     openpyxl 的 insert_rows 只移动值、不移动合并区间，落进陈旧合并区间的
+     单元格会被写成 MergedCell 占位、**值被永久删除**，丢的恰好是字段名与
+     类型名这类标题格。现在改为「先快照并全部 unmerge → insert_rows →
+     按新坐标重新 merge」，并在保存前自检每个合并区左上角非空。
+     这个 bug 曾在 examples 里造成 5 处损伤（20 个单元格），已按上游
+     luban_examples@879f5c5 逐单元格审计并补回。
+     回归测试见同目录 test_migrate_xlsx.py（退回旧实现会有 4 项失败）。
 
-在此之前不要用它迁移任何工程。要解除禁用，删除下方的 sys.exit 并
-自行承担风险。
+  2. main() 的循环缩进已修正。
+     原本 `for ws in wb.worksheets` 与 `for name in filenames` 平级，
+     每个目录只跑一次且复用上一次的 wb，首个目录没有 xlsx 便直接 NameError。
+
+【尚未验证，这是它仍被禁用的原因】
+
+  main() 里 349 行起的元数据驱动逻辑（meta_map / build_autoimport_meta /
+  xml_map / export_false 分支）由于上述缩进错误，**在真实环境中从未执行过**。
+  缩进虽已修好，但这段代码没有任何运行记录，也没有测试覆盖。
+
+要解禁：删除下方的 SystemExit，先在【工程副本】上跑一次，与原始文件逐单元格
+比对确认无损，再用于正式工程。当前 examples 已是迁移完成状态，不需要再跑它。
 """
 import csv
 import json
@@ -33,9 +39,10 @@ from openpyxl import load_workbook
 # 拒绝执行优于文档警告：注释救不了直接双击运行的人。
 if __name__ == "__main__":
     sys.stderr.write(
-        "\n[DISABLED] migrate_xlsx.py 当前不可用。\n"
-        "  它会在插入 ##export 行时错位合并区间，并永久删除落进旧合并区的单元格值。\n"
-        "  详见本文件顶部说明。修复前请勿用于任何工程。\n\n")
+        "\n[DISABLED] migrate_xlsx.py 暂不可直接运行。\n"
+        "  吞数据与缩进两个缺陷已修复并有测试覆盖（见 test_migrate_xlsx.py），\n"
+        "  但 main() 的元数据驱动逻辑因长期不可达，从未在真实环境验证过。\n"
+        "  解禁前请先在工程副本上试跑并逐单元格比对。详见本文件顶部说明。\n\n")
     raise SystemExit(2)
 
 
@@ -300,6 +307,40 @@ def collect_xml_excel_inputs(confs):
     return xml_map, xml_anysheet, xml_dirs
 
 
+def shift_merges_down(ws, by: int = 1):
+    """把全部合并区间整体下移 by 行。
+
+    必须在 insert_rows 之前调用，且顺序不能反。openpyxl 的 insert_rows 只移动
+    单元格的值，合并区间原地不动；于是下移后落进陈旧合并区间的单元格会被写成
+    MergedCell 占位，**值被永久丢弃** —— 丢的恰好是字段名、类型名这类标题格。
+
+    正确顺序：先快照并全部 unmerge，再 insert_rows，最后按新坐标重新 merge。
+    """
+    snapshot = [(m.min_row, m.min_col, m.max_row, m.max_col)
+                for m in ws.merged_cells.ranges]
+    for m in list(ws.merged_cells.ranges):
+        ws.unmerge_cells(str(m))
+    return snapshot
+
+
+def reapply_merges(ws, snapshot, by: int = 1):
+    for r1, c1, r2, c2 in snapshot:
+        ws.merge_cells(start_row=r1 + by, start_column=c1,
+                       end_row=r2 + by, end_column=c2)
+
+
+def assert_no_swallowed_values(ws, where: str):
+    """插行后自检：每个合并区的左上角都必须有值。
+
+    左上角为空意味着这个合并区不再对应任何内容 —— 要么位移错了，要么值被吞了。
+    与其把损坏写进文件让人半年后才发现，不如当场失败。
+    """
+    for m in ws.merged_cells.ranges:
+        if ws.cell(m.min_row, m.min_col).value in (None, ""):
+            raise RuntimeError(
+                f"{where}: 合并区 {m} 的左上角为空，插行后值可能已被丢弃，已中止")
+
+
 def ensure_export_row(ws, meta: str, export_flag: str):
     a1 = ws.cell(1, 1).value
     if isinstance(a1, str) and a1.strip().lower().startswith("##export"):
@@ -307,10 +348,13 @@ def ensure_export_row(ws, meta: str, export_flag: str):
         if meta is not None:
             ws.cell(1, 2).value = meta
         return
+    snapshot = shift_merges_down(ws)
     ws.insert_rows(1)
+    reapply_merges(ws, snapshot)
     ws.cell(1, 1).value = export_flag
     if meta is not None:
         ws.cell(1, 2).value = meta
+    assert_no_swallowed_values(ws, f"sheet:{ws.title}")
 
 
 def migrate_csv(path: str, meta: str, export_flag: str):
@@ -372,11 +416,14 @@ def main():
                 continue
             wb = load_workbook(full_path)
             is_def_file = lower in ("__beans__.xlsx", "__enums__.xlsx")
-        for ws in wb.worksheets:
-            if ws.title.lower() in ("__beans__", "__enums__"):
-                ensure_export_row(ws, None, "##export")
-                migrated.append({"file": rel_path, "sheet": ws.title, "meta": ""})
-                continue
+            # 这个循环原本缩进错了一级，与 `for name in filenames` 平级，
+            # 于是每个目录只跑一次、用的还是上一次 load_workbook 留下的 wb
+            # （os.walk 的第一个目录没有 xlsx，因此直接 NameError）。
+            for ws in wb.worksheets:
+                if ws.title.lower() in ("__beans__", "__enums__"):
+                    ensure_export_row(ws, None, "##export")
+                    migrated.append({"file": rel_path, "sheet": ws.title, "meta": ""})
+                    continue
                 key = (os.path.normpath(full_path), ws.title)
                 if key in meta_map:
                     meta = meta_map[key][0]["meta"]

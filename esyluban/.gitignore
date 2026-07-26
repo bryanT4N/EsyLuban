@@ -20,6 +20,10 @@ examples/dev/TestOutputs/
 # 内容全部是 runtime/ 与 templates/ 的副本，没有一份是原始资产。
 dist/
 
+# Python 字节码缓存（scripts/authoring/ 下的工具与测试会产生）
+__pycache__/
+*.pyc
+
 # ── 取消上游规则对本子树的误伤 ──────────────────────────────
 # 上游 .gitignore 第 18 行的 [Rr]elease/ 是 .NET 生态用来忽略 Release 构建
 # 目录的通用规则，它匹配【任意层级】的 release 目录，而不只是 bin/Release。
@@ -43,3 +47,4 @@ dist/
 # 注意：examples/release 下 Unity 工程的生成物（Assets/GenCode、Assets/GenData）
 # 【刻意保留】进版本控制 —— 它们是"发布示例"的展示内容，用于说明生成结果的样子；
 # 且 Unity 要求 .meta 与资源一一对应，忽略后工程会报缺失。
+

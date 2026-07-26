@@ -147,6 +147,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
   -ReportPath "!COMPARE_REPORT_COVERAGE!" -Label "coverage baseline"
 if errorlevel 1 set /a FAILED+=1
 
+rem Owned files silently swallowed by .gitignore are invisible until someone
+rem clones. Cheap to check, and it has already caught two real losses.
+call "%~dp0check_gitignore_traps.bat"
+if errorlevel 1 set /a FAILED+=1
+
 echo.
 if !FAILED! gtr 0 (
   echo ==========================================
