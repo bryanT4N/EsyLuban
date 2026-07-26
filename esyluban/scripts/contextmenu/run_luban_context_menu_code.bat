@@ -118,14 +118,31 @@ for %%t in (%TARGET_NAMES%) do (
 if "%LIST_TARGET%"=="" set LIST_TARGET=client
 
 rem Step 1: ask Luban which tables live under the selected path.
-rem Its stdout is table full names, one per line, with logging suppressed.
-rem cmd /c wrapper: inside for /f usebackq, a command starting with a quote
-rem makes cmd strip the wrong pair, and --listTables silently returns nothing.
-for /f "usebackq delims=" %%A in (`cmd /c ""!LUBAN_EXE!" --conf "!CONF_FILE!" -t !LIST_TARGET! --listTables "!SCAN_PATH!""`) do (
+rem Its stdout is table full names, one per line; logs go to stderr.
+rem
+rem Route through a temp file rather than `for /f`: for /f discards the exit
+rem code, so a failed listing was indistinguishable from an empty one. That is
+rem how "your B1 has a syntax error" and "there are no tables here" ended up
+rem printing the same message -- to the one audience that cannot debug it.
+set "LIST_TMP=%TEMP%\luban_tables_%RANDOM%%RANDOM%.txt"
+"!LUBAN_EXE!" --conf "!CONF_FILE!" -t !LIST_TARGET! --listTables "!SCAN_PATH!" > "!LIST_TMP!"
+set "LIST_ERR=!errorlevel!"
+if not "!LIST_ERR!"=="0" (
+  del /q "!LIST_TMP!" 2>nul
+  echo.
+  echo [ERROR] Could not list tables under: !SCAN_PATH!
+  echo         Luban exited with code !LIST_ERR!; the reason is printed above.
+  echo         Common causes: a malformed B1 cell, or a table name collision.
+  if not defined LUBAN_NO_PAUSE pause
+  exit /b 6
+)
+for /f "usebackq delims=" %%A in ("!LIST_TMP!") do (
   set OUTPUT_TABLE_ARGS=!OUTPUT_TABLE_ARGS! -o %%A
 )
-if "%OUTPUT_TABLE_ARGS%"=="" (
+del /q "!LIST_TMP!" 2>nul
+if "!OUTPUT_TABLE_ARGS!"=="" (
   echo No exportable tables found under: !SCAN_PATH!
+  echo   ^(the listing succeeded - this folder genuinely has no exportable table^)
   if not defined LUBAN_NO_PAUSE pause
   exit /b 4
 )

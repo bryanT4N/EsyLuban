@@ -366,10 +366,21 @@ internal static class Program
         s_logger = LogManager.GetCurrentClassLogger();
 
         // [EsyLuban] --listTables 的 stdout 是给调用方逐行读取的表名清单，
-        // 静音日志与 banner，免得调用方还要过滤。
+        // 因此 banner 与 INFO 日志不能混进去。但**只能改流向，不能丢弃**：
+        // 之前这里装的是一个空 LoggingConfiguration（无 target = 全部丢弃），
+        // 于是 B1 语法写错、路径不存在这类失败连一个字都不输出，调用方唯一能
+        // 看到的就是「stdout 为空」。右键菜单据此打出 "No exportable tables
+        // found"，把「表定义坏了」和「这里确实没有表」说成了同一件事。
         if (!string.IsNullOrWhiteSpace(opts.ListTables))
         {
-            NLog.LogManager.Configuration = new NLog.Config.LoggingConfiguration();
+            var config = new NLog.Config.LoggingConfiguration();
+            var stderrTarget = new NLog.Targets.ConsoleTarget("stderr")
+            {
+                StdErr = true,
+                Layout = "${level:uppercase=true}|${message}${onexception:${newline}${exception:format=Message}}",
+            };
+            config.AddRule(NLog.LogLevel.Warn, NLog.LogLevel.Fatal, stderrTarget);
+            NLog.LogManager.Configuration = config;
             return;
         }
 
