@@ -1,4 +1,20 @@
 
+> ## This is EsyLuban — a fork of Luban
+>
+> It adds **self-contained table definitions** on top of upstream Luban: each Excel sheet
+> describes itself via `A1=##export` and `B1` metadata, so the central `__tables__.xlsx`
+> is no longer needed. A Windows context menu is included for exporting a selected subset.
+>
+> **All fork-owned content lives under [`esyluban/`](./esyluban/); the repository root
+> stays as upstream.**
+> Entry point: [esyluban/README.md](./esyluban/README.md)　·　
+> Full manual (Chinese): [esyluban/docs/guides/esyluban_beginner_guide.md](./esyluban/docs/guides/esyluban_beginner_guide.md)
+>
+> After cloning, run `esyluban\scripts\build.bat` first to build the runtime
+> (it is not under version control).
+>
+> The original upstream Luban README follows.
+
 - [README 中文](./README.md)
 - [README English](./README_EN.md)
 
