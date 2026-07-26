@@ -40,15 +40,20 @@ pushd "%SCRIPT_DIR%"
 rem -f (forceLoadTableDatas) makes Luban load and validate every row without
 rem writing any output -- that is what makes this a check rather than an export.
 rem
+rem --validationFailAsError is what makes the exit code mean anything. Without
+rem it Luban prints validation errors and still returns 0, so this script would
+rem report "validation passed" on a corpus full of broken references, missing
+rem resources and out-of-range values. A check that cannot fail is not a check.
+rem
 rem With no arguments, fall back to the target shipped in the template conf.
 rem Pass -t yourself if you renamed it or added more targets.
 if "%~1"=="" set "ARGS=-t client"
 
 echo %* | findstr /i /c:"--conf" >nul
 if %errorlevel%==0 (
-  "!LUBAN_EXE!" -f !ARGS!
+  "!LUBAN_EXE!" -f --validationFailAsError !ARGS!
 ) else (
-  "!LUBAN_EXE!" -f --conf "!CONF_FILE!" !ARGS!
+  "!LUBAN_EXE!" -f --validationFailAsError --conf "!CONF_FILE!" !ARGS!
 )
 set "CHECK_ERR=!errorlevel!"
 
@@ -56,12 +61,13 @@ popd
 
 if not "!CHECK_ERR!"=="0" (
   echo.
-  echo [FAIL] validation failed, Luban exited with code !CHECK_ERR!
+  echo [FAIL] validation failed ^(exit !CHECK_ERR!^) - see the ERROR lines above.
+  echo        Each one names the table, the record and the field at fault.
   if not defined LUBAN_NO_PAUSE pause
   exit /b !CHECK_ERR!
 )
 
 echo.
-echo [OK] validation passed
+echo [OK] validation passed - every record satisfied its validators
 if not defined LUBAN_NO_PAUSE pause
 exit /b 0

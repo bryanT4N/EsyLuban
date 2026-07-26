@@ -35,6 +35,7 @@ set NEGATIVE_DIR=%EXAMPLE_ROOT%\DataTables\negatives
 set NEGATIVE_OUTPUT_DIR=%EXAMPLE_ROOT%\TestOutputs\negatives
 set NEGATIVE_LOG=%EXAMPLE_ROOT%\TestOutputs\negative_tests.log
 set MAIN_LOG=%EXAMPLE_ROOT%\TestOutputs\main_export.log
+set CONTEXTMENU_OUT=%EXAMPLE_ROOT%\TestOutputs\contextmenu
 set COMPARE_PS1=%~dp0compare_baseline.ps1
 
 set FAILED=0
@@ -52,13 +53,19 @@ for %%D in ("!OUTPUT_DIR!" "!OUTPUT_DIR_NO_L10N!" "!NEGATIVE_OUTPUT_DIR!") do (
   if exist "%%~D" rmdir /s /q "%%~D"
 )
 
-pushd "!LUBAN_DIR!"
+rem Exports go through gen.bat, not straight to Luban.exe.
+rem
+rem gen.bat is what the docs tell users to run, so it is the thing that has to
+rem work. Calling the executable behind it skips runtime lookup, argument
+rem handling and exit-code propagation -- precisely where breakage hides. The
+rem release smoke test learned this the hard way: it bypassed gen.bat and
+rem happily passed while `gen.bat` itself could not run at all.
+set LUBAN_NO_PAUSE=1
 
-echo [EXAMPLE] generate json outputs (with l10n)
-"!LUBAN_EXE!" ^
+echo [EXAMPLE] generate json outputs (with l10n) -- via gen.bat
+call "!LUBAN_DIR!\gen.bat" ^
   -t all ^
   -d json ^
-  --conf "!CONF_FILE!" ^
   -x outputDataDir="!OUTPUT_DIR!" ^
   -x l10n.provider=default ^
   -x l10n.textFile.path=!L10N_FILE! ^
@@ -70,11 +77,10 @@ if errorlevel 1 (
   set /a FAILED+=1
 )
 
-echo [EXAMPLE] generate json outputs (no l10n)
-"!LUBAN_EXE!" ^
+echo [EXAMPLE] generate json outputs (no l10n) -- via gen.bat
+call "!LUBAN_DIR!\gen.bat" ^
   -t all ^
   -d json ^
-  --conf "!CONF_FILE!" ^
   -x outputDataDir="!OUTPUT_DIR_NO_L10N!" ^
   -x l10n.convertTextKeyToValue=0 > "!MAIN_LOG!" 2>&1
 if errorlevel 1 (
@@ -82,6 +88,23 @@ if errorlevel 1 (
   set /a FAILED+=1
 )
 type "!MAIN_LOG!"
+
+rem check.bat must FAIL here, and that is the assertion.
+rem The dev corpus deliberately contains broken records (negatives/, plus
+rem upstream's own test/path.xlsx). If this entry point ever reports success,
+rem it has stopped validating -- which is exactly what it used to do before
+rem --validationFailAsError was added.
+echo [EXAMPLE] check.bat must reject the corpus (it contains deliberate negatives)
+call "!LUBAN_DIR!\check.bat" -t all >nul 2>&1
+if errorlevel 1 (
+  echo [OK]   check.bat correctly rejected the corpus
+) else (
+  echo [FAIL] check.bat reported success on a corpus with known-bad records
+  echo        it is no longer validating anything
+  set /a FAILED+=1
+)
+
+pushd "!LUBAN_DIR!"
 
 rem Assert the validator subsystem is still alive.
 rem
@@ -133,6 +156,30 @@ if exist "!NEGATIVE_DIR!" (
 )
 
 popd
+
+rem The right-click chain: forwarder -> impl -> --listTables -> -o export.
+rem
+rem This is the entry point designers actually use, and until now nothing
+rem exercised it -- which is how it stayed broken (runtime lookup from the wrong
+rem root) and how it silently deleted every other table's output for months.
+rem Exporting one folder must produce that folder's tables AND leave the rest
+rem of the output directory alone.
+echo [EXAMPLE] right-click chain -- menu_entry_data.bat
+if exist "!CONTEXTMENU_OUT!" rmdir /s /q "!CONTEXTMENU_OUT!"
+call "%~dp0..\contextmenu\menu_entry_data.bat" "!EXAMPLE_ROOT!\DataTables\item" >nul 2>&1
+if errorlevel 1 (
+  echo [FAIL] right-click export returned !errorlevel!
+  set /a FAILED+=1
+) else (
+  set RC_FILES=0
+  for /f %%N in ('dir /b /s "!CONTEXTMENU_OUT!\*.json" 2^>nul ^| find /c /v ""') do set RC_FILES=%%N
+  if "!RC_FILES!"=="0" (
+    echo [FAIL] right-click export produced no files under !CONTEXTMENU_OUT!
+    set /a FAILED+=1
+  ) else (
+    echo [OK]   right-click chain produced !RC_FILES! file^(s^)
+  )
+)
 
 rem core/ is upstream's own output: we legitimately have more tables than it
 rem (matrix/, minimal_b1). Missing or differing files are still failures --

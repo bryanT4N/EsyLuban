@@ -29,7 +29,7 @@ set "ARG1_DIR=%~dp1"
 if "%TARGET%"=="" set TARGET=%CD%
 if "%TARGET%"=="" (
   echo [ERROR] No target path provided.
-  pause
+  if not defined LUBAN_NO_PAUSE pause
   exit /b 1
 )
 
@@ -55,7 +55,7 @@ if not defined LUBAN_DIR (
   echo           !TARGET_DIR!
   echo.
   echo         Expected layout:  ^<project^>\Tools\Luban\luban.conf
-  pause
+  if not defined LUBAN_NO_PAUSE pause
   exit /b 2
 )
 
@@ -77,7 +77,7 @@ if not defined IMPL (
   echo         contextmenu\ is a runtime dependency, not just an installer --
   echo         the right-click menu calls into it on every export. Do not
   echo         delete it. Restore Tools\Luban from a full release package.
-  pause
+  if not defined LUBAN_NO_PAUSE pause
   exit /b 5
 )
 

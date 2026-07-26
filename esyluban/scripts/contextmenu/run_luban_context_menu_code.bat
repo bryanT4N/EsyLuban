@@ -9,7 +9,7 @@ if "%TARGET%"=="" (
   set TARGET=!CD!
   if "!TARGET!"=="" (
     echo No target path provided.
-    pause
+    if not defined LUBAN_NO_PAUSE pause
     exit /b 1
   )
 )
@@ -42,7 +42,7 @@ if defined LUBAN_DIR (
 
 if not defined LUBAN_DIR (
   echo Tools\Luban not found within 5 levels.
-  pause
+  if not defined LUBAN_NO_PAUSE pause
   exit /b 2
 )
 
@@ -67,7 +67,7 @@ if not defined LUBAN_EXE (
   echo         Using a release download? Extract it so that the runtime folder
   echo         sits next to luban.conf, both inside your project's Tools\Luban.
   echo         Building from source? Run esyluban\scripts\build.bat first.
-  pause
+  if not defined LUBAN_NO_PAUSE pause
   exit /b 3
 )
 
@@ -126,7 +126,7 @@ for /f "usebackq delims=" %%A in (`cmd /c ""!LUBAN_EXE!" --conf "!CONF_FILE!" -t
 )
 if "%OUTPUT_TABLE_ARGS%"=="" (
   echo No exportable tables found under: !SCAN_PATH!
-  pause
+  if not defined LUBAN_NO_PAUSE pause
   exit /b 4
 )
 
@@ -150,5 +150,5 @@ popd
 echo.
 echo Done. Generated code went to outputCodeDir, set in:
 echo   %CONF_FILE%
-pause
+if not defined LUBAN_NO_PAUSE pause
 endlocal

@@ -1,36 +1,73 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-rem This project holds only its own luban.conf.
-rem The Luban runtime is shared repo-wide; locate it by searching upwards.
-set SCRIPT_DIR=%~dp0
-set CONF_FILE=%SCRIPT_DIR%luban.conf
+rem The runtime normally sits next to this script (Tools\Luban\runtime).
+rem Searching upwards also covers the in-repo layout, where all example
+rem projects share one runtime at esyluban\runtime.
+rem
+rem IMPORTANT: inside ( ) blocks always use !VAR!, never %VAR% -- see the
+rem note in gen.bat. A path containing ')' otherwise kills this script at
+rem parse time.
+rem
+rem NOTE: keep this file ASCII-only. cmd parses .bat using the system
+rem ANSI code page, so UTF-8 non-ASCII comments break execution.
 
-set FIND_DIR=%SCRIPT_DIR:~0,-1%
-set LUBAN_DLL=
+set "SCRIPT_DIR=%~dp0"
+set "CONF_FILE=%SCRIPT_DIR%luban.conf"
+set "ARGS=%*"
+
+set "FIND_DIR=%SCRIPT_DIR:~0,-1%"
+set LUBAN_EXE=
 for /l %%i in (0,1,6) do (
-  if not defined LUBAN_DLL if exist "!FIND_DIR!\esyluban\runtime\Luban.dll" set "LUBAN_DLL=!FIND_DIR!\esyluban\runtime\Luban.dll"
-  if not defined LUBAN_DLL if exist "!FIND_DIR!\runtime\Luban.dll" set "LUBAN_DLL=!FIND_DIR!\runtime\Luban.dll"
+  if not defined LUBAN_EXE if exist "!FIND_DIR!\esyluban\runtime\Luban.exe" set "LUBAN_EXE=!FIND_DIR!\esyluban\runtime\Luban.exe"
+  if not defined LUBAN_EXE if exist "!FIND_DIR!\runtime\Luban.exe" set "LUBAN_EXE=!FIND_DIR!\runtime\Luban.exe"
   set "FIND_DIR=!FIND_DIR!\.."
 )
 
-if not defined LUBAN_DLL (
-  echo [ERROR] Luban runtime not found: esyluban\runtime\Luban.dll
-  echo         Run esyluban\scripts\build.bat first to build from source.
-  pause
+if not defined LUBAN_EXE (
+  echo [ERROR] Luban runtime not found.
+  echo         Expected here: !SCRIPT_DIR!runtime\Luban.exe
+  echo.
+  echo         Using a release download? Extract it so that the runtime folder
+  echo         sits next to luban.conf, both inside your project's Tools\Luban.
+  echo         Building from source? Run esyluban\scripts\build.bat first.
+  if not defined LUBAN_NO_PAUSE pause
   exit /b 1
 )
 
 pushd "%SCRIPT_DIR%"
 
+rem -f (forceLoadTableDatas) makes Luban load and validate every row without
+rem writing any output -- that is what makes this a check rather than an export.
+rem
+rem --validationFailAsError is what makes the exit code mean anything. Without
+rem it Luban prints validation errors and still returns 0, so this script would
+rem report "validation passed" on a corpus full of broken references, missing
+rem resources and out-of-range values. A check that cannot fail is not a check.
+rem
+rem With no arguments, fall back to the target shipped in the template conf.
+rem Pass -t yourself if you renamed it or added more targets.
+if "%~1"=="" set "ARGS=-t client"
+
 echo %* | findstr /i /c:"--conf" >nul
 if %errorlevel%==0 (
-  dotnet "%LUBAN_DLL%" -t all -f %*
+  "!LUBAN_EXE!" -f --validationFailAsError !ARGS!
 ) else (
-  dotnet "%LUBAN_DLL%" -t all -f --conf "%CONF_FILE%" %*
+  "!LUBAN_EXE!" -f --validationFailAsError --conf "!CONF_FILE!" !ARGS!
 )
+set "CHECK_ERR=!errorlevel!"
 
 popd
 
-pause
-endlocal
+if not "!CHECK_ERR!"=="0" (
+  echo.
+  echo [FAIL] validation failed ^(exit !CHECK_ERR!^) - see the ERROR lines above.
+  echo        Each one names the table, the record and the field at fault.
+  if not defined LUBAN_NO_PAUSE pause
+  exit /b !CHECK_ERR!
+)
+
+echo.
+echo [OK] validation passed - every record satisfied its validators
+if not defined LUBAN_NO_PAUSE pause
+exit /b 0
