@@ -160,11 +160,17 @@ public class SelfContainedTableImporter : ITableImporter
     {
         var metadata = B1Parser.Parse(b1Content);
 
+        // full_name 是 B1 里唯一必填项 —— 其余字段要么能从它推导，
+        // 要么上游本就有合理缺省。写得越少越好。
         string fullName = metadata["full_name"];
-        string valueType = metadata["value_type"];
 
         string namespaceName = TypeUtil.GetNamespace(fullName);
         string tableName = TypeUtil.GetName(fullName);
+
+        // value_type 缺省时按惯例由表名推导：TbItem -> Item。
+        string valueType = metadata.TryGetValue("value_type", out var valueTypeValue)
+            ? valueTypeValue
+            : DeriveValueTypeName(tableName);
 
         // input 缺省时指向当前 sheet 自身。
         // 注意定位语法是「sheet名@文件路径」，而非「文件@sheet」
@@ -175,8 +181,10 @@ public class SelfContainedTableImporter : ITableImporter
 
         TableMode mode = metadata.TryGetValue("mode", out var modeValue) ? ParseMode(modeValue) : TableMode.MAP;
 
-        bool readSchemaFromFile = !metadata.TryGetValue("read_schema_from_file", out var readValue)
-                                  || ParseBool(readValue);
+        // 缺省为 false：表结构通常写在 XML / __beans__ 里，需要"从数据表标题行读结构"
+        // 才显式写 true。
+        bool readSchemaFromFile = metadata.TryGetValue("read_schema_from_file", out var readValue)
+                                  && ParseBool(readValue);
 
         // 从 Excel 读 schema 时，value_type 若未写命名空间则按表所在命名空间补全
         if (readSchemaFromFile && string.IsNullOrEmpty(TypeUtil.GetNamespace(valueType)))
@@ -219,6 +227,17 @@ public class SelfContainedTableImporter : ITableImporter
                 .Replace('\\', '/');
         }
         return Path.GetFileName(absolutePath);
+    }
+
+    /// <summary>
+    /// 由表名推导值类型名：约定表名以 Tb 开头（TbItem -> Item）。
+    /// 不符合该约定时退回表名本身，此时应在 B1 显式写 value_type。
+    /// </summary>
+    private static string DeriveValueTypeName(string tableName)
+    {
+        return tableName.Length > 2 && tableName.StartsWith("Tb")
+            ? tableName.Substring(2)
+            : tableName;
     }
 
     private static string GetOptional(Dictionary<string, string> dict, string key, string defaultValue)

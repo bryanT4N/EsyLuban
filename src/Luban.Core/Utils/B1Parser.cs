@@ -211,14 +211,12 @@ public static class B1Parser
     /// </summary>
     private static void ValidateRequiredFields(Dictionary<string, string> fields)
     {
+        // full_name 是 B1 唯一必填项：它是这张表的身份，无从推导。
+        // 其余字段一律可省 —— value_type 由表名推导（TbItem -> Item），
+        // output / index / input 等则各有缺省语义，不应强迫每张表重复书写。
         if (!fields.ContainsKey("full_name") || string.IsNullOrWhiteSpace(fields["full_name"]))
         {
             throw new Exception("Missing required field: full_name");
-        }
-
-        if (!fields.ContainsKey("value_type") || string.IsNullOrWhiteSpace(fields["value_type"]))
-        {
-            throw new Exception("Missing required field: value_type");
         }
     }
 }

@@ -118,13 +118,16 @@ public class B1ParserTests
     }
 
     [Fact]
-    public void Test_Parse_MissingValueType()
+    public void Test_Parse_ValueTypeIsOptional()
     {
-        // 缺少 value_type
+        // value_type 可省略：由调用方按表名推导（TbItem -> Item）。
+        // full_name 是 B1 唯一必填项。
         string b1 = "full_name=\"TbItem\"";
 
-        var exception = Assert.Throws<Exception>(() => B1Parser.Parse(b1));
-        Assert.Contains("value_type", exception.Message);
+        var result = B1Parser.Parse(b1);
+
+        Assert.Equal("TbItem", result["full_name"]);
+        Assert.False(result.ContainsKey("value_type"));
     }
 
     [Fact]
