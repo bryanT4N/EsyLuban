@@ -299,6 +299,14 @@ public static class SheetLoadUtil
             foreach (var mergeCell in mergeCells)
             {
                 Title subTitle = null;
+                // [EsyLuban] mergeCell 用的是 Excel 绝对坐标，而 cells 的起点被
+                // ##export 行推后了 titleLineOffset 行，两者必须换算后再比对。
+                //
+                // 关键：##export 始终插在 Excel 的【行】方向上，所以无论表是横是纵，
+                // 要减 offset 的永远是 FromRow/ToRow。纵向表的 cells 是转置过的
+                // （见 ParseRawSheetContent：finalRows[i][j] = originRows[j][i]），
+                // 于是 rowIndex 对应 Excel 列号、title.FromIndex/ToIndex 对应 Excel
+                // 行号 —— 减法要落在后者身上，减到列号上会让纵表的标题合并永远匹配不上。
                 if (orientRow)
                 {
                     //if (mergeCell.FromRow <= 1 && mergeCell.ToRow >= 1)
@@ -316,16 +324,18 @@ public static class SheetLoadUtil
                 }
                 else
                 {
-                    if (mergeCell.FromColumn - titleLineOffset == rowIndex && mergeCell.FromRow >= title.FromIndex && mergeCell.FromRow <= title.ToIndex)
+                    int mergeFromRow = mergeCell.FromRow - titleLineOffset;
+                    int mergeToRow = mergeCell.ToRow - titleLineOffset;
+                    if (mergeCell.FromColumn == rowIndex && mergeFromRow >= title.FromIndex && mergeFromRow <= title.ToIndex)
                     {
                         // 标题 行
-                        var nameAndAttrs = titleRow[mergeCell.FromRow].Value?.ToString()?.Trim();
+                        var nameAndAttrs = titleRow[mergeFromRow].Value?.ToString()?.Trim();
                         if (IsIgnoreTitle(nameAndAttrs))
                         {
                             continue;
                         }
                         var (titleName, tags) = ParseNameAndMetaAttrs(nameAndAttrs);
-                        subTitle = new Title() { Name = titleName, Tags = tags, FromIndex = mergeCell.FromRow, ToIndex = mergeCell.ToRow };
+                        subTitle = new Title() { Name = titleName, Tags = tags, FromIndex = mergeFromRow, ToIndex = mergeToRow };
                     }
                 }
                 if (subTitle == null)
