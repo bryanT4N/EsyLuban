@@ -2,12 +2,24 @@
 > ## 这是 EsyLuban —— Luban 的一个 fork
 >
 > 在上游 Luban 之上增加**自包含表定义**：每张 Excel 用 `A1=##export` 与 `B1` 元数据
-> 自我描述，不再需要集中式的 `__tables__.xlsx`；配套 Windows 右键菜单实现局部导表。
+> 自我描述，不再需要集中式的 `__tables__.xlsx`；配套 Windows 右键菜单，让策划右键
+> 自己那张表就能导出。
 >
-> **自有内容全部位于 [`esyluban/`](./esyluban/) 目录，仓库根保持为上游原物。**
-> 入口文档：[esyluban/README.md](./esyluban/README.md)　·　
+> ### 要用它
+>
+> **不需要 clone，也不需要构建。** 从 Releases 下载，解压后读里面的 `README.md`——
+> 那份文档讲从下载到接入游戏项目的完整过程。两个版本功能一致：
+>
+> - `EsyLuban-<版本>-win-x64-standalone.zip`（约 34 MB）—— **解压即用**，无需安装
+> - `EsyLuban-<版本>-win-x64.zip`（约 2 MB）—— 需要 [.NET 8 运行时](https://dotnet.microsoft.com/download/dotnet/8.0)
+>
 > 完全手册：[esyluban/docs/esyluban_beginner_guide.md](./esyluban/docs/esyluban_beginner_guide.md)
+> （A 章给策划，B 章给程序员；发布包内也附一份）
 >
+> ### 要改它
+>
+> 自有内容全部位于 [`esyluban/`](./esyluban/) 目录；仓库根是上游 Luban 原物，
+> `src/` 下除两个文件外只做新增。入口文档：[esyluban/README.md](./esyluban/README.md)。
 > clone 后请先运行 `esyluban\scripts\build.bat` 构建运行时（不进版本控制）。
 >
 > 以下为上游 Luban 的原始 README。

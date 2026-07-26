@@ -19,19 +19,24 @@ if exist "%TARGET%\*" (
   set TARGET_DIR=%~dp1
 )
 
-set CUR_DIR=%TARGET_DIR%
-set LUBAN_DIR=
+rem %2 is the Tools\Luban directory, passed in by menu_entry_data.bat which
+rem already resolved it. Falling back to searching keeps this script runnable
+rem on its own -- useful for testing and for calling it from a build script.
+set LUBAN_DIR=%~f2
 set PROJECT_ROOT=
-for /l %%i in (0,1,5) do (
-  if exist "!CUR_DIR!\Tools\Luban\luban.conf" (
-    set LUBAN_DIR=!CUR_DIR!\Tools\Luban
-    set PROJECT_ROOT=!CUR_DIR!
-    goto :FOUND_LUBAN
+if defined LUBAN_DIR (
+  for %%I in ("%LUBAN_DIR%\..\..") do set "PROJECT_ROOT=%%~fI"
+) else (
+  set CUR_DIR=%TARGET_DIR%
+  for /l %%i in (0,1,5) do (
+    if not defined LUBAN_DIR if exist "!CUR_DIR!\Tools\Luban\luban.conf" (
+      set "LUBAN_DIR=!CUR_DIR!\Tools\Luban"
+      set "PROJECT_ROOT=!CUR_DIR!"
+    )
+    set "CUR_DIR=!CUR_DIR!\.."
   )
-  set CUR_DIR=!CUR_DIR!\..
 )
 
-:FOUND_LUBAN
 if not defined LUBAN_DIR (
   echo Tools\Luban not found within 5 levels.
   pause
@@ -40,17 +45,25 @@ if not defined LUBAN_DIR (
 
 set CONF_FILE=%LUBAN_DIR%\luban.conf
 
-rem Config travels with each project; the runtime is shared repo-wide.
-rem Locate the runtime by searching upwards from the project root.
+rem The runtime ships next to luban.conf (Tools\Luban\runtime), so each
+rem project carries its own version and upgrades independently. Look there
+rem first; only then search upwards, which supports the in-repo layout where
+rem one runtime is shared by all example projects.
+set LUBAN_EXE=
+if exist "%LUBAN_DIR%\runtime\Luban.exe" set "LUBAN_EXE=%LUBAN_DIR%\runtime\Luban.exe"
 set FIND_DIR=%PROJECT_ROOT%
-set LUBAN_DLL=
 for /l %%i in (0,1,6) do (
-  if not defined LUBAN_DLL if exist "!FIND_DIR!\esyluban\runtime\Luban.dll" set "LUBAN_DLL=!FIND_DIR!\esyluban\runtime\Luban.dll"
-  if not defined LUBAN_DLL if exist "!FIND_DIR!\runtime\Luban.dll" set "LUBAN_DLL=!FIND_DIR!\runtime\Luban.dll"
+  if not defined LUBAN_EXE if exist "!FIND_DIR!\esyluban\runtime\Luban.exe" set "LUBAN_EXE=!FIND_DIR!\esyluban\runtime\Luban.exe"
+  if not defined LUBAN_EXE if exist "!FIND_DIR!\runtime\Luban.exe" set "LUBAN_EXE=!FIND_DIR!\runtime\Luban.exe"
   set "FIND_DIR=!FIND_DIR!\.."
 )
-if not defined LUBAN_DLL (
-  echo Luban runtime not found. Run esyluban\scripts\build.bat first.
+if not defined LUBAN_EXE (
+  echo [ERROR] Luban runtime not found.
+  echo         Expected here: %LUBAN_DIR%\runtime\Luban.exe
+  echo.
+  echo         Using a release download? Extract it so that the runtime folder
+  echo         sits next to luban.conf, both inside your project's Tools\Luban.
+  echo         Building from source? Run esyluban\scripts\build.bat first.
   pause
   exit /b 3
 )
@@ -95,7 +108,9 @@ if "%LIST_TARGET%"=="" set LIST_TARGET=client
 
 rem Step 1: ask Luban which tables live under the selected path.
 rem Its stdout is table full names, one per line, with logging suppressed.
-for /f "usebackq delims=" %%A in (`dotnet "%LUBAN_DLL%" --conf "%CONF_FILE%" -t %LIST_TARGET% --listTables "%SCAN_PATH%"`) do (
+rem cmd /c wrapper: inside for /f usebackq, a command starting with a quote
+rem makes cmd strip the wrong pair, and --listTables silently returns nothing.
+for /f "usebackq delims=" %%A in (`cmd /c ""%LUBAN_EXE%" --conf "%CONF_FILE%" -t %LIST_TARGET% --listTables "%SCAN_PATH%""`) do (
   set OUTPUT_TABLE_ARGS=!OUTPUT_TABLE_ARGS! -o %%A
 )
 if "%OUTPUT_TABLE_ARGS%"=="" (
@@ -124,13 +139,28 @@ for %%t in (%DATA_TARGETS%) do (
 
   rem Step 2: full schema load (so cross-table refs resolve), but -o limits
   rem which tables actually get exported.
-  dotnet "%LUBAN_DLL%" --conf "%CONF_FILE%" -t %%t -d %DATA_FORMAT% !OUT_ARG! %OUTPUT_TABLE_ARGS% %EXTRA_ARGS%
+  rem
+  rem cleanUpOutputDir=0 is mandatory here. Luban defaults it to true and then
+  rem deletes every file in outputDataDir that is not part of THIS run's output.
+  rem Combined with -o that would mean: exporting one table wipes every other
+  rem table's data, plus any unrelated file that lives in that directory --
+  rem which destroys the whole point of exporting a selected subset.
+  rem Full exports via gen.bat keep the cleanup, where it correctly removes
+  rem leftovers from tables that no longer exist.
+  "%LUBAN_EXE%" --conf "%CONF_FILE%" -t %%t -d %DATA_FORMAT% !OUT_ARG! -x cleanUpOutputDir=0 %OUTPUT_TABLE_ARGS% %EXTRA_ARGS%
   if errorlevel 1 (
     echo Export failed for target %%t
+  ) else (
+    if defined TARGET_OUT (
+      echo   [%%t] -^> !TARGET_OUT!
+    ) else (
+      echo   [%%t] -^> see outputDataDir in luban.conf
+    )
   )
 )
 popd
 
-echo Done. Outputs are under: %PROJECT_ROOT%\TestOutputs\json
+echo.
+echo Done. Paths above are relative to %LUBAN_DIR%
 pause
 endlocal

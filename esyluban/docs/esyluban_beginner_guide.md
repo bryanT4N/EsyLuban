@@ -327,38 +327,195 @@ B1: full_name="mail.TbRewards"
 
 ---
 
-### B0. 环境准备（clone 之后第一件事）
+### B0. 接入你的游戏项目
 
-**Luban 运行时不进版本控制**，clone 下来 `esyluban/runtime/` 是空的。
-必须先构建，否则 `gen.bat` / `check.bat` / 右键菜单都会报
-`Luban runtime not found`：
+这一节讲怎么把 EsyLuban 从零接进一个真实工程。已经接好的话直接跳 B1。
 
-```
-esyluban\scripts\build.bat
-```
+#### B0.1 拿到工具：两个发布版本
 
-它从仓库的 `src/` 构建出完整运行时（含各语言代码生成器）到 `esyluban/runtime/`。
-需要 .NET SDK（本项目在 .NET 9 上验证）。
+**不需要 clone，不需要构建。** Releases 里有两个包，功能完全一致：
 
-为什么不把 dll 提交进仓库：60 个二进制每次重建都会在 git 历史里留下新 blob，
-仓库体积会随开发次数线性且不可逆地膨胀。
+| 包 | 体积 | 前置条件 | 每项目占用 |
+|---|---|---|---|
+| `EsyLuban-<版本>-win-x64-standalone.zip` | 约 34 MB | **无，解压即用** | 约 76 MB |
+| `EsyLuban-<版本>-win-x64.zip` | 约 2 MB | 需要 .NET 8 运行时 | 约 6 MB |
 
-**工具只存这一份。** 各示例工程的 `Tools/Luban/` 里只有自己的 `luban.conf` 与
-`gen/check.bat`，它们会向上搜索定位共享运行时。因此工具更新后**不需要**再往
-各工程复制副本。
+因为约定是"每个项目自带一套 `Tools/Luban/`"，两者的取舍是**一次性安装成本 vs 每项目磁盘占用**。
+团队机器统一装了 .NET 8 就用小包，否则 standalone 省事。
 
-其它常用入口：
+用小包时先确认：
 
 ```
-esyluban\scripts\test\run_full_tests_example.bat   全量回归 + 双基线比对
-esyluban\scripts\test\run_unit_tests.bat           B1Parser 单元测试
-esyluban\scripts\contextmenu\install_luban_context_menu.bat   安装右键菜单（需管理员）
+dotnet --list-runtimes
 ```
 
-> 注册表指向的是 `%ProgramData%\EsyLuban` 下的脚本副本，
-> 所以改动 `scripts/contextmenu/` 下的脚本后，需**重新运行一次安装脚本**才生效。
+输出里要有 `Microsoft.NETCore.App 8.x.x`，没有就装
+[.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)（选 **Runtime**，不需要 SDK）。
 
-#### 示例工程的目录结构
+这一步由接入的程序员做一次，**策划完全不需要碰**——他们只右键。
+
+发布包解压出来的结构**就是下面这个推荐布局本身**，可以直接照搬。
+
+#### B0.2 维护者：从源码构建
+
+本 fork 的维护者才需要这一节。clone 后运行（需要 .NET SDK）：
+
+```
+esyluban\scripts\build.bat                    构建 framework-dependent 到 runtime/
+esyluban\scripts\build.bat --self-contained   构建 self-contained 到 runtime-sc/
+```
+
+运行时不进版本控制，clone 下来两个目录都是空的，必须先构建。打包：
+
+```
+esyluban\scripts\release\make_release.bat
+esyluban\scripts\release\make_release.bat --self-contained
+```
+
+> 所有脚本调用的是 `runtime\Luban.exe`，不是 `dotnet Luban.dll`。
+> 两种构建都产出 `Luban.exe`，因此**一套脚本同时服务两个版本**，
+> 不需要为 standalone 维护第二份 `gen.bat` / 右键脚本。
+
+#### B0.3 目录布局
+
+```
+你的开发目录/
+├─ Docs/                          文档
+├─ DataTables/                    Excel 都放这，策划的地盘
+│  ├─ items.xlsx
+│  └─ monsters.xlsx
+├─ Tools/                         工具链
+│  └─ Luban/
+│     ├─ runtime/                  工具本体，不要动
+│     ├─ luban.conf                唯一需要你改的文件
+│     ├─ gen.bat                   命令行导表
+│     ├─ check.bat                 只校验不导出
+│     └─ contextmenu/              右键菜单安装脚本
+└─ Source/                        游戏工程
+   └─ 你的游戏/
+      ├─ Code/Generated/           导出的代码
+      └─ Run/Data/Generated/       导出的数据
+```
+
+三条原则：
+
+| 原则 | 理由 |
+|---|---|
+| **Excel 只放 `DataTables/`** | 游戏工程里不该出现源表，只该有导出产物。策划改表不碰游戏工程，程序员的构建产物也不会污染策划的目录。 |
+| **`Tools/` 与 `DataTables/` 平级** | 工具既不属于数据也不属于某个工程，它服务于整个开发目录。多个客户端/服务端工程时这一点尤其明显。 |
+| **`luban.conf` 与 `runtime/` 必须同级** | 右键菜单先向上找 `Tools\Luban\luban.conf`，再在它旁边找 `runtime\Luban.exe`。拆开就找不到运行时。 |
+
+这与官方 `luban_examples` 的做法一致（`DataTables/`、`Tools/`、`Projects/` 三者平级，
+游戏工程内无源表），不是自创约定。
+
+**每个项目自带一套 `Tools/Luban/`**（约 6MB）。代价是磁盘上有多份副本，换来的是
+各项目工具版本互相独立——老项目不会因为别处升级 Luban 而被动出问题。
+
+#### B0.4 改 `luban.conf`：只有三处与你的项目有关
+
+```json
+{
+  "dataDir": "../../DataTables",
+  "xargs":
+  [
+    "outputDataDir=../../Source/你的游戏/Run/Data/Generated",
+    "outputCodeDir=../../Source/你的游戏/Code/Generated"
+  ]
+}
+```
+
+**所有路径相对 `Tools/Luban/` 自身。** 按上面的布局，`dataDir` 通常不用改。
+
+顺带确认右键菜单的输出格式：
+
+```json
+"contextMenu":
+{
+  "data": { "targets": ["client"], "dataTarget": "json" },
+  "code": { "targets": ["client"], "codeTargets": ["cs-simple-json"] }
+}
+```
+
+`dataTarget` 是数据格式（`json`/`bin`/`xml`/`lua`/`yaml`/`bson`），
+`codeTargets` 是代码语言。按引擎改，Unity + JSON 用默认值即可。
+
+#### B0.5 装右键菜单
+
+**以管理员身份**运行一次：
+
+```
+Tools\Luban\contextmenu\install_luban_context_menu.bat
+```
+
+装完右键任意文件夹 / 文件夹空白处 / 单个 xlsx，出现 `Luban Export (Data)` 与
+`Luban Export (Code)`，只导出所选范围内的表。写的是 HKLM，**一台机器装一次**，
+之后所有项目共用这套菜单——脚本从右键位置向上找各自项目的 `Tools\Luban\luban.conf`，
+互不干扰。
+
+同一台机器要装多套（比如两个项目用不同 Luban 版本），安装时传套件名：
+
+```
+install_luban_context_menu.bat MyGame      菜单显示 "Luban Export (Data) - MyGame"
+uninstall_luban_context_menu.bat MyGame    卸载须传入相同的套件名
+```
+
+套件名同时作用于注册表键名、菜单标题与 `%ProgramData%\EsyLuban\<套件名>` 目录，
+彼此隔离。不传则为默认安装。
+
+#### B0.5.1 升级工具时不需要重装右键菜单
+
+注册表指向的是 `%ProgramData%\EsyLuban\menu_entry_*.bat`——一个**转发器**。
+它安装后就冻结了，所以里面刻意不含任何导表逻辑，只有目录契约：
+
+```
+%ProgramData%\EsyLuban\menu_entry_data.bat     装一次，之后不再变
+   |
+   |  1. 从右键位置向上找 <项目>\Tools\Luban\luban.conf（最多 5 层）
+   |  2. 转调该目录下的 contextmenu\run_luban_context_menu_data.bat
+   v
+<项目>\Tools\Luban\contextmenu\run_luban_context_menu_data.bat   随项目升级
+       runtime 寻址、conf 解析、--listTables、-o 拼装、
+       cleanUpOutputDir、per-target 输出目录、全部提示文案
+```
+
+**换新版发布包替换 `Tools\Luban\` 即完成升级**，右键行为立刻跟着变。
+
+只有上面那两条契约本身变了（比如 `luban.conf` 不再放在 `Tools\Luban\`、
+或 5 层不够深），才需要管理员重跑一次安装脚本。
+
+> ⚠ **`Tools\Luban\contextmenu\` 是运行时依赖，不是装完就没用的安装器。**
+> 右键每次导表都要调用它，删掉右键菜单就报
+> `Export script not found`。历史上手工拷贝 `Tools\Luban\` 时最容易漏掉它。
+>
+> 仓库内的示例工程是例外：它们的 `Tools\Luban\` 下没有 `contextmenu\`，
+> 转发器会向上回退到共享的 `esyluban\scripts\contextmenu\`。
+
+**为什么要这么设计**：早期版本把完整脚本装进 `%ProgramData%`，于是脚本逻辑冻结在
+安装那一刻——升级工具**不会**升级右键行为，而且界面上毫无迹象。这不只是"用不了"
+那么温和：早期脚本缺 `cleanUpOutputDir=0`（见 B2.3.1），右键导一张表会**静默删光
+其余所有表的产物**。安装器现在会主动删除这些旧副本。
+
+#### B0.6 验证接入成功
+
+```
+Tools\Luban\gen.bat -t client -d json
+```
+
+产物应当出现在你 `outputDataDir` 指向的目录里。看到文件就说明整条链路通了。
+不带参数运行 `gen.bat` 会打印用法说明（Luban 的 `-t` 是必填的）。
+
+日常导表用右键菜单，命令行主要用于全量导出和排查问题。
+
+#### B0.7 本仓库示例工程为什么不长这样
+
+`esyluban/examples/{dev,release}/` 下的示例工程，`Tools/Luban/` 里**没有 `runtime/`**——
+它们共享 `esyluban/runtime/` 一份运行时，由脚本向上搜索命中。这是仓库内部的特例：
+一份源码构建出的运行时供所有示例工程使用，避免每次 rebuild 都要复制多份。
+
+**外部项目不要模仿这一点。** 脚本的寻址顺序是"先看 `luban.conf` 旁边，再向上搜"，
+两种布局都支持，但外部项目自带一份才能获得版本独立性。
+
+仓库内示例工程的完整样子：
 
 ```
 esyluban/examples/{dev,release}/
@@ -376,25 +533,10 @@ esyluban/examples/{dev,release}/
       └─ check.bat
 ```
 
-注意 `Tools/Luban/` 里**没有 Luban.dll** —— 运行时全仓库共享 `esyluban/runtime/`
-一份，由脚本向上寻址。工具更新后无需再往各工程复制副本。
-
-#### 多套工具共存（右键菜单套件名）
-
-同一台机器要装多套 EsyLuban 时，安装时传一个套件名即可避免互相覆盖：
-
-```
-install_luban_context_menu.bat MyGame      菜单显示 "Luban Export (Data) - MyGame"
-uninstall_luban_context_menu.bat MyGame    卸载须传入相同的套件名
-```
-
-套件名同时作用于注册表键名、菜单标题与 `%ProgramData%\EsyLuban\<套件名>` 目录，
-因此不同套件彼此隔离。不传则为默认安装。
-
 #### 列出某个范围内的表
 
 ```
-dotnet Luban.dll --conf luban.conf -t client --listTables <文件或目录>
+runtime\Luban.exe --conf luban.conf -t client --listTables <文件或目录>
 ```
 
 只做 schema 收集后输出表全名（每行一个，无日志），不生成任何东西。
@@ -482,9 +624,9 @@ PowerShell 7（`pwsh`）支持注释，因此这个问题在 pwsh 下复现不�
     {"name":"all", "manager":"Tables", "groups":["c","s","e"], "topModule":"cfg"}
   ],
   "xargs": [
-    "outputDataDir=../../TestOutputs/json",
-    "outputCodeDir=../../TestOutputs/code",
-    "cs-simple-json.outputCodeDir=../../TestOutputs/code/cs-simple-json",
+    "outputDataDir=../../Source/YourGame/Run/Data/Generated",
+    "outputCodeDir=../../Source/YourGame/Code/Generated",
+    "cs-simple-json.outputCodeDir=../../Source/YourGame/Code/Generated/cs",
     "pathValidator.rootDir=../../DataTables",
     "l10n.provider=default",
     "l10n.textFile.path=../../DataTables/l10n/texts.xlsx",
@@ -535,37 +677,78 @@ PowerShell 7（`pwsh`）支持注释，因此这个问题在 pwsh 下复现不�
 
 #### B2.3 导出文件结构示意（基于上面的配置）
 
-该配置使用 `all/client/server/editor/test.outputDataDir`，因此导出结果默认按 **表 target** 分目录。  
-**规则**：`{target}.outputDataDir` 优先，其次 `{dataTarget}.outputDataDir`，最后 `outputDataDir`。  
-不同 `target` 会导致**导出内容不同**（文件名来自 B1 `output` 或默认规则）。  
-如需生成代码，请在 `xargs` 中补充 `{codeTarget}.outputCodeDir` 或全局 `outputCodeDir`。
+**输出目录的解析规则只有两层**：`{dataTarget}.outputDataDir` 优先，其次全局 `outputDataDir`。
+代码同理：`{codeTarget}.outputCodeDir` 优先，其次 `outputCodeDir`。
 
-**当导出 client（只包含 c 组）**：
-```
-TestOutputs/json/client/
-├─ item_tbitem.json        # c 组表
-├─ mail_tbrewards.json     # c 组表
-└─ ...                     # 其它 c 组表
-```
+⚠ **没有 `{target}.outputDataDir` 这一层。** `client` / `server` / `all` 是 `targets` 里的
+target 名，而 xargs 的命名空间绑定的是 **dataTarget**（`json`、`bin`、`xml`…）与
+**codeTarget**（`cs-simple-json`…）。写 `client.outputDataDir=...` 既不报错也不生效，
+只会让人误以为已经按 target 分好目录。
 
-**当导出 server（只包含 s 组）**：
+上面那份配置只有一个全局 `outputDataDir`，所以**三个 target 用 `-d json` 导出时会写进
+同一个目录，后一个覆盖前一个**：
+
 ```
-TestOutputs/json/server/
-├─ combat_tbskill.json     # s 组表
-├─ drop_tbdrop.json        # s 组表
-└─ ...
+Source/YourGame/Run/Data/Generated/
+├─ item_tbitem.json        # 导 client 时是 c 组表
+├─ combat_tbskill.json     # 导 server 时又写进来 s 组表
+└─ ...                     # 最终内容取决于最后一次导的是哪个 target
 ```
 
-**当导出 all（包含 c/s/e 组）**：
+不同 target 导出的**内容**确实不同（各自的 group 范围），但**落点相同**——这正是坑所在。
+
+要让各 target 各有目录，用下面两种方式之一：
+
+**方式一：命令行显式指定**（适合 CI / 批处理）
+
 ```
-TestOutputs/json/all/
-├─ item_tbitem.json        # c 组表
-├─ combat_tbskill.json     # s 组表
-├─ editor_tbscene.json     # e 组表
-└─ ...
+gen.bat -t client -d json -x outputDataDir=../../Source/YourGame/Run/Data/client
+gen.bat -t server -d json -x outputDataDir=../../Source/YourGame/Run/Data/server
 ```
+
+**方式二：右键菜单的 target→目录映射**（见 B0 的"让各 target 输出到各自目录"）
+
+```json
+"contextMenu": {
+  "data": {
+    "targets": ["client","server"],
+    "dataTarget": "json",
+    "outputDataDir": {
+      "client": "../../Source/YourGame/Run/Data/client",
+      "server": "../../Source/YourGame/Run/Data/server"
+    }
+  }
+}
+```
+
+这份映射由右键脚本读取后逐个翻译成 `-x outputDataDir=`，走的才是 Luban 真正支持的语义。
+未列出的 target 回落到全局 `outputDataDir`。
 
 > **最佳实践**：为每个表显式写 `output`，确保输出文件名稳定且可读。  
+
+#### B2.3.1 ⚠ 输出目录会被清空
+
+Luban 每次导出前会**删除输出目录里所有不属于本次产物的文件**
+（选项 `cleanUpOutputDir`，**默认开启**）。清理不判断文件是不是 Luban 生成的，
+目录里任何东西都会被删。
+
+| 场景 | 清理是好是坏 |
+|---|---|
+| **全量导出**（`gen.bat`） | **好**。能清掉已经删除的表遗留的旧产物，避免游戏加载到幽灵数据。 |
+| **局部导出**（右键菜单 / `-o` 限定） | **灾难**。只导一张表，其余所有表的产物会被当成"不属于本次产物"而删光。 |
+
+因此**右键脚本固定传 `-x cleanUpOutputDir=0`**——否则策划右键自己那张表，就会把
+全项目的配置数据删得只剩他那一张。`gen.bat` 的全量导出则保留清理。
+
+手动关闭：
+
+```
+gen.bat -t client -d json -o your.TbFoo -x cleanUpOutputDir=0
+```
+
+> **`outputDataDir` 必须是 Luban 专用目录。**
+> 不要指向游戏工程里混放美术资源、手写配置的目录——全量导出会把它们一并删掉。
+> 推荐固定用 `.../Run/Data/Generated/` 这类一眼看出是生成物的路径。
 
 #### B2.4 target 与 group 对照（速查）
 

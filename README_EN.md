@@ -3,13 +3,25 @@
 >
 > It adds **self-contained table definitions** on top of upstream Luban: each Excel sheet
 > describes itself via `A1=##export` and `B1` metadata, so the central `__tables__.xlsx`
-> is no longer needed. A Windows context menu is included for exporting a selected subset.
+> is no longer needed. A Windows context menu lets designers export just their own table.
 >
-> **All fork-owned content lives under [`esyluban/`](./esyluban/); the repository root
-> stays as upstream.**
-> Entry point: [esyluban/README.md](./esyluban/README.md)　·　
+> ### To use it
+>
+> **No clone, no build required.** Download from Releases and read the `README.md` inside —
+> it covers the whole path from download to integrating with a game project.
+> Two builds, same features:
+>
+> - `EsyLuban-<version>-win-x64-standalone.zip` (~34 MB) — **runs as-is**, nothing to install
+> - `EsyLuban-<version>-win-x64.zip` (~2 MB) — needs the [.NET 8 runtime](https://dotnet.microsoft.com/download/dotnet/8.0)
+>
 > Full manual (Chinese): [esyluban/docs/esyluban_beginner_guide.md](./esyluban/docs/esyluban_beginner_guide.md)
+> (also bundled in the release package)
 >
+> ### To modify it
+>
+> All fork-owned content lives under [`esyluban/`](./esyluban/); the repository root stays
+> as upstream Luban, with only two modified files under `src/` and the rest additions only.
+> Entry point: [esyluban/README.md](./esyluban/README.md).
 > After cloning, run `esyluban\scripts\build.bat` first to build the runtime
 > (it is not under version control).
 >

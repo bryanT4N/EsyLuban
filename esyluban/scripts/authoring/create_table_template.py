@@ -8,9 +8,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Create a minimal EsyLuban table template.")
     parser.add_argument("--output", required=True, help="Output .xlsx path")
     parser.add_argument("--full-name", required=True, help="table full_name, e.g. test.TbExample")
-    parser.add_argument("--value-type", required=True, help="table value_type, e.g. test.ExampleBean")
-    parser.add_argument("--index", default="id", help="index field name (default: id)")
-    parser.add_argument("--mode", default="map", help="mode: map/one/list (default: map)")
+    parser.add_argument("--value-type", help="override value_type; omit to derive it from the table name (TbExample -> Example)")
+    parser.add_argument("--index", help="override index field; omit to use the first column")
+    parser.add_argument("--mode", help="override mode (map/one/list); omit for map")
     parser.add_argument("--field", action="append", default=[], help="field spec name:type (repeatable)")
     args = parser.parse_args()
 
@@ -26,18 +26,27 @@ def main() -> int:
         fields.append((name.strip(), ftype.strip()))
 
     if not fields:
-        fields = [(args.index, "int"), ("name", "string")]
+        fields = [(args.index or "id", "int"), ("name", "string")]
 
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Sheet1"
 
-    meta = (
-        f'full_name="{args.full_name}" & value_type="{args.value_type}" '
-        f'& index="{args.index}" & mode="{args.mode}" & read_schema_from_file="false"'
-    )
+    # B1 carries only what cannot be inferred. full_name is the table's identity;
+    # read_schema_from_file="true" is required because this template describes its
+    # structure in the ##var / ##type rows rather than in a schema XML.
+    # value_type / index / mode all have defaults -- writing them out unchanged
+    # would be noise that every future reader has to check against the defaults.
+    parts = [f'full_name="{args.full_name}"', 'read_schema_from_file="true"']
+    if args.value_type:
+        parts.insert(1, f'value_type="{args.value_type}"')
+    if args.index:
+        parts.append(f'index="{args.index}"')
+    if args.mode:
+        parts.append(f'mode="{args.mode}"')
+
     ws.cell(1, 1).value = "##export"
-    ws.cell(1, 2).value = meta
+    ws.cell(1, 2).value = " & ".join(parts)
 
     ws.cell(2, 1).value = "##var"
     ws.cell(3, 1).value = "##type"

@@ -29,12 +29,15 @@ if not "%SUITE%"=="" (
   set "MENU_LABEL_CODE=Luban Export (Code) - !SUITE!"
 )
 
-set SCRIPT_DATA=%GLOBAL_DIR%\run_luban_context_menu_data.bat
-set SCRIPT_CODE=%GLOBAL_DIR%\run_luban_context_menu_code.bat
-set SOURCE_DATA=%SCRIPT_DIR%run_luban_context_menu_data.bat
-set SOURCE_CODE=%SCRIPT_DIR%run_luban_context_menu_code.bat
-if not exist "%SOURCE_DATA%" set SOURCE_DATA=%ROOT_DIR%\scripts\contextmenu\run_luban_context_menu_data.bat
-if not exist "%SOURCE_CODE%" set SOURCE_CODE=%ROOT_DIR%\scripts\contextmenu\run_luban_context_menu_code.bat
+rem Only the forwarders get installed. They carry no export logic, just the
+rem directory contract, so a project can upgrade its Tools\Luban and get the
+rem new export behaviour without anyone re-running this installer.
+set SCRIPT_DATA=%GLOBAL_DIR%\menu_entry_data.bat
+set SCRIPT_CODE=%GLOBAL_DIR%\menu_entry_code.bat
+set SOURCE_DATA=%SCRIPT_DIR%menu_entry_data.bat
+set SOURCE_CODE=%SCRIPT_DIR%menu_entry_code.bat
+if not exist "%SOURCE_DATA%" set SOURCE_DATA=%ROOT_DIR%\scripts\contextmenu\menu_entry_data.bat
+if not exist "%SOURCE_CODE%" set SOURCE_CODE=%ROOT_DIR%\scripts\contextmenu\menu_entry_code.bat
 
 set RUN_CMD_DATA="\"%SCRIPT_DATA%\" \"%%1\""
 set RUN_CMD_CODE="\"%SCRIPT_CODE%\" \"%%1\""
@@ -70,6 +73,13 @@ if %errorlevel% neq 0 (
   pause
   exit /b 1
 )
+
+rem Older installs put full export scripts here and pointed the registry at
+rem them. Leaving those behind would be actively harmful: they predate the
+rem cleanUpOutputDir fix, so exporting one table wiped every other table's
+rem output. Delete them so nothing can invoke the stale copies.
+del /q "%GLOBAL_DIR%\run_luban_context_menu_data.bat" >nul 2>nul
+del /q "%GLOBAL_DIR%\run_luban_context_menu_code.bat" >nul 2>nul
 
 rem cleanup old single menu
 reg delete "HKLM\Software\Classes\Directory\shell\LubanExport" /f >nul 2>nul

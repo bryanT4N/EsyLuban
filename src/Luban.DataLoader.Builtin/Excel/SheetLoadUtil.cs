@@ -80,13 +80,13 @@ public static class SheetLoadUtil
     {
         bool orientRow;
 
-        if (!TryParseMeta(reader, out orientRow))
+        if (!TryParseMeta(reader, out orientRow, out int skippedLines))
         {
             return null;
         }
         var cells = ParseRawSheetContent(reader, orientRow, false);
         ValidateTitles(cells);
-        var title = ParseTitle(cells, reader.MergeCells, orientRow);
+        var title = ParseTitle(cells, reader.MergeCells, orientRow, skippedLines);
         cells.RemoveAll(c => IsNotDataRow(c));
         return new RawSheet() { Title = title, SheetName = reader.Name, Cells = cells };
     }
@@ -148,6 +148,15 @@ public static class SheetLoadUtil
 
     public static Title ParseTitle(List<List<Cell>> cells, CellRange[] mergeCells, bool orientRow)
     {
+        return ParseTitle(cells, mergeCells, orientRow, 0);
+    }
+
+    /// <summary>
+    /// [EsyLuban] titleLineOffset 是 cells 数组相对 Excel 绝对行/列的偏移量，
+    /// 由 ##export 行造成。合并单元格用绝对坐标，此处据此校正后再比对。
+    /// </summary>
+    public static Title ParseTitle(List<List<Cell>> cells, CellRange[] mergeCells, bool orientRow, int titleLineOffset)
+    {
         var rootTitle = new Title()
         {
             Root = true,
@@ -163,7 +172,7 @@ public static class SheetLoadUtil
         }
         //titleRowNum = GetTitleRowNum(mergeCells, orientRow);
 
-        ParseSubTitles(rootTitle, cells, mergeCells, orientRow, topTitleRowIndex + 1);
+        ParseSubTitles(rootTitle, cells, mergeCells, orientRow, topTitleRowIndex + 1, titleLineOffset);
 
         rootTitle.Init();
 
@@ -281,7 +290,7 @@ public static class SheetLoadUtil
         return (titleName, tags);
     }
 
-    private static void ParseSubTitles(Title title, List<List<Cell>> cells, CellRange[] mergeCells, bool orientRow, int excelRowIndex)
+    private static void ParseSubTitles(Title title, List<List<Cell>> cells, CellRange[] mergeCells, bool orientRow, int excelRowIndex, int titleLineOffset)
     {
         var rowIndex = excelRowIndex - 1;
         var titleRow = cells[rowIndex];
@@ -293,7 +302,7 @@ public static class SheetLoadUtil
                 if (orientRow)
                 {
                     //if (mergeCell.FromRow <= 1 && mergeCell.ToRow >= 1)
-                    if (mergeCell.FromRow == rowIndex && mergeCell.FromColumn >= title.FromIndex && mergeCell.FromColumn <= title.ToIndex)
+                    if (mergeCell.FromRow - titleLineOffset == rowIndex && mergeCell.FromColumn >= title.FromIndex && mergeCell.FromColumn <= title.ToIndex)
                     {
                         var nameAndAttrs = titleRow[mergeCell.FromColumn].Value?.ToString()?.Trim();
                         if (IsIgnoreTitle(nameAndAttrs))
@@ -307,7 +316,7 @@ public static class SheetLoadUtil
                 }
                 else
                 {
-                    if (mergeCell.FromColumn == rowIndex && mergeCell.FromRow >= title.FromIndex && mergeCell.FromRow <= title.ToIndex)
+                    if (mergeCell.FromColumn - titleLineOffset == rowIndex && mergeCell.FromRow >= title.FromIndex && mergeCell.FromRow <= title.ToIndex)
                     {
                         // 标题 行
                         var nameAndAttrs = titleRow[mergeCell.FromRow].Value?.ToString()?.Trim();
@@ -326,7 +335,7 @@ public static class SheetLoadUtil
 
                 if (excelRowIndex < cells.Count && TryFindNextSubFieldRowIndex(cells, excelRowIndex, out int nextRowIndex))
                 {
-                    ParseSubTitles(subTitle, cells, mergeCells, orientRow, nextRowIndex + 1);
+                    ParseSubTitles(subTitle, cells, mergeCells, orientRow, nextRowIndex + 1, titleLineOffset);
                 }
                 title.AddSubTitle(subTitle);
 
@@ -398,7 +407,7 @@ public static class SheetLoadUtil
             }
             if (excelRowIndex < cells.Count && TryFindNextSubFieldRowIndex(cells, excelRowIndex, out int nextRowIndex))
             {
-                ParseSubTitles(subTitle, cells, mergeCells, orientRow, nextRowIndex + 1);
+                ParseSubTitles(subTitle, cells, mergeCells, orientRow, nextRowIndex + 1, titleLineOffset);
             }
             title.AddSubTitle(subTitle);
         }
@@ -460,6 +469,18 @@ public static class SheetLoadUtil
 
     public static bool TryParseMeta(IExcelDataReader reader, out bool orientRow)
     {
+        return TryParseMeta(reader, out orientRow, out _);
+    }
+
+    /// <summary>
+    /// [EsyLuban] skippedLines 报告为跳过 ##export 行而额外消耗的行数（0 或 1）。
+    /// 调用方必须用它校正 reader.MergeCells —— 合并单元格的行号是 Excel 绝对行号，
+    /// 而 cells 数组的起点被 ##export 行推后了一行，两者不校正就会整体错位一行，
+    /// 导致多行嵌套（*field）的子字段列范围识别不出来。
+    /// </summary>
+    public static bool TryParseMeta(IExcelDataReader reader, out bool orientRow, out int skippedLines)
+    {
+        skippedLines = 0;
         if (!reader.Read() || reader.FieldCount == 0)
         {
             orientRow = true;
@@ -478,6 +499,7 @@ public static class SheetLoadUtil
                 orientRow = true;
                 return false;
             }
+            skippedLines = 1;
             metaStr = reader.GetValue(0)?.ToString().Trim();
         }
 
@@ -624,12 +646,12 @@ public static class SheetLoadUtil
     {
         bool orientRow;
 
-        if (!TryParseMeta(reader, out orientRow))
+        if (!TryParseMeta(reader, out orientRow, out int skippedLines))
         {
             return null;
         }
         var cells = ParseRawSheetContent(reader, orientRow, true);
-        var title = ParseTitle(cells, reader.MergeCells, orientRow);
+        var title = ParseTitle(cells, reader.MergeCells, orientRow, skippedLines);
 
         int typeRowIndex = cells.FindIndex(IsTypeRow);
 
