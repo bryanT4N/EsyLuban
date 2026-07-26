@@ -104,11 +104,27 @@ if "%OUTPUT_TABLE_ARGS%"=="" (
   exit /b 4
 )
 
+rem Per-target output directories, from contextMenu.data.outputDataDir.
+rem Luban's xargs namespace is keyed by dataTarget, not by target, so a
+rem "client.outputDataDir" style option would silently do nothing. Translating
+rem the mapping here is what actually gives each target its own directory --
+rem otherwise every target writes to the same place and the last one wins.
+rem Read once into OUTDIR_<target> variables (cheaper than one call per target).
+for /f "usebackq tokens=1,* delims==" %%A in (`powershell -NoProfile -Command ^
+  "$c = Get-Content -Raw '%CONF_FILE%' | ConvertFrom-Json;" ^
+  "$m = $c.contextMenu.data.outputDataDir;" ^
+  "if ($m) { $m.PSObject.Properties | ForEach-Object { $_.Name + '=' + $_.Value } }"`
+) do set "OUTDIR_%%A=%%B"
+
 pushd "%LUBAN_DIR%"
 for %%t in (%DATA_TARGETS%) do (
+  set OUT_ARG=
+  call set "TARGET_OUT=%%OUTDIR_%%t%%"
+  if defined TARGET_OUT set OUT_ARG=-x outputDataDir=!TARGET_OUT!
+
   rem Step 2: full schema load (so cross-table refs resolve), but -o limits
   rem which tables actually get exported.
-  dotnet "%LUBAN_DLL%" --conf "%CONF_FILE%" -t %%t -d %DATA_FORMAT% %OUTPUT_TABLE_ARGS% %EXTRA_ARGS%
+  dotnet "%LUBAN_DLL%" --conf "%CONF_FILE%" -t %%t -d %DATA_FORMAT% !OUT_ARG! %OUTPUT_TABLE_ARGS% %EXTRA_ARGS%
   if errorlevel 1 (
     echo Export failed for target %%t
   )

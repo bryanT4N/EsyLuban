@@ -37,6 +37,10 @@
 - `{codeTarget}.outputCodeDir` 指定某个 codeTarget 的代码输出目录（优先于上面的兜底项）
 - `{dataTarget}.outputDataDir` 指定某个 dataTarget 的数据输出目录（优先于上面的兜底项）
 
+> **想按 target 分离输出？** 用右键菜单配置 `contextMenu.data.outputDataDir`
+> （见 2.1 节），由脚本逐个 target 翻译成 `-x outputDataDir=`。
+> 直接在 `xargs` 里写 `client.outputDataDir` 是不生效的 —— 原因如下。
+>
 > **前缀只能是 codeTarget / dataTarget，不能是 target。**
 > 输出目录的查找命名空间取自 `OutputFileManifest.TargetName`，而该值在
 > `DefaultPipeline.ProcessDataTarget` 中来自 **dataTarget**（`json`、`bin`…）、
@@ -376,6 +380,11 @@ EnumItem 列表:
   "data": {
     "targets": ["client","server","editor"],
     "dataTarget": "json",
+    "outputDataDir": {
+      "client": "../../TestOutputs/json/client",
+      "server": "../../TestOutputs/json/server",
+      "editor": "../../TestOutputs/json/editor"
+    },
     "extraArgs": []
   },
   "code": {
@@ -388,9 +397,27 @@ EnumItem 列表:
 说明：  
 - `data.targets` 控制右键导出哪些表 target  
 - `data.dataTarget` 控制 `-d`  
+- `data.outputDataDir` **按 target 指定各自的数据输出目录**（见下）  
 - `code.target` 控制表 target  
 - `code.codeTargets` 控制 `-c` 列表  
 - `extraArgs` 追加参数（如 `--variant` / `--includeTag` / `--validationFailAsError` / `-x key=val`）
+
+##### 关于 `data.outputDataDir`
+
+右键会对 `targets` 里的每个 target 各调用一次 Luban。若不配置本项，这几次调用
+会全部写入同一个 `outputDataDir`，**后一个 target 覆盖前一个，最终只剩最后一个的结果**。
+
+之所以要在这里配、而不是在 `xargs` 里写 `client.outputDataDir`：Luban 的 xargs
+命名空间绑定的是 dataTarget/codeTarget，无法按 target 区分（见 1.2 节）。
+脚本读取本映射后，逐个 target 翻译成 `-x outputDataDir=<对应目录>` 传入 —— 
+配置写法保持直观，行为则走 Luban 真正支持的语义。
+
+未在映射中列出的 target，回落到 `xargs` 里的全局 `outputDataDir`。
+
+> **`luban.conf` 不要写 `//` 注释。** Luban 自身能解析带注释的 JSON，但右键脚本
+> 用 `powershell.exe`（Windows PowerShell 5.1）读取配置，该版本的
+> `ConvertFrom-Json` **不支持注释**，会解析失败并静默丢失全部右键配置。
+> （PowerShell 7 的 `pwsh` 支持，因此这个问题在 pwsh 下测不出来。）
 
 #### `esyluban/scripts/contextmenu/install_luban_context_menu.bat` / `uninstall_luban_context_menu.bat`
 - 全局安装/卸载 Windows 右键菜单 (HKLM, 需管理员)。
