@@ -158,7 +158,7 @@ LoadTablesFromTableImporter();
 ```
 
 内联枚举/Bean 子表扫描规则：  
-- 遍历 `dataDir` 下的 Excel（排除 `__tables__/__beans__/__enums__` 及 `__Defines__`）  
+- 遍历 `dataDir` 下的 Excel（排除 `__tables__/__beans__/__enums__` 及 `Defines`）  
 - 只识别 sheet 名 `__enums__` / `__beans__`  
 ```119:160:C:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\luban\src\Luban.Schema.Builtin\DefaultSchemaCollector.cs
 if (!FileUtil.IsExcelFile(file) || file.EndsWith(".csv", ...)) { continue; }
@@ -304,7 +304,7 @@ echo %* | findstr /i /c:"--conf" >nul
 if %errorlevel%==0 ( dotnet "%LUBAN_DLL%" %* ) else ( dotnet "%LUBAN_DLL%" --conf "%CONF_FILE%" %* )
 ```
 
-### 9.2 `scripts/run_full_tests_example.bat`
+### 9.2 `esyluban/scripts/test/run_full_tests_example.bat`
 - 用于**内部覆盖测试**，不属于正式项目必备脚本  
 - 生成带 L10N 与不带 L10N 两套输出  
 - 负例仅记录日志（不中断）  

@@ -248,7 +248,7 @@ EnumItem 列表:
 - **Enum/Bean 子表**：支持自动识别。只要同一 Excel 内存在 `__enums__`/`__beans__` 子表，即会自动加载，无需在 `schemaFiles` 中显式声明。
 
 **测例 1：Bean 定义来自数据表标题头（已存在样例）**
-- 文件：`Projects/EsyLuban_Example_release/DataTables/test/define_from_excel.xlsx`
+- 文件：`esyluban/examples/release/DataTables/test/define_from_excel.xlsx`
 - A1/B1:
   - `A1 = ##export`
   - `B1 = full_name="test.TbDefineFromExcel2" & value_type="DefineFromExcel2" & read_schema_from_file="True" & input="test/define_from_excel.xlsx"`
@@ -258,7 +258,7 @@ EnumItem 列表:
   - 这些行即为 **Bean 结构定义**
 
 **测例 2：Enum/Bean 定义在同一 Excel 的子表（自动识别）**
-- 文件：`Projects/EsyLuban_Example_release/DataTables/test/inline_defs.xlsx`
+- 文件：`esyluban/examples/release/DataTables/test/inline_defs.xlsx`
 - 子表名固定为 `__enums__` / `__beans__`（大小写不敏感）
 - 子表结构必须与 `__enums__.xlsx` / `__beans__.xlsx` 完全一致（含 `A1=##export`）
 - 作用域为 **file-wide**，同文件内多张数据表可复用
@@ -266,9 +266,9 @@ EnumItem 列表:
 
 ### 4.4 实际文件清单
 
-- `Projects/EsyLuban_Example_release/DataTables/__Defines__/builtin.xml`
-- `Projects/EsyLuban_Example_release/DataTables/__Defines__/test.xml`
-- `Projects/EsyLuban_Example_release/DataTables/**` (示例数据与表定义)
+- `esyluban/examples/release/DataTables/Defines/builtin.xml`
+- `esyluban/examples/release/DataTables/Defines/test.xml`
+- `esyluban/examples/release/DataTables/**` (示例数据与表定义)
 
 - `luban_examples/MiniTemplate/Datas/__tables__.xlsx`
 - `luban_examples/MiniTemplate/Datas/__beans__.xlsx`
@@ -288,7 +288,7 @@ EnumItem 列表:
 ### 5.0 EsyLuban 新工作流 (Tools/Luban)
 
 #### `Tools/Luban/luban.conf`
-- 新结构下的统一入口配置, 指向 `DataTables/__Defines__` 与 `DataTables/` 数据目录。
+- 新结构下的统一入口配置, 指向 `DataTables/Defines` 与 `DataTables/` 数据目录。
 
 #### `Tools/Luban/gen.bat`
 - 统一生成入口, 将 `--conf` 固定到 `Tools/Luban/luban.conf`, 其余参数透传。
@@ -296,33 +296,33 @@ EnumItem 列表:
 #### `Tools/Luban/check.bat`
 - 统一校验入口, 默认 `-t all -f`, 其余参数透传。
 
-#### `scripts/run_full_tests_example.bat`
+#### `esyluban/scripts/test/run_full_tests_example.bat`
 - 示例项目全覆盖测试入口:
   - 生成 `TestOutputs/json`（带 L10N）与 `TestOutputs/json_nol10n`（不带 L10N）。
   - 无 L10N 输出与核心基线对比：`luban_examples_pristine/Projects/GenerateDatas/json` -> `TestOutputs/compare_report.json`。
-  - 无 L10N 输出与覆盖基线对比：`EsyLuban_Baselines/json` -> `TestOutputs/compare_report_coverage.json`。
+  - 无 L10N 输出与覆盖基线对比：`esyluban/baselines/coverage` -> `TestOutputs/compare_report_coverage.json`。
   - 负例用例会单独运行，**仅记录日志不影响整体导出**，日志为 `TestOutputs/negative_tests.log`。
 
 #### `scripts/run_luban_context_menu_data.bat` / `scripts/run_luban_context_menu_code.bat`
 - 全局右键菜单入口脚本（数据/代码），自动寻址 `Tools/Luban`（向上最多 5 层）。
 - 仅覆盖 `tableImporter.scanPath`，输出/L10N/校验参数全部来自 `luban.conf` 的 `xargs`。
 
-#### `scripts/refresh_coverage_baseline.bat`
+#### `esyluban/scripts/test/refresh_coverage_baseline.bat`
 - 覆盖基线刷新脚本：
-  - 将 `Projects/EsyLuban_Example_dev/TestOutputs/json_nol10n` 同步到 `EsyLuban_Baselines/json`。
-  - 追加刷新记录到 `EsyLuban_Baselines/baseline_log.md`。
+  - 将 `esyluban/examples/dev/TestOutputs/json_nol10n` 同步到 `esyluban/baselines/coverage`。
+  - 追加刷新记录到 `esyluban/baselines/baseline_log.md`。
 
-#### `scripts/report_coverage_matrix.bat`
+#### `esyluban/scripts/test/report_coverage_matrix.bat`
 - 覆盖矩阵摘要报告：
   - 扫描 `DataTables/matrix` 与 `DataTables/negatives`。
-  - 输出 `Projects/EsyLuban_Example_dev/TestOutputs/coverage_matrix_report.json`。
+  - 输出 `esyluban/examples/dev/TestOutputs/coverage_matrix_report.json`。
 
-#### `scripts/create_matrix_cases.py`
+#### `esyluban/scripts/authoring/create_matrix_cases.py`
 - 覆盖矩阵用例生成工具：
   - 生成/刷新 `DataTables/matrix/feature_tables.xlsx` 与 `DataTables/negatives/path_fail.xlsx`
   - 追加 `__beans__.xlsx` / `__enums__.xlsx` 的矩阵用例定义
 
-#### `scripts/create_table_template.bat` / `scripts/create_table_template.py`
+#### `esyluban/scripts/authoring/create_table_template.bat` / `scripts/create_table_template.py`
 - 最小表模板生成工具：
   - 生成包含 `A1=##export` 与 `B1` 元数据、`##var/##type` 的新表模板。
 
@@ -371,13 +371,23 @@ EnumItem 列表:
 - `code.codeTargets` 控制 `-c` 列表  
 - `extraArgs` 追加参数（如 `--variant` / `--includeTag` / `--validationFailAsError` / `-x key=val`）
 
-#### `Tools/Luban/install_luban_context_menu.bat` / `uninstall_luban_context_menu.bat`
+#### `esyluban/scripts/contextmenu/install_luban_context_menu.bat` / `uninstall_luban_context_menu.bat`
 - 全局安装/卸载 Windows 右键菜单 (HKLM, 需管理员)。
-- 安装时将 `scripts/run_luban_context_menu_data.bat` / `scripts/run_luban_context_menu_code.bat` 复制到 `%ProgramData%\EsyLuban`，保证多项目共用。
+- 安装时将 `run_luban_context_menu_data.bat` / `run_luban_context_menu_code.bat` 复制到 `%ProgramData%\EsyLuban`，保证多项目共用。
+- 因注册表指向的是该副本，改动脚本后需**重新运行安装脚本**才生效。
 
-#### `scripts/sync_example_tools.bat`
-- 复制同步示例项目工具: `Tools/Luban` -> `Projects/EsyLuban_Example_dev/Tools/Luban` 和 `Projects/EsyLuban_Example_release/Tools/Luban`。
-- 默认不覆盖示例项目的 `luban.conf`。
+#### `esyluban/scripts/build.bat`
+- 从仓库 `src/` 构建 Luban 运行时到 `esyluban/runtime/`。
+- 运行时不进版本控制，clone 后需先执行一次。
+
+#### `esyluban/scripts/test/run_unit_tests.bat`
+- 运行 `src/Luban.Tests`（B1Parser 单元测试）。
+- 该测试项目刻意不写入上游 `Luban.sln`，`dotnet test` 直接接受项目路径即可。
+
+> **已退役：`scripts/sync_example_tools.bat`**
+> 早期工具本体随每个示例工程各存一份，需靠该脚本复制同步。现在运行时全仓库
+> 只有 `esyluban/runtime/` 一份，各工程仅保留自己的 `luban.conf` 与 gen/check 入口，
+> 由脚本分别向上寻址，同步机制与"忘记同步"的风险一并消失。
 
 ### 5.1 构建与格式化
 

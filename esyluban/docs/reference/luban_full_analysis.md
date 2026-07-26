@@ -40,7 +40,7 @@
 │     ├─ run_luban_context_menu_data.bat
 │     └─ run_luban_context_menu_code.bat
 ├─ DataTables/
-│  ├─ __Defines__/              # XML Schema 定义
+│  ├─ Defines/              # XML Schema 定义
 │  ├─ matrix/                   # 覆盖矩阵正向用例
 │  ├─ negatives/                # 负向用例 (单独跑)
 │  ├─ Assets/                   # path 校验资源根
@@ -49,7 +49,7 @@
 └─ TestOutputs/                 # 测试导出结果 (模板默认)
 ```
 
-说明: 旧结构中的 `DataTables/Datas` 与 `DataTables/Defines` 被新结构替换, 建议将数据表直接放入 `DataTables/` 并将 XML 迁入 `DataTables/__Defines__/`。
+说明: 旧结构中的 `DataTables/Datas` 与 `DataTables/Defines` 被新结构替换, 建议将数据表直接放入 `DataTables/` 并将 XML 迁入 `DataTables/Defines/`。
 
 ### 1.3 核心产物
 
@@ -445,17 +445,17 @@ flowchart TD
 
 ### 4.6 全覆盖测试模板 (EsyLuban)
 
-- 入口脚本: `scripts/run_full_tests_example.bat`
-- 数据目录: `Projects/EsyLuban_Example_dev/DataTables/`
-- 输出目录: `Projects/EsyLuban_Example_dev/TestOutputs/`
-- 无 L10N 输出: `Projects/EsyLuban_Example_dev/TestOutputs/json_nol10n`
+- 入口脚本: `esyluban/scripts/test/run_full_tests_example.bat`
+- 数据目录: `esyluban/examples/dev/DataTables/`
+- 输出目录: `esyluban/examples/dev/TestOutputs/`
+- 无 L10N 输出: `esyluban/examples/dev/TestOutputs/json_nol10n`
 - 核心基线: `luban_examples_pristine/Projects/GenerateDatas/json`
-- 覆盖基线: `EsyLuban_Baselines/json`
+- 覆盖基线: `esyluban/baselines/coverage`
 - 对比报告:
-  - 核心一致性: `Projects/EsyLuban_Example_dev/TestOutputs/compare_report.json`
-  - 覆盖一致性: `Projects/EsyLuban_Example_dev/TestOutputs/compare_report_coverage.json`
-- 负例日志: `Projects/EsyLuban_Example_dev/TestOutputs/negative_tests.log`
-- 覆盖基线刷新: `scripts/refresh_coverage_baseline.bat`
+  - 核心一致性: `esyluban/examples/dev/TestOutputs/compare_report.json`
+  - 覆盖一致性: `esyluban/examples/dev/TestOutputs/compare_report_coverage.json`
+- 负例日志: `esyluban/examples/dev/TestOutputs/negative_tests.log`
+- 覆盖基线刷新: `esyluban/scripts/test/refresh_coverage_baseline.bat`
 - 资源根: `DataTables/Assets/` (用于 path 校验)
 - 本地化: `DataTables/l10n/texts.xlsx` (配合 `text` 类型字段)
 

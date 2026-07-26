@@ -1,78 +1,108 @@
-# EsyLuban 使用讲解 (示例项目版)
+# EsyLuban 使用讲解（示例项目版）
 
-本文面向 `Projects/EsyLuban_Example_release`，用于说明**发布版示例项目的常规使用方式**。
-测试与回归请使用 `Projects/EsyLuban_Example_dev`。
-如需从零入门与最佳实践，请优先阅读：`docs/esyluban_beginner_guide.md`。
+本文面向 `esyluban/examples/release`，说明**发布版示例项目的常规使用方式**。
+测试与回归请使用 `esyluban/examples/dev`。
+从零入门与最佳实践请优先阅读 `esyluban/docs/guides/esyluban_beginner_guide.md`。
 
 ## 1. 示例项目结构
 
 ```
-Projects/EsyLuban_Example_release/
+esyluban/examples/release/
 ├─ DataTables/                 # 配置与数据
-│  ├─ __Defines__/             # XML Schema 定义
-│  ├─ __beans__.xlsx           # Bean 定义
-│  ├─ __enums__.xlsx           # Enum 定义
-│  └─ ...                      # 各类数据表/数据源
+│  ├─ Defines/                 # XML Schema 定义（注意：目录名不能以 _ 开头）
+│  ├─ __beans__.xlsx           # 全局 Bean 定义
+│  ├─ __enums__.xlsx           # 全局 Enum 定义
+│  └─ ...                      # 各类数据表 / 数据源
 ├─ Projects/
-│  └─ Csharp_Unity_json/        # Unity 示例工程 (json)
-├─ Tools/
-│  └─ Luban/                   # 工具本体 + 示例配置与脚本
-│     ├─ Luban.dll
-│     ├─ luban.conf
-│     ├─ gen.bat
-│     ├─ check.bat
-│     ├─ install_luban_context_menu.bat
-│     └─ uninstall_luban_context_menu.bat
-└─ TestOutputs/                # 生成输出（运行后产生）
+│  └─ Csharp_Unity_json/       # Unity 示例工程（json）
+└─ Tools/
+   └─ Luban/                   # 只放本工程自己的配置与入口
+      ├─ luban.conf
+      ├─ gen.bat
+      └─ check.bat
 ```
 
-## 2. 工具版本保持最新 (复制同步)
+注意 `Tools/Luban/` 里**没有 Luban.dll**。运行时全仓库共享一份，位于
+`esyluban/runtime/`，由 `gen.bat` / `check.bat` / 右键菜单自动向上寻址。
+工具更新后无需再往各工程复制副本。
 
-- 使用根目录脚本：`scripts/sync_example_tools.bat`
-- 作用：从根目录 `Tools/Luban` 复制工具文件到示例项目：
-  - `Projects/EsyLuban_Example_dev/Tools/Luban`
-  - `Projects/EsyLuban_Example_release/Tools/Luban`
-- 约定：**不覆盖**示例项目的 `luban.conf`。
+## 2. 准备运行时（clone 后必做一次）
 
-## 3. 自包含表定义规范
-
-- A1: `##export` 或 `##export=false`
-- B1: 表元数据（示例）
+运行时是构建产物，不进版本控制。执行：
 
 ```
-full_name="test.TbFoo" & value_type="Foo" & index="id" & mode="map" & input="test/foo.xlsx"
+esyluban\scripts\build.bat
 ```
 
-注意：原 `##var/##type/##group/##comment` 行需整体下移一行。
+它从仓库的 `src/` 构建出 `esyluban/runtime/`。之后所有入口才能找到 `Luban.dll`。
 
-### 3.1 内联枚举/Bean 子表
+## 3. 自包含表定义
 
-- 同一 Excel 内支持 `__enums__` / `__beans__` 子表自动识别
-- 子表结构需与 `DataTables/__enums__.xlsx` / `DataTables/__beans__.xlsx` 一致（含 `A1=##export`）
-- 作用域为 file-wide：同一文件内多张数据表可复用
-- `full_name` 必须包含模块名（如 `test.InlineQuality`）
-- 示例文件：`DataTables/test/inline_defs.xlsx`
+- **A1**：`##export`，或 `##export=false` 关闭导出
+- **B1**：表元数据
 
-### 3.2 单一来源配置（推荐）
+原 `##var` / `##type` / `##group` / `##comment` 行整体下移一行。
 
-- 输出目录、校验与 L10N 统一写入 `Tools/Luban/luban.conf` 的 `xargs`。
-- 脚本（gen/check/右键）不再覆盖这些参数，避免多处修改。
+### 3.1 B1 写多少？—— 只有 `full_name` 是必填的
 
-示例片段：
+```
+full_name="test.TbFoo"
+```
+
+这就是一张完整可用的表定义。其余字段都有缺省，**能不写就不写**：
+
+| 字段 | 不写时 | 什么时候才需要写 |
+|---|---|---|
+| `value_type` | 由表名推导：`TbFoo` → `Foo` | 值类型名不遵循 `Tb` 前缀约定时 |
+| `output` | 由全名生成：`test.TbFoo` → `test_tbfoo` | 想自定义输出文件名时 |
+| `input` | 指向本 sheet 自己 | 数据在别的文件 / 多个数据源时 |
+| `index` | 取值类型的第一个字段 | 主键不是第一个字段时 |
+| `read_schema_from_file` | `false`（结构来自 XML 或 `__beans__`） | 想让结构也写在本表标题行里，填 `true` |
+| `mode` | `map` | 单例表填 `one`，列表表填 `list` |
+| `group` / `comment` / `tags` | 空 | 需要时才写 |
+
+**结构与数据同在一表**（最自包含的形态）只需两个字段：
+
+```
+full_name="test.TbMinimal" & read_schema_from_file="true"
+```
+
+可运行的样例见 `esyluban/examples/dev/DataTables/test/minimal_b1.xlsx`。
+
+### 3.2 `input` 的定位语法：`sheet名@文件路径`
+
+注意顺序是 **sheet 在前、文件在后**，与常见的 `文件#锚点` 相反：
+
+```
+input="通用道具表@item/道具系统表.xlsx"     # 该文件里名为「通用道具表」的 sheet
+input="a.json,*@b.json"                    # 逗号分隔多个数据源，合成一张表
+```
+
+理解方式：`@` 把一条路径切成「逻辑位置」和「物理落点」——
+`item/通用道具表@道具系统表.xlsx` 读作"逻辑上是 item 下的『通用道具表』，
+物理上躺在 道具系统表.xlsx 里"。因此 sheet 名占据路径的一段，写在 `@` 左边。
+
+### 3.3 内联枚举 / Bean 子表
+
+- 同一 Excel 内名为 `__enums__` / `__beans__` 的 sheet 会被自动识别为定义
+- 子表结构需与 `DataTables/__enums__.xlsx` / `__beans__.xlsx` 一致（含 `A1=##export`）
+- 作用域为 file-wide：同一文件内多张数据表可共用
+- `full_name` 需包含模块名（如 `test.InlineQuality`）
+- 示例：`DataTables/test/inline_defs.xlsx`
+
+这样一张表连同它专用的类型定义可以放在同一个文件里交付，不必回到集中的
+`__beans__.xlsx` 登记。
+
+### 3.4 单一来源配置
+
+输出目录、校验与 L10N 统一写在 `Tools/Luban/luban.conf` 的 `xargs`，
+脚本（gen / check / 右键）不再覆盖这些参数：
+
 ```
 "xargs": [
-  "outputDataDir=../../TestOutputs/json/all",
-  "all.outputDataDir=../../TestOutputs/json/all",
-  "client.outputDataDir=../../TestOutputs/json/client",
-  "server.outputDataDir=../../TestOutputs/json/server",
-  "editor.outputDataDir=../../TestOutputs/json/editor",
-  "test.outputDataDir=../../TestOutputs/json/test",
-  "outputCodeDir=../../TestOutputs/code/all",
-  "client.outputCodeDir=../../TestOutputs/code/client",
-  "server.outputCodeDir=../../TestOutputs/code/server",
-  "editor.outputCodeDir=../../TestOutputs/code/editor",
-  "cs-simple-json.outputCodeDir=../../TestOutputs/code/cs-simple-json",
-  "pathValidator.rootDir=../../DataTables/Assets",
+  "client.outputDataDir=../../Projects/Csharp_Unity_json/Assets/GenData/client",
+  "client.outputCodeDir=../../Projects/Csharp_Unity_json/Assets/GenCode/client",
+  "pathValidator.rootDir=../../Projects/Csharp_Unity_json",
   "l10n.provider=default",
   "l10n.textFile.path=../../DataTables/l10n/texts.xlsx",
   "l10n.textFile.keyFieldName=key",
@@ -81,62 +111,61 @@ full_name="test.TbFoo" & value_type="Foo" & index="id" & mode="map" & input="tes
 ]
 ```
 
+`pathValidator.rootDir` 指向**工程根**，而不是 `Assets` 目录本身 ——
+表里存的资源路径通常自带 `Assets/` 前缀，两处都写会拼成重复路径。
+
 ## 4. 生成与校验
 
-### 4.1 生成数据
 ```
-Projects/EsyLuban_Example_release/Tools/Luban/gen.bat
+esyluban\examples\release\Tools\Luban\gen.bat      生成数据
+esyluban\examples\release\Tools\Luban\check.bat    校验数据
 ```
-
-### 4.2 校验数据
-```
-Projects/EsyLuban_Example_release/Tools/Luban/check.bat
-```
-
 
 ## 5. Unity 示例
 
-- 示例工程：`Projects/Csharp_Unity_json`
-- 用途：演示 Unity 中加载 Luban 生成数据的最小工程（json）。
-- 提示：资源路径校验依赖 `luban.conf` 的 `pathValidator.rootDir`。
+- 工程：`Projects/Csharp_Unity_json`，演示在 Unity 中加载生成数据（json）的最小工程
+- 生成结果落在 `Assets/GenData` 与 `Assets/GenCode`
 
 ## 6. 右键菜单
 
-- 安装：`Tools/Luban/install_luban_context_menu.bat`（全局安装，两个菜单项）
-- 卸载：`Tools/Luban/uninstall_luban_context_menu.bat`
-- 使用：右键点击 `DataTables` 或单个 Excel 文件即可导表/生成代码（数据入口会覆盖 `tableImporter.scanPath`）。
-- 寻址：从所选路径向上最多 5 层寻找 `Tools/Luban` 与 `Tools/luban.conf`。
-- 数据入口：`scripts/run_luban_context_menu_data.bat`（`client/server/editor`）
-- 代码入口：`scripts/run_luban_context_menu_code.bat`（`client + cs-simple-json`）
+```
+安装  esyluban\scripts\contextmenu\install_luban_context_menu.bat   （需管理员）
+卸载  esyluban\scripts\contextmenu\uninstall_luban_context_menu.bat
+```
 
-右键配置（写在 `luban.conf`，无需改脚本）：
+装好后右键**文件夹 / 文件夹空白处 / 单个 xlsx**，会出现
+`Luban Export (Data)` 与 `Luban Export (Code)`，只导出所选范围内的表。
+
+- 寻址：从所选位置向上最多 5 层找 `Tools\Luban\luban.conf`；运行时再向上找
+  `esyluban\runtime\Luban.dll`
+- 修改了 `scripts/contextmenu/` 下的脚本后，需**重新运行一次安装脚本**才生效
+  —— 注册表指向的是 `%ProgramData%\EsyLuban` 下的副本
+
+右键行为写在 `luban.conf`，无需改脚本：
+
 ```
 "contextMenu": {
-  "data": {
-    "targets": ["client","server","editor"],
-    "dataTarget": "json",
-    "extraArgs": []
-  },
-  "code": {
-    "target": "client",
-    "codeTargets": ["cs-simple-json"],
-    "extraArgs": []
-  }
+  "data": { "targets": ["client","server","editor"], "dataTarget": "json", "extraArgs": [] },
+  "code": { "targets": ["client","server"], "codeTargets": ["cs-simple-json"], "extraArgs": [] }
 }
 ```
 
-## 7. 快速模板工具
+## 7. 辅助脚本
 
-- 生成最小表模板：
-  - `scripts/create_table_template.bat --output <path.xlsx> --full-name test.TbFoo --value-type test.Foo`
-- 可选字段：
-  - `--index id`
-  - `--mode map|one|list`
-  - `--field name:type`（可重复）
+```
+esyluban\scripts\build.bat                        构建运行时
+esyluban\scripts\test\run_full_tests_example.bat  全量回归 + 双基线比对
+esyluban\scripts\test\run_unit_tests.bat          B1Parser 单元测试
+esyluban\scripts\test\refresh_coverage_baseline.bat  刷新覆盖基线
+esyluban\scripts\authoring\create_table_template.bat --output <path.xlsx> --full-name test.TbFoo
+```
 
-## 8. 常见提示与处理
+## 8. 常见提示
 
-- **缺少 B1 元数据**：XML 定义表或目录型数据表会输出 WARN，不影响导出。
-- **path 校验错误**：示例数据内含错误用例，用于覆盖测试。
-- **variant 警告**：字段变体未设置 `--variant` 会提示 WARN。
-
+- **A1 有 `##export` 但 B1 为空**：视作由其它机制导出（L10N 文本表等），
+  只告警、不中断
+- **path 校验报错**：`examples/dev` 内含**故意的**错误用例（`negatives/` 目录），
+  用于覆盖测试
+- **variant 警告**：字段变体未设置 `--variant` 会提示 WARN
+- **目录名不要以 `_` 开头**：Luban 会忽略以 `.` / `_` / `~` 开头的路径段，
+  放在这类目录里的定义文件会被静默跳过

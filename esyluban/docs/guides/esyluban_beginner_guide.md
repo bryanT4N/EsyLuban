@@ -41,13 +41,29 @@
 
 ```
 A1: ##export
-B1: full_name="item.TbItem" & value_type="item.Item" & index="id" & mode="map" & output="item_tbitem"
+B1: full_name="item.TbItem"
+```
+
+**`full_name` 是唯一必填项**，其余字段都有缺省，能不写就不写：
+
+| 字段 | 不写时 | 什么时候才需要写 |
+|---|---|---|
+| `value_type` | 由表名推导：`TbItem` → `Item` | 值类型名不遵循 `Tb` 前缀约定时 |
+| `output` | 由全名生成：`item.TbItem` → `item_tbitem` | 想自定义输出文件名时 |
+| `input` | 指向本 sheet 自己 | 数据在别的文件 / 多个数据源时 |
+| `index` | 取值类型的第一个字段 | 主键不是第一个字段时 |
+| `mode` | `map` | 单例表填 `one`，列表表填 `list` |
+| `read_schema_from_file` | `false`（结构来自 XML 或 `__beans__`） | 想让结构也写在本表标题行里，填 `true` |
+
+需要时再逐项添加，例如：
+
+```
+B1: full_name="item.TbItem" & index="uid" & mode="list" & comment="道具表"
 ```
 
 补充：  
 - `A1=##export=false` 表示该 Sheet 不导出  
-- **推荐写 `output`**：用于明确输出文件名，避免默认命名变化影响加载  
-- **默认命名规则**：`full_name` 中 `.` → `_` 并转小写  
+- 输出文件的默认命名规则：`full_name` 中 `.` → `_` 并转小写  
 
 #### A3.2 标准表头
 
@@ -300,7 +316,7 @@ B1: full_name="mail.TbRewards" & value_type="mail.Reward" & index="id" & mode="m
     {"names":["t"], "default": false}
   ],
   "schemaFiles": [
-    {"fileName":"../../DataTables/__Defines__", "type":""},
+    {"fileName":"../../DataTables/Defines", "type":""},
     {"fileName":"../../DataTables/__beans__.xlsx", "type":"bean"},
     {"fileName":"../../DataTables/__enums__.xlsx", "type":"enum"}
   ],
@@ -343,7 +359,7 @@ B1: full_name="mail.TbRewards" & value_type="mail.Reward" & index="id" & mode="m
 
 - `schemaFiles`  
   - **作用**：schema 定义入口  
-  - **推荐**：统一放 `DataTables/__Defines__` / `__beans__` / `__enums__`  
+  - **推荐**：统一放 `DataTables/Defines` / `__beans__` / `__enums__`  
   - **不推荐**：在多个目录分散 schema  
 
 - `dataDir`  
@@ -930,7 +946,7 @@ fields 子列：
 - `sep`：默认分隔符  
 - `variants`：字段变体  
 
-#### B11.3 XML Schema（放在 `DataTables/__Defines__`）
+#### B11.3 XML Schema（放在 `DataTables/Defines`）
 
 常见元素：  
 - `<module>`：模块命名空间  
@@ -1191,7 +1207,7 @@ item.Item     id    int
 - 默认扫描 `dataDir` 全目录  
 - 支持文件或目录  
 - 支持绝对路径或相对 `dataDir`  
-- 自动忽略：`__tables__` / `__beans__` / `__enums__` / `__Defines__`  
+- 自动忽略：`__tables__` / `__beans__` / `__enums__` / `Defines`  
 
 **推荐**：右键导表时用 `scanPath` 限定范围。  
 **不推荐**：在 `xargs` 里写死 `scanPath`。  

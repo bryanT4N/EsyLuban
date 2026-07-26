@@ -3,8 +3,8 @@
 本文用于记录 **EsyLuban 功能 → 测例** 的对应关系，便于补例与回归测试。
 
 ## 1. 范围与原则
-- 正向用例集中于 `Projects/EsyLuban_Example_dev/DataTables/matrix/`。
-- 负向用例集中于 `Projects/EsyLuban_Example_dev/DataTables/negatives/`，仅用于“不中断但记录日志”。
+- 正向用例集中于 `esyluban/examples/dev/DataTables/matrix/`。
+- 负向用例集中于 `esyluban/examples/dev/DataTables/negatives/`，仅用于“不中断但记录日志”。
 - 以 **可导出的表** 为准（A1=`##export` 且 B1 含元数据）。
 
 ## 2. 正向用例覆盖
@@ -46,11 +46,11 @@
 
 ## 5. 依赖资源
 
-- L10N 文本源：`Projects/EsyLuban_Example_dev/DataTables/l10n/texts.xlsx`
-- path 资源根：`Projects/EsyLuban_Example_dev/DataTables/Assets`
+- L10N 文本源：`esyluban/examples/dev/DataTables/l10n/texts.xlsx`
+- path 资源根：`esyluban/examples/dev/DataTables/Assets`
   - 示例资源：`Assets/Scenes/SampleScene.unity`
 
 ## 6. 矩阵快照输出
 
-- 输出 JSON：`Projects/EsyLuban_Example_dev/TestOutputs/coverage_matrix_report.json`
-- 生成脚本：`scripts/report_coverage_matrix.bat`
+- 输出 JSON：`esyluban/examples/dev/TestOutputs/coverage_matrix_report.json`
+- 生成脚本：`esyluban/scripts/test/report_coverage_matrix.bat`
