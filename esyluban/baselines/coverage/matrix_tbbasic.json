@@ -4,7 +4,7 @@
     "name": "Alpha",
     "quality": 1,
     "textKey": "/apple",
-    "res": "Scenes/SampleScene.unity",
+    "res": "Assets/Scenes/SampleScene.unity",
     "enabled": true,
     "score": 1.5,
     "count": 100,

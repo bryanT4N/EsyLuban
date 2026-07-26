@@ -1,11 +1,42 @@
+"""一次性迁移工具：把上游集中式 __tables__.xlsx 的表定义改写为自包含格式。
+
+⚠ 当前不可用，已被禁用。三个已知缺陷：
+
+  1. main() 缩进错误，整段 xlsx 迁移逻辑是不可达代码，直接运行会 NameError。
+  2. ensure_export_row() 插入 ##export 行后没有同步位移合并区间，
+     导致所有依赖合并单元格的写法（多行嵌套 *field、多级标题）错位一行。
+     这曾被 SheetLoadUtil 里一个对称的偏移错误抵消，因而长期无人察觉；
+     该错误已于 2026-07 修复，抵消不复存在 —— 现在这个 bug 会直接暴露。
+  3. 更严重：insert_rows(1) 后，落进陈旧合并区间的单元格会被 openpyxl
+     写成 MergedCell 占位，**值被永久删除**。被删的恰好是字段名/类型名
+     这类标题格。已在 examples 里造成 5 处损伤（20 个单元格），
+     以上游 luban_examples@879f5c5 为基准逐单元格审计后已补回。
+
+修复它需要：修正缩进、把 continue 之后的逻辑移到正确位置、插行后手工
+位移全部合并区间（先快照、unmerge、insert、按新坐标 merge）、保存前
+校验每个合并区左上角非空，并补一个「造带合并的表 → 迁移 → 断言值与
+合并都正确」的测试。
+
+在此之前不要用它迁移任何工程。要解除禁用，删除下方的 sys.exit 并
+自行承担风险。
+"""
 import csv
 import json
 import os
 import pathlib
+import sys
 from datetime import datetime
 import xml.etree.ElementTree as ET
 
 from openpyxl import load_workbook
+
+# 拒绝执行优于文档警告：注释救不了直接双击运行的人。
+if __name__ == "__main__":
+    sys.stderr.write(
+        "\n[DISABLED] migrate_xlsx.py 当前不可用。\n"
+        "  它会在插入 ##export 行时错位合并区间，并永久删除落进旧合并区的单元格值。\n"
+        "  详见本文件顶部说明。修复前请勿用于任何工程。\n\n")
+    raise SystemExit(2)
 
 
 ROOT = os.environ.get("LUBAN_ROOT", r"C:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban")

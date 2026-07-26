@@ -123,7 +123,7 @@ esyluban/
 │  ├─ test/         回归测试、基线刷新、覆盖矩阵报告
 │  ├─ release/      发布打包脚本与发布包 README
 │  ├─ contextmenu/  右键菜单安装/卸载与两个导表入口
-│  └─ authoring/    建表模板、矩阵用例生成、xlsx 迁移
+│  └─ authoring/    建表模板、矩阵用例生成（xlsx 迁移工具已禁用，见其文件头）
 ├─ templates/      新建工程用的 luban.conf / gen.bat / check.bat 与示例表
 ├─ docs/
 │  ├─ esyluban_beginner_guide.md   完全手册（A 给策划，B 给程序员）

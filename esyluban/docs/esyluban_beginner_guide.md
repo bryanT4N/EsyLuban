@@ -750,6 +750,30 @@ gen.bat -t client -d json -o your.TbFoo -x cleanUpOutputDir=0
 > 不要指向游戏工程里混放美术资源、手写配置的目录——全量导出会把它们一并删掉。
 > 推荐固定用 `.../Run/Data/Generated/` 这类一眼看出是生成物的路径。
 
+#### B2.3.1.1 ⚠ 导出 0 张表时，目录同样会被清空
+
+上一条的推论，但后果更突然：**如果某个 target 绑定的 group 全部是 `default:false`，
+它一张表都导不出来——然后 `cleanUpOutputDir` 把整个输出目录清空，退出码 0，无任何警告。**
+
+```
+"groups":  [ {"names":["c"], "default":true}, {"names":["t"], "default":false} ],
+"targets": [ {"name":"client", "groups":["c"]}, {"name":"test", "groups":["t"]} ],
+"xargs":   [ "outputDataDir=.../Run/Data/Generated" ]      ← 两个 target 共用
+```
+
+此时跑一次 `gen.bat -t test -d json`：`test` 只绑 `t` 组，而自包含表的 `group`
+缺省为空、`t` 又不是默认组，于是**没有一张表满足导出条件**——目录里 `client`
+刚导出的全部产物被当成"不属于本次产物"删光。下次启动游戏才会发现配置全空。
+
+避免方式（任选其一，推荐都做）：
+
+1. **每个 target 用各自的输出目录**——这也是 B2.3 推荐的做法
+2. 不要给只有 `default:false` 组的 target 配全局输出目录
+3. 导出前先跑 `check.bat` 确认表数不为 0
+
+> 这个陷阱在本仓库的 `examples/dev` 里真实存在过：`gen.bat -t all -d json` 导出 56 张表，
+> 紧接着 `gen.bat -t test -d json` 只剩 3 张——**53 张表的产物被静默删除**。
+
 #### B2.4 target 与 group 对照（速查）
 
 | target | groups | 典型用途 |
