@@ -27,7 +27,7 @@ git diff --name-status origin/main -- src
 ```
 esyluban/
 ├─ runtime/        Luban 运行时（构建产物，不进版本控制）
-├─ examples/
+├─ examples/      数据多数源自上游 luban_examples，出处见 examples/README.md
 │  ├─ dev/         回归测试工程：全覆盖用例 + matrix/ + negatives/
 │  └─ release/     发布示例工程：干净用例 + Unity 集成演示
 ├─ baselines/
