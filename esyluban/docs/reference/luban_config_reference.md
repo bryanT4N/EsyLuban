@@ -216,17 +216,23 @@ EsyLuban 新规范: Excel/CSV 表**不再依赖 `__tables__.xlsx`**, 以 Sheet �
 **`input` 缺省即指向声明它的那个 sheet 自己。** 一个 Excel 内放多张表**不需要**
 写 `input` —— 每个 sheet 各自带 A1/B1，importer 会逐个 sheet 识别成独立的表。
 
-只有**数据不在声明它的 sheet 里**时才需要写。实际用到的三类（统计自 dev 工程）：
+只有**数据不在声明它的 sheet 里**时才需要写。实际用到的四类（统计自 dev 工程）：
 
 ```
 ai/behaviortrees                       数据是整个目录下的多个文件
 table3@test/composite_tables.json      数据在别的文件、别的格式里
 a.csv,b.csv,c.csv                      逗号分隔多数据源，合成一张表
+test/item.xlsx                         读该文件【全部 sheet】，合并成一张表
 ```
 
-> dev 工程中 50 处写了 `input` 的表里，**36 处（72%）其实指向 sheet 自己**，
-> 属于迁移工具无脑生成的冗余 —— 例如 `test/list.xlsx` 的三个 sheet 各写了
-> `not_index@test/list.xlsx` 一类的自引用。新表不必照抄。
+> **`文件路径` 与 `sheet@文件路径` 语义不同**：前者读该文件的所有 sheet，
+> 后者只读指定的一个。缺省等价于后者（本 sheet），因此**只写文件路径的 input
+> 不可省略** —— 多态表常靠它把多个 sheet 合成一张表
+> （如 `test/item.xlsx` 的 item / equipment / decorator / mixed）。
+> 误删会让该表只剩声明所在的那个 sheet 的数据。
+>
+> dev 工程曾有 36 处指向 sheet 自身的自引用（迁移工具生成的冗余），
+> 已于 2026-07 统一精简；新表不必照抄。
 
 定位语法为上游既有约定（`FileUtil.SplitFileAndSheetName`），`input`、`schemaFiles`、
 L10N 配置共用同一套写法。**顺序是 sheet 在前、文件在后**，与常见的 `文件#锚点` 相反：

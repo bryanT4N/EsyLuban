@@ -102,13 +102,18 @@ B1: full_name="item.TbItem" & index="uid" & mode="list" & comment="道具表"
 **一个 Excel 里放多张表也不需要写 `input`** —— 每个 sheet 各自写好 A1/B1，
 导表时会逐个 sheet 识别，各自成为一张表。
 
-只有一种情况需要写：**数据不在声明它的这个 sheet 里**。常见三类：
+只有一种情况需要写：**数据不在声明它的这个 sheet 里**。常见四类：
 
 ```
 input="ai/behaviortrees"                    数据是整个目录下的多个文件
 input="table3@test/composite_tables.json"   数据在别的文件、别的格式里
 input="a.csv,b.csv,c.csv"                   逗号分隔多个数据源，合成一张表
+input="test/item.xlsx"                      读该文件【全部 sheet】，合并成一张表
 ```
+
+> 最后一类容易与缺省混淆：**只写文件路径（不带 `@sheet`）表示读该文件的所有
+> sheet**，而缺省只读声明它的那一个 sheet。多态表常用这种写法把
+> `item` / `equipment` / `decorator` 几个 sheet 合成一张表，**这种 `input` 不能省**。
 
 第二类要注意顺序是 **sheet 名在前、文件路径在后**，与常见的 `文件#锚点` 相反：
 `table3@test/composite_tables.json` 表示"该 json 里名为 table3 的那部分数据"。
