@@ -2,42 +2,55 @@
 // Licensed under MIT License
 
 using ExcelDataReader;
+using Luban.Defs;
 using Luban.RawDefs;
 using Luban.Utils;
 
 namespace Luban.Schema.Builtin;
 
 /// <summary>
-/// 自包含表导入器。
+/// 自包含表导入器 —— EsyLuban 发现表的唯一入口。
 ///
-/// 扫描数据目录下的所有 Excel，凡 A1 恰为 <c>##export</c> 的 sheet，
-/// 即按 B1 的元数据串生成表定义。这样每张表自描述，不再需要集中式的
-/// <c>__tables__.xlsx</c>。
+/// 扫描数据目录下的所有 Excel，凡 A1 恰为 <c>##export</c> 的 sheet，即按 B1 的
+/// 元数据串生成表定义。每张表自描述，不再需要集中式的 <c>__tables__.xlsx</c>。
 ///
-/// 为什么是 TableImporter 而不是 SchemaLoader：
-/// SchemaLoader 只处理 luban.conf 中 schemaFiles 显式列出的文件；而"扫描整个
-/// 数据目录、发现哪些表要导出"属于 TableImporter 的职责（上游 DefaultTableImporter
-/// 即按 <c>#xxx</c> 文件名模式做同样的事）。把数据目录直接配进 schemaFiles 是行不通的
-/// —— 目录里混有 .xml/.json 等数据文件，会被误当作 schema 定义。
+/// <para>
+/// <b>为什么以 Priority 覆盖 "default"</b>：自包含表定义是本 fork 的唯一形态，
+/// 不是可选项。借 Luban 既有的 behaviour 优先级机制接管默认 importer 之后，
+/// 使用者无需在 luban.conf 里写 <c>tableImporter.name</c> —— 少一个不该暴露的旋钮，
+/// 也就少一处需要在各工程间同步的配置。上游按 <c>#xxx</c> 文件名模式导表的
+/// DefaultTableImporter 未被改动，显式配置 <c>tableImporter.name=default</c> 以外的
+/// 名字仍可回到上游行为。
+/// </para>
 ///
-/// 启用方式（luban.conf 的 xargs 或命令行 -x）：
-/// <code>tableImporter.name=selfcontained</code>
-/// 可选：<code>tableImporter.scanPath=&lt;目录或文件&gt;</code> 限定扫描范围，
-/// 右键菜单的"局部导表"正是借此只导出所选范围内的表。
+/// <para>
+/// <b>为什么是 TableImporter 而不是 SchemaLoader</b>：SchemaLoader 只处理 luban.conf 中
+/// schemaFiles 显式列出的文件；"扫描整个数据目录、发现哪些表要导出"属于 TableImporter
+/// 的职责。把数据目录直接配进 schemaFiles 是行不通的 —— 目录里混有 .xml/.json/.unity
+/// 等数据与资源文件，会被误当作 schema 定义。
+/// </para>
 /// </summary>
-[TableImporter("selfcontained")]
+[TableImporter("default", Priority = 100)]
 public class SelfContainedTableImporter : ITableImporter
 {
     private static readonly NLog.Logger s_logger = NLog.LogManager.GetCurrentClassLogger();
 
     private static readonly HashSet<string> s_excelExts = new() { "xlsx", "xls", "xlsm" };
 
+    /// <summary>
+    /// schema 定义表：A1 同样是 ##export，但它们由 bean/enum schema loader 处理，
+    /// 不是数据表。
+    /// </summary>
+    private static readonly HashSet<string> s_schemaDefinitionFileNames =
+        new(StringComparer.OrdinalIgnoreCase) { "__beans__", "__enums__", "__tables__" };
+
     public List<RawTable> LoadImportTables()
     {
         string dataDir = GenerationContext.GlobalConf.InputDataDir;
-        string scanPath = EnvManager.Current.GetOptionOrDefault("tableImporter", "scanPath", false, "");
 
-        // scanPath 为空时扫描整个 dataDir；否则只扫描指定范围（可以是目录或单个文件）。
+        // scanPath 限定扫描范围（可为目录或单个文件），右键菜单的"局部导表"由此实现；
+        // 留空则扫描整个 dataDir。
+        string scanPath = EnvManager.Current.GetOptionOrDefault("tableImporter", "scanPath", false, "");
         string scanRoot = string.IsNullOrWhiteSpace(scanPath) ? dataDir : scanPath;
 
         var files = new List<string>();
@@ -51,8 +64,7 @@ public class SelfContainedTableImporter : ITableImporter
         }
         else
         {
-            s_logger.Warn("tableImporter.scanPath not found: {}", scanRoot);
-            return new List<RawTable>();
+            throw new Exception($"tableImporter.scanPath not found: {scanRoot}");
         }
 
         var tables = new List<RawTable>();
@@ -67,28 +79,25 @@ public class SelfContainedTableImporter : ITableImporter
             {
                 continue;
             }
-            // __beans__ / __enums__ / __tables__ 由 bean/enum schema loader 处理
-            if (SelfContainedExcelSchemaLoader.IsSchemaDefinitionFile(file))
+            if (s_schemaDefinitionFileNames.Contains(Path.GetFileNameWithoutExtension(file)))
             {
                 continue;
             }
-
-            foreach (var table in LoadTablesFromFile(file))
-            {
-                tables.Add(table);
-            }
+            tables.AddRange(LoadTablesFromFile(file));
         }
 
         s_logger.Info("self-contained table importer: {} table(s) found under {}", tables.Count, scanRoot);
         return tables;
     }
 
-    private static IEnumerable<RawTable> LoadTablesFromFile(string file)
+    private static List<RawTable> LoadTablesFromFile(string file)
     {
         var result = new List<RawTable>();
         try
         {
             using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            // 与上游 SheetLoadUtil 使用同一套 Excel 实现（ExcelDataReader），
+            // 避免为此引入第二个 Excel 库。reader 前向只读：每张 sheet 只需读第一行。
             using var reader = ExcelReaderFactory.CreateReader(stream);
             do
             {
@@ -106,17 +115,16 @@ public class SelfContainedTableImporter : ITableImporter
                     continue;
                 }
 
-                // A1 有 ##export 但 B1 没有表元数据：属于 L10N 文本表、XML 定义表、
-                // 目录型数据表等由其它机制导出的文件。按约定只告警、不中断。
+                // A1 有 ##export 但 B1 无表元数据：属于 L10N 文本表、XML 定义表等
+                // 由其它机制导出的文件。按既有约定只告警、不中断。
                 if (string.IsNullOrWhiteSpace(b1))
                 {
                     s_logger.Warn("sheet '{}'@{} has ##export but no table metadata in B1, skipped.", sheetName, file);
                     continue;
                 }
 
-                var table = SelfContainedExcelSchemaLoader.ParseSheetMetadata(sheetName, b1, file);
-                result.Add(table);
-                s_logger.Info("Loaded self-contained table: {} from {}@{}", table.Name, file, sheetName);
+                result.Add(ParseSheetMetadata(sheetName, b1, file));
+                s_logger.Info("Loaded self-contained table from {}@{}", file, sheetName);
             } while (reader.NextResult());
         }
         catch (Exception ex)
@@ -124,5 +132,102 @@ public class SelfContainedTableImporter : ITableImporter
             throw new Exception($"Failed to import self-contained tables from: {file}", ex);
         }
         return result;
+    }
+
+    /// <summary>
+    /// 按 B1 元数据串生成表定义。
+    /// </summary>
+    private static RawTable ParseSheetMetadata(string sheetName, string b1Content, string fileName)
+    {
+        var metadata = B1Parser.Parse(b1Content);
+
+        string fullName = metadata["full_name"];
+        string valueType = metadata["value_type"];
+
+        string namespaceName = TypeUtil.GetNamespace(fullName);
+        string tableName = TypeUtil.GetName(fullName);
+
+        // input 缺省时指向当前 sheet 自身
+        string input = metadata.TryGetValue("input", out var inputValue)
+            ? inputValue
+            : $"{GetRelativePathToDataDir(fileName)}@{sheetName}";
+
+        TableMode mode = metadata.TryGetValue("mode", out var modeValue) ? ParseMode(modeValue) : TableMode.MAP;
+
+        bool readSchemaFromFile = !metadata.TryGetValue("read_schema_from_file", out var readValue)
+                                  || ParseBool(readValue);
+
+        // 从 Excel 读 schema 时，value_type 若未写命名空间则按表所在命名空间补全
+        if (readSchemaFromFile && string.IsNullOrEmpty(TypeUtil.GetNamespace(valueType)))
+        {
+            valueType = TypeUtil.MakeFullName(namespaceName, valueType);
+        }
+
+        return new RawTable
+        {
+            Namespace = namespaceName,
+            Name = tableName,
+            ValueType = valueType,
+            InputFiles = new List<string> { input },
+            Mode = mode,
+            ReadSchemaFromFile = readSchemaFromFile,
+            Index = GetOptional(metadata, "index", "id"),
+            Comment = GetOptional(metadata, "comment", ""),
+            Groups = ParseGroups(GetOptional(metadata, "group", "")),
+            Tags = DefUtil.ParseAttrs(GetOptional(metadata, "tags", "")),
+            OutputFile = GetOptional(metadata, "output", ""),
+        };
+    }
+
+    private static string GetRelativePathToDataDir(string absolutePath)
+    {
+        string dataDir = FileUtil.Standardize(GenerationContext.GlobalConf.InputDataDir);
+        string standardizedPath = FileUtil.Standardize(absolutePath);
+
+        if (standardizedPath.StartsWith(dataDir))
+        {
+            return standardizedPath.Substring(dataDir.Length)
+                .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .Replace('\\', '/');
+        }
+        return Path.GetFileName(absolutePath);
+    }
+
+    private static string GetOptional(Dictionary<string, string> dict, string key, string defaultValue)
+    {
+        return dict.TryGetValue(key, out var value) ? value : defaultValue;
+    }
+
+    private static TableMode ParseMode(string modeStr)
+    {
+        return modeStr.ToLower() switch
+        {
+            "map" => TableMode.MAP,
+            "list" => TableMode.LIST,
+            "one" => TableMode.ONE,
+            _ => throw new Exception($"Invalid mode: {modeStr}. Expected: map, list, or one")
+        };
+    }
+
+    private static bool ParseBool(string boolStr)
+    {
+        return boolStr.ToLower() switch
+        {
+            "1" or "true" => true,
+            "0" or "false" => false,
+            _ => throw new Exception($"Invalid bool value: {boolStr}. Expected: 1, 0, true, or false")
+        };
+    }
+
+    private static List<string> ParseGroups(string groupStr)
+    {
+        if (string.IsNullOrWhiteSpace(groupStr))
+        {
+            return new List<string>();
+        }
+        return groupStr.Split(',')
+            .Select(s => s.Trim())
+            .Where(s => !string.IsNullOrEmpty(s))
+            .ToList();
     }
 }

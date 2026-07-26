@@ -42,15 +42,7 @@ public class DefaultSchemaCollector : SchemaCollectorBase
             {
                 throw new Exception($"schema file:'{importFile.FileName}' has no extension. luban doesn't know how to load file without extension.");
             }
-            // [EsyLuban] 自包含表定义需要把整个数据目录配进 schemaFiles，
-            // 目录中会混有非 schema 文件（如 path 校验用的 .unity 资源）。
-            // 未注册扩展名跳过即可，不应中断整个 schema 加载。
-            if (!SchemaManager.Ins.TryCreateSchemaLoader(ext, importFile.Type, this, out var schemaLoader))
-            {
-                s_logger.Debug("skip file with no matching schema loader. file:{} type:{} ext:{}",
-                    importFile.FileName, importFile.Type, ext);
-                continue;
-            }
+            var schemaLoader = SchemaManager.Ins.CreateSchemaLoader(ext, importFile.Type, this);
             schemaLoader.Load(importFile.FileName);
         }
 
