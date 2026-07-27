@@ -39,6 +39,21 @@ if "%~1"=="" (
   exit /b 1
 )
 
+rem Windows still caps most paths at 260 characters, and a deeply nested project
+rem plus this tool's own subdirectories can cross it. When that happens cmd fails
+rem with "The current directory is invalid" -- a message that points nowhere near
+rem the real cause. Say it plainly instead.
+set "PATH_LEN_PROBE=%SCRIPT_DIR%"
+call :StrLen PATH_LEN_PROBE PATH_LEN
+if !PATH_LEN! gtr 200 (
+  echo [WARN] This tool sits at a very deep path ^(!PATH_LEN! characters^):
+  echo        !SCRIPT_DIR!
+  echo        Windows caps most paths at 260. If export fails with an error like
+  echo        "The current directory is invalid", move the project somewhere
+  echo        shallower -- that is almost certainly the cause.
+  echo.
+)
+
 set "FIND_DIR=%SCRIPT_DIR:~0,-1%"
 set LUBAN_EXE=
 for /l %%i in (0,1,6) do (
@@ -79,3 +94,17 @@ if not "!GEN_ERR!"=="0" (
 
 if not defined LUBAN_NO_PAUSE pause
 exit /b 0
+
+:StrLen
+rem %1 = name of a variable holding the string, %2 = name of the output variable
+setlocal EnableDelayedExpansion
+set "S=!%~1!#"
+set "L=0"
+for %%A in (4096 2048 1024 512 256 128 64 32 16 8 4 2 1) do (
+  if "!S:~%%A!" neq "" (
+    set /a L+=%%A
+    set "S=!S:~%%A!"
+  )
+)
+endlocal & set "%~2=%L%"
+goto :eof

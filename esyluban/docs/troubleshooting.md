@@ -61,6 +61,7 @@
 |---|---|
 | 提示缺少 .NET / 无法启动 | 用的是小包但机器上没有 .NET 8。装运行时，或换 standalone 版（解压即用） |
 | 从源码构建后跑不起来 | 先跑 `esyluban\scripts\build.bat` |
+| `The current directory is invalid` | 路径太深。Windows 大多数路径上限是 260 字符，工程嵌套深一点就会越界 —— 这句报错完全不指向真因。把项目挪到浅一点的位置。`gen.bat` 在路径超过 200 字符时会提前警告 |
 
 ---
 
