@@ -56,7 +56,7 @@ schema XML 或 `__beans__`）。整份手册的 A 章模板都属于「结构写
 | 字段 | 不写时 | 什么时候才需要写 |
 |---|---|---|
 | `value_type` | 由表名推导：`TbItem` → `Item` | 值类型名不遵循 `Tb` 前缀约定时 |
-| `output` | 由全名生成：`item.TbItem` → `item_tbitem` | 想自定义输出文件名时 |
+| `output` | 由全名生成：`item.TbItem` → `item_tbitem`（平铺、全小写） | 想自定义输出文件名时；**值可带目录**，见 B3.x |
 | `input` | 指向本 sheet 自己 | 数据在别的文件 / 多个数据源时 |
 | `index` | 取值类型的第一个字段 | 主键不是第一个字段时 |
 | `mode` | `map` | 单例表填 `one`，列表表填 `list` |
@@ -1108,8 +1108,41 @@ B1 字段决定表结构与导出行为。以下是必须掌握的链路。
 - `output`  
   - **作用**：覆盖输出文件名  
   - **推荐**：生产环境**显式写 output**，保证文件名稳定  
-  - **命名建议**：全小写、下划线、与表名对应  
   - **不推荐**：随意改名导致加载路径不一致  
+
+#### B3.x `output` 可以带目录：让数据也分层
+
+缺省推导出来的是**平铺**的文件名 —— `item.TbItem` → `item_tbitem.json`，模块名
+和表名用 `_` 拼在一起、全部小写。代码输出本来就是分层的
+（`GenCode/client/ai/BehaviorTree.cs`），只有数据是平的。
+
+`output` 的值会被**当作路径**用，因此写上分隔符就能分目录，层级不限：
+
+```
+##export | full_name="matrix.TbMatrixList" & output="matrix/nested/TbMatrixList"
+   ->  <outputDataDir>/matrix/nested/TbMatrixList.json
+```
+
+三件配套的事都是成立的（本仓库回归里有这张表在守着）：
+
+1. **生成代码自动跟随**，接入方一行都不用改：
+
+   ```csharp
+   // output 改成 matrix/nested/TbMatrixList 之后，Tables.cs 自己就变成：
+   TbMatrixList = new matrix.TbMatrixList(loader("matrix/nested/TbMatrixList"));
+   ```
+
+   你的 loader 拿到的仍是「相对 outputDataDir 的路径」，拼上扩展名即可。
+
+2. **清理跟进子目录**。把 `output` 从 `matrix/nested/` 改到别处后重跑，旧文件
+   会被删掉，空目录也一并清理，不会留下幽灵数据。
+
+3. **大小写随你写**。`output` 是原样使用的，不像缺省推导那样强制小写。
+   跨平台部署（Linux 区分大小写）时，保持与 loader 里写的完全一致即可。
+
+> **没有"一键全体分层"的开关。** 想让整个项目都按模块分目录，就得逐表写
+> `output`。Luban 没有提供改变缺省推导规则的选项 —— 缺省永远是
+> `模块_表名` 全小写平铺。表很多时，可以在建表模板里就把这一行写好。
 
 ---
 

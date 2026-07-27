@@ -90,7 +90,7 @@ public partial class Tables
         TbBasic = new matrix.TbBasic(loader("matrix_tbbasic"));
         TbContainers = new matrix.TbContainers(loader("matrix_tbcontainers"));
         TbMatrixSingleton = new matrix.TbMatrixSingleton(loader("matrix_tbmatrixsingleton"));
-        TbMatrixList = new matrix.TbMatrixList(loader("matrix_tbmatrixlist"));
+        TbMatrixList = new matrix.TbMatrixList(loader("matrix/nested/TbMatrixList"));
         TbValidators = new matrix.TbValidators(loader("matrix_tbvalidators"));
         TbVerticalMerged = new matrix.TbVerticalMerged(loader("matrix_tbverticalmerged"));
         TbTestTag = new tag.TbTestTag(loader("tag_tbtesttag"));
