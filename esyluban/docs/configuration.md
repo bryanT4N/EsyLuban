@@ -74,13 +74,32 @@ schema 定义的入口。`type` 留空表示按文件内容自己声明，`bean`
 
 一份常见的分工：
 
-| target | groups | 用途 |
+| target | groups | 导出什么 |
 |---|---|---|
-| client | c | 客户端运行数据 |
-| server | s | 服务端运行数据 |
-| editor | c（`topModule` 用 `editor.cfg`） | 编辑器或工具数据 |
-| test | t | 仅测试或内部数据 |
-| all | c/s/e | 全量导出 |
+| client | `c` | 客户端要的表 |
+| server | `s` | 服务端要的表 |
+| test | `t` | 仅测试或内部数据。`t` 通常设 `default:false`，这样不标 group 的表不会进来 |
+| all | `c` `s` `e` | 全量导出 |
+
+#### 同一份数据换个命名空间：`editor` 这类 target
+
+本仓库的示例工程里还有一个 `editor`，它绑的 group 和 `client` **完全一样**：
+
+```json
+{"name":"client", "groups":["c"], "topModule":"cfg"},
+{"name":"editor", "groups":["c"], "topModule":"editor.cfg"}
+```
+
+两者导出的**数据文件一模一样**，唯一区别是生成代码的顶层命名空间。这不是笔误，
+是一个具体用途：Unity 的编辑器程序集与运行时程序集需要各有一套配置类，否则同名
+类型会冲突。同一份数据生成两遍代码、放进两个命名空间，就解决了。
+
+所以 `editor` 绑的是「编辑器**需要哪些数据**」（和客户端一样），不是「哪些数据
+是给编辑器的」。如果你确实有一批只给编辑器用的表，那就给它们标 `group="e"` 并让
+`editor` 绑 `e` —— 但多数项目里编辑器要看的就是客户端那一份，于是 `e` 组是空的。
+
+`groups` 决定导出**哪些表**，`topModule` 决定生成代码**叫什么**。这两件事正交，
+一个 target 可以只用其中一个。
 
 `targets` 里的名字与 `-d` / `-c` 的取值是三套不同的东西，混淆它们是配置踩坑的主要来源 —— 见[目标与输出 ·「target」是三个不同的东西](targets-and-output.md#target是三个不同的东西)。
 

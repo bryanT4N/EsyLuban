@@ -233,6 +233,32 @@ if ((Test-Path -LiteralPath $versionFile) -and $null -ne $changelog) {
     }
 }
 
+# ---- targets that share a group must be explained ---------------------------
+# The dev example has an "editor" target bound to the same group as "client".
+# It looks like a typo -- and a reader asked whether it should be "e" -- but it
+# is deliberate: identical data, different topModule, so a Unity editor assembly
+# and a runtime assembly can each have their own config classes without the type
+# names colliding.
+#
+# Anything that reads like a mistake but is not needs the reason written down, or
+# the next person "fixes" it. This asserts the explanation is still there.
+$devConf = Join-Path $esy 'examples\dev\Tools\Luban\luban.conf'
+if (Test-Path -LiteralPath $devConf) {
+    $conf = [System.IO.File]::ReadAllText($devConf)
+    $clientGroups = [regex]::Match($conf, '"name"\s*:\s*"client".*?"groups"\s*:\s*\[([^\]]*)\]')
+    $editorGroups = [regex]::Match($conf, '"name"\s*:\s*"editor".*?"groups"\s*:\s*\[([^\]]*)\]')
+    if ($clientGroups.Success -and $editorGroups.Success -and
+        $clientGroups.Groups[1].Value -eq $editorGroups.Groups[1].Value) {
+        $config = Read-Text 'esyluban/docs/configuration.md'
+        if ($config -notmatch 'topModule' -or $config -notmatch 'editor\.cfg') {
+            Write-Host "[FAIL] doc facts: editor and client bind the same group in the dev conf,"
+            Write-Host "         but configuration.md no longer explains why (the topModule trick)."
+            Write-Host "         Without that, it reads as a typo and someone will 'fix' it."
+            $failed++
+        }
+    }
+}
+
 if ($failed -eq 0) {
     Write-Host "[OK]   doc facts: target counts, baselines, paths and mechanisms all agree"
     exit 0
