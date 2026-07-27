@@ -139,6 +139,7 @@ rem --validationFailAsError is deliberately NOT used here: the corpus contains
 rem records that are meant to fail. check.bat covers the "must reject" side.
 set VALIDATOR_FAILED=0
 set VALIDATOR_TOTAL=0
+set RC_FAILED=0
 
 call :CountErr "matrix.TbPathFail"       1 "negatives: path validator"
 call :CountErr "matrix.TbValidatorsFail" 4 "negatives: regex/default/range/set"
@@ -228,20 +229,29 @@ rem root) and how it silently deleted every other table's output for months.
 rem Exporting one folder must produce that folder's tables AND leave the rest
 rem of the output directory alone.
 echo [EXAMPLE] right-click chain -- menu_entry_data.bat
-if exist "!CONTEXTMENU_OUT!" rmdir /s /q "!CONTEXTMENU_OUT!"
-call "%~dp0..\contextmenu\menu_entry_data.bat" "!EXAMPLE_ROOT!\DataTables\item" >nul 2>&1
-if errorlevel 1 (
-  echo [FAIL] right-click export returned !errorlevel!
+rem Several folders, not one. Testing only item/ was how a real bug survived:
+rem item's table carries no group, so it belongs to every group and exported
+rem cleanly for every target -- the one folder in the corpus that could not
+rem reveal the problem. Any folder whose tables DO carry a group (ai, matrix)
+rem failed for the "test" target, whose group "t" excludes them, with a
+rem confusing "referenced table was not exported" error.
+set RC_TOTAL=0
+call :RightClick item
+call :RightClick ai
+call :RightClick matrix
+call :RightClick l10n
+
+rem The impl script also runs standalone, without the forwarder passing it the
+rem Tools\Luban directory -- it then searches upwards for luban.conf. That
+rem branch is documented as the way to drive the export from a build script or
+rem to debug it by hand, but nothing exercised it, so "documented" was the only
+rem evidence it still worked. It does; this keeps it that way.
+call :RightClickDirect item
+if !RC_FAILED! gtr 0 (
+  echo [FAIL] right-click chain: !RC_FAILED! folder^(s^) failed
   set /a FAILED+=1
 ) else (
-  set RC_FILES=0
-  for /f %%N in ('dir /b /s "!CONTEXTMENU_OUT!\*.json" 2^>nul ^| find /c /v ""') do set RC_FILES=%%N
-  if "!RC_FILES!"=="0" (
-    echo [FAIL] right-click export produced no files under !CONTEXTMENU_OUT!
-    set /a FAILED+=1
-  ) else (
-    echo [OK]   right-click chain produced !RC_FILES! file^(s^)
-  )
+  echo [OK]   right-click chain: 4 folders + standalone entry, !RC_TOTAL! file^(s^) total
 )
 
 rem examples/release is the project users are told to copy: a Unity project,
@@ -323,6 +333,48 @@ exit /b 0
 
 rem ---- helpers ----------------------------------------------------------
 rem %1 pattern, %2 expected count, %3 human label
+:RightClickDirect
+rem Same as :RightClick but calls the implementation directly, with no second
+rem argument, so the upward search for Tools\Luban is what has to find the conf.
+setlocal EnableDelayedExpansion
+if exist "!CONTEXTMENU_OUT!" rmdir /s /q "!CONTEXTMENU_OUT!"
+call "%~dp0..\contextmenu\run_luban_context_menu_data.bat" "!EXAMPLE_ROOT!\DataTables\%~1" >nul 2>&1
+if errorlevel 1 (
+  echo        [standalone %~1] export returned a failure
+  endlocal & set /a RC_FAILED+=1
+  exit /b 0
+)
+set RC_N=0
+for /f %%N in ('dir /b /s "!CONTEXTMENU_OUT!\*.json" 2^>nul ^| find /c /v ""') do set RC_N=%%N
+if "!RC_N!"=="0" (
+  echo        [standalone %~1] produced no files
+  endlocal & set /a RC_FAILED+=1
+  exit /b 0
+)
+endlocal & set /a RC_TOTAL+=%RC_N%
+exit /b 0
+
+:RightClick
+rem %1 = folder under DataTables. Exporting it must succeed AND produce files.
+setlocal EnableDelayedExpansion
+set "FOLDER=%~1"
+if exist "!CONTEXTMENU_OUT!" rmdir /s /q "!CONTEXTMENU_OUT!"
+call "%~dp0..\contextmenu\menu_entry_data.bat" "!EXAMPLE_ROOT!\DataTables\!FOLDER!" >nul 2>&1
+if errorlevel 1 (
+  echo        [right-click !FOLDER!] export returned a failure
+  endlocal & set /a RC_FAILED+=1
+  exit /b 0
+)
+set RC_N=0
+for /f %%N in ('dir /b /s "!CONTEXTMENU_OUT!\*.json" 2^>nul ^| find /c /v ""') do set RC_N=%%N
+if "!RC_N!"=="0" (
+  echo        [right-click !FOLDER!] produced no files
+  endlocal & set /a RC_FAILED+=1
+  exit /b 0
+)
+endlocal & set /a RC_TOTAL+=%RC_N%
+exit /b 0
+
 :ExpectFail
 rem %1 conf base name under negatives_hard, %2 required ASCII fragment, %3 label
 rem Passing is a NON-ZERO exit plus that fragment in the log. Checking only the

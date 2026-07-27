@@ -173,6 +173,11 @@ for /f "usebackq tokens=1,* delims==" %%A in (`powershell -NoProfile -Command ^
   "if ($m) { $m.PSObject.Properties | ForEach-Object { $_.Name + '=' + $_.Value } }"`
 ) do set "OUTDIR_%%A=%%B"
 
+rem Track failures explicitly. Without this the script's exit code is simply
+rem whatever the LAST target left behind: a target failing in the middle while
+rem a later one succeeds would exit 0 and read as a clean export.
+set EXPORT_FAILED=0
+
 pushd "%LUBAN_DIR%"
 for %%t in (%DATA_TARGETS%) do (
   set OUT_ARG=
@@ -192,6 +197,11 @@ for %%t in (%DATA_TARGETS%) do (
   "!LUBAN_EXE!" --conf "!CONF_FILE!" -t %%t -d !DATA_FORMAT! !OUT_ARG! -x cleanUpOutputDir=0 -x outputSaver.!DATA_FORMAT!.cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
   if errorlevel 1 (
     echo Export failed for target %%t
+    echo   If the log above says a referenced table "was not exported", this
+    echo   target's groups exclude the tables you selected, so exporting them
+    echo   for it is not a meaningful operation. List only the targets that
+    echo   actually contain your tables in contextMenu.data.targets.
+    set /a EXPORT_FAILED+=1
   ) else (
     if defined TARGET_OUT (
       echo   [%%t] -^> !TARGET_OUT!
@@ -203,6 +213,11 @@ for %%t in (%DATA_TARGETS%) do (
 popd
 
 echo.
+if not "!EXPORT_FAILED!"=="0" (
+  echo Done with errors: !EXPORT_FAILED! target^(s^) failed. Paths above are relative to %LUBAN_DIR%
+  if not defined LUBAN_NO_PAUSE pause
+  endlocal & exit /b 1
+)
 echo Done. Paths above are relative to %LUBAN_DIR%
 if not defined LUBAN_NO_PAUSE pause
 endlocal

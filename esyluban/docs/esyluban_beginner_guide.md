@@ -586,6 +586,15 @@ runtime\Luban.exe --conf luban.conf -t client --listTables <文件或目录>
 
 未在映射中列出的 target，回落到 `xargs` 里的全局 `outputDataDir`。
 
+> **`targets` 里只列真正含有这些表的 target。** 右键会对列出的每个 target 各导
+> 一遍。如果某个 target 的 `groups` 把你选中的表过滤掉了，这次导出对它就没有
+> 意义 —— 而且往往不是安静地跳过，而是报一句令人费解的
+> 「`ref` 引用的表 `xxx` 没有导出」后失败：被过滤掉的表仍被别的表引用着。
+>
+> 典型的踩法是把一个"只给负例/测试用"的 target（本手册示例里的 `test`，绑
+> `group="t"`）也列进去。这类 target 应当只由 `gen.bat -t test` 手动跑，不进
+> 右键菜单。
+
 > 为什么不能在 `xargs` 里写 `client.outputDataDir`：Luban 的 xargs 命名空间
 > 绑定的是 **dataTarget / codeTarget**（`json`、`cs-simple-json`…），不是
 > `targets.name` 的那个 target。写了既不报错也不生效，只会让人误以为已按

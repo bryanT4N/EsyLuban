@@ -169,6 +169,10 @@ if "!OUTPUT_TABLE_ARGS!"=="" (
   exit /b 4
 )
 
+rem Track failures explicitly -- see the note in the data script: without a
+rem counter the exit code is just whatever the LAST combination left behind.
+set GEN_FAILED=0
+
 pushd "%LUBAN_DIR%"
 for %%t in (%TARGET_NAMES%) do (
   for %%c in (!CODE_TARGETS!) do (
@@ -181,12 +185,23 @@ for %%t in (%TARGET_NAMES%) do (
     "!LUBAN_EXE!" --conf "!CONF_FILE!" -t %%t -c %%c -x cleanUpOutputDir=0 -x outputSaver.%%c.cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
     if errorlevel 1 (
       echo Code generation failed for target %%t code target %%c
+      echo   If the log says a referenced table "was not exported", this
+      echo   target's groups exclude the tables you selected. List only the
+      echo   targets that actually contain them in contextMenu.code.targets.
+      set /a GEN_FAILED+=1
     )
   )
 )
 popd
 
 echo.
+if not "!GEN_FAILED!"=="0" (
+  echo Done with errors: !GEN_FAILED! combination^(s^) failed.
+  echo   Generated code went to outputCodeDir, set in:
+  echo   %CONF_FILE%
+  if not defined LUBAN_NO_PAUSE pause
+  endlocal & exit /b 1
+)
 echo Done. Generated code went to outputCodeDir, set in:
 echo   %CONF_FILE%
 if not defined LUBAN_NO_PAUSE pause
