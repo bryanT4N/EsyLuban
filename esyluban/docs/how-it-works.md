@@ -72,6 +72,17 @@ luban.conf + 命令行参数
 
 这三个都是**替换**内置实现，而不是修改它。跟进上游时它们不参与合并冲突。
 
+**替换是彻底的，不是并存。** 以 TableImporter 为例：上游那套「文件名以 `#` 开头
+就自动导表」的 `DefaultTableImporter` 源码原封不动，但它注册的名字同样是
+`default`，被更高 Priority 压过之后**没有第二个名字能选回它** ——
+`tableImporter.name` 只有两个取值有意义：缺省的 `default`（拿到 EsyLuban 的），
+以及 `none`（不导入任何表）；写别的名字会明确报
+`behaviour:xxx type:ITableImporter not exists`。
+
+这是有意的取舍。自包含定义覆盖了 `#xxx` 的全部场景，还多支持三样它不支持的：
+多数据源合表、按 sheet 分别导出、`one` / `list` 模式。两套发现方式并存，只会让
+「这张表为什么被导出」多一个需要排查的分支。
+
 ## 不得不改动的上游文件
 
 有三处绕不开扩展点，改动面登记在 [`upstream_boundary.txt`](../upstream_boundary.txt)，

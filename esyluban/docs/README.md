@@ -8,7 +8,10 @@
 |---|---|
 | 第一次填表，不知道从哪下手 | [写一张表](writing-tables.md) |
 | 填了但导不出来，报了错 | [出错了怎么办](troubleshooting.md) |
-| 想写列表、嵌套结构、纵向表 | [表格式参考](table-format.md) |
+| 一个字段要填一串东西：列表、字典、嵌套结构 | [填复杂结构](filling-structures.md) |
+| 每种类型字段都不一样（技能、buff、AI） | [填复杂结构 · 多态](filling-structures.md) |
+| 表太大要拆文件、数据是工具生成的 | [数据从哪来](data-sources.md) |
+| 类型怎么写、有哪些校验器 | [表格式参考](table-format.md) |
 
 策划只需要上面三份。下面的都是程序员配环境用的。
 
@@ -17,10 +20,15 @@
 | 我想…… | 读这份 |
 |---|---|
 | 把 EsyLuban 装进我的工程 | [接入你的项目](setup.md) |
+| **客户端和服务端要不同字段** | [常见需求怎么配](recipes.md) |
+| **产物按模块分到不同目录** | [常见需求怎么配](recipes.md) |
+| **做多语言，按语言分目录出包** | [常见需求怎么配](recipes.md) |
+| **测试数据不进正式包** | [常见需求怎么配](recipes.md) |
+| **把校验接进提交流程 / CI** | [常见需求怎么配](recipes.md) |
 | 弄清楚 `luban.conf` 每一项在做什么 | [配置参考](configuration.md) |
-| 决定导出什么格式、放到哪个目录 | [目标与输出](targets-and-output.md) |
+| 决定导出什么格式、格式怎么配套 | [目标与输出](targets-and-output.md) |
 | 配右键菜单，或者它不工作 | [右键菜单](context-menu.md) |
-| 做多语言 | [本地化](localization.md) |
+| 本地化的更多细节 | [本地化](localization.md) |
 | 想知道从 Excel 到产物中间发生了什么 | [它是怎么工作的](how-it-works.md) |
 | 改 EsyLuban 本身、提 PR | [参与开发](contributing.md) |
 

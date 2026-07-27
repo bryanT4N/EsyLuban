@@ -140,23 +140,8 @@ Excel 里可空 bean 的 `$type` 列写 `null` 表示空，写 `{}` 或该 bean 
 | `set,<T>` | 元素不能是容器，否则报 `set的元素不支持容器类型` |
 | `map,<K>,<V>` | 键必须是非容器类型 |
 
-一个单元格里填多个值时要挂 `#sep=`。map 在单元格里是**键值交替**排列的：
-
-```
-##var   nums#sep=,   props#sep=,          innerList#sep=,
-##type  list,int     map,int,string       list,matrix.InnerBean
-数据    1,2,3        1,apple,2,banana     1:Alpha,2:Beta
-```
-
-最后一列里 `:` 是 `InnerBean` 自己的分隔符（在 `__beans__.xlsx` 的 `sep` 列上定义），
-外层 `,` 才是这个 list 的分隔符。多层容器逐层写分隔符：
-
-```
-(list#sep=|),(list#sep=,),int        数据：1,2|3,4,5
-(map#sep=-|),int,(list#sep=,),int    数据：1-1,2,3|2-2,4,6
-```
-
-分隔符本身要转义时前面加 `\`：`(list#sep=\#),int`。
+容器的值怎么填进表格（一格用分隔符、占多格、还是跨多行），
+见 → **[填复杂结构](filling-structures.md)**。
 
 ### 枚举与 flags
 
@@ -390,7 +375,7 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 | `index` | 见下 |
 | `mode` | `map` / `list` / `one`，其它值报 `Invalid mode: X. Expected: map, list, or one` |
 | `read_schema_from_file` | `true` 表示结构来自本表的 `##var`/`##type` 行。缺省 `false` |
-| `input` | 数据源，见下一节。逗号分隔可以并列多个 |
+| `input` | 数据从哪来。缺省是本 sheet 自己，见[数据源](data-sources.md) |
 | `output` | 覆盖默认输出文件名，见下面「`output` 这一格能写什么」 |
 | `group` | 逗号或分号分隔。留空时，是否导出取决于当前 target 的 group 里有没有被标记为默认的组 |
 | `comment` | 注释，进生成代码 |
@@ -412,35 +397,13 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 
 ---
 
-## `input` 的定位语法
+## `input`：数据从哪来
 
 不写 `input` 时它指向声明它的那个 sheet 自己，**大多数表用不到它**。
 一个 Excel 里放多张表也不需要写 —— 每个 sheet 各写各的 A1 / B1，逐个被识别。
 
-只有一种情况需要写：**数据不在声明它的这个 sheet 里**。
-
-| 写法 | 含义 |
-|---|---|
-| `input="test/item.xlsx"` | 读该文件的**全部** sheet，合并成一张表 |
-| `input="ai/behaviortrees"` | 读整个目录下的所有数据文件 |
-| `input="a.csv,b.csv,c.csv"` | 逗号分隔多个数据源，合成一张表 |
-| `input="table3@test/composite_tables.json"` | 该 json 里名为 `table3` 的那一段，**当作一条记录**读 |
-| `input="*table1@test/composite_tables.json"` | 同上，但该段是一个**记录数组** |
-| `input="*@test/composite_tables2.json"` | 整个 json 根就是记录数组 |
-
-**注意 `@` 左边是 sheet / 字段名，右边才是文件路径**，与常见的「文件#锚点」相反。
-读法是「逻辑上是这张表，物理上躺在那个文件里」，所以逻辑位置占据路径的一段，
-写在左边。这是上游的既有约定（`FileUtil.SplitFileAndSheetName`），
-`luban.conf` 的 `schemaFiles` 与 l10n 配置用的是同一套写法。
-
-第一种最容易与缺省混淆：**只写文件路径（不带 `@sheet`）表示读该文件的所有
-sheet**，而缺省只读声明它的那一个。多态表常用它把 `item` / `equipment` /
-`decorator` 几个 sheet 合成一张表，这种 `input` 不能省。
-
-**读一条还是读一组，由 `*` 前缀决定，不由表的 `mode` 决定。** Excel 文件永远
-按「一组」读；非 Excel 文件带 `*` 前缀才是一组，不带就是单独一条 ——
-所以 `mode="one"` 的表配 json 数据源时，`input` 写不带 `*` 的那一种。
-`*` 只管这件事，不参与定位：字段路径支持 `.` 逐级下钻（`*a.b.c@file.json`）。
+需要指向别处时（另一个文件、一整个目录、json 里的某一段、多处合成一张表），
+写法与坑都在 → **[数据源](data-sources.md)**。
 
 ---
 

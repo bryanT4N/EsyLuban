@@ -228,6 +228,7 @@ tableImporter 默认扫 `dataDir` 全目录，自动跳过：
 | | `--timeZone` | datetime 的时区 |
 | | `--validationFailAsError` | 有校验失败就以退出码 1 结束 |
 | | `--customTemplateDir` | 自定义模板目录 |
+| `-w` | `--watchDir` | 盯住一个目录，文件一变就重新导出。**开发期挂在后台很省事** —— 策划存盘即可在游戏里看到，不必每次去点右键 |
 | | `--listTables` | 列出指定路径下的表全名后退出，不编译不校验 |
 | `-s` | `--schemaCollector` | schema 收集器 |
 | `-p` | `--pipeline` | 流水线 |

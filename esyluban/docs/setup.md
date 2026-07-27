@@ -174,9 +174,29 @@ Tools\Luban\gen.bat -t client -d json
 
 ---
 
+## 项目里已经在用 Luban 了怎么办
+
+**不用一次性迁移，两种写法可以共存。**
+
+已有的 `__tables__.xlsx` 继续有效，新建的表用 A1/B1 自包含写法，同一个工程里
+混着来没有问题。老表什么时候改、改不改，由你决定。
+
+有一件事需要先确认：**EsyLuban 的产物与上游逐字节相同**，所以换过来不需要改
+运行时加载代码，也不会有数据差异。这一点由回归守着 —— `baselines/core/` 是上游
+在未迁移语料上跑出来的产物，每次都拿它逐文件比对 SHA256。
+
+一处会变的行为：上游那套「文件名以 `#` 开头就自动导表」的约定在 EsyLuban 里
+不生效，原因见[数据从哪来](data-sources.md)。用过这套约定的表要补上 A1/B1。
+
+> 存量表暂无自动迁移工具。`scripts/authoring/migrate_xlsx.py` 仍是禁用状态，
+> 理由写在它的文件头里。
+
+---
+
 ## 接下来
 
 - 装右键菜单，把导表入口交给策划 → [右键菜单](context-menu.md)
-- 加 target、分 group、按 target 分目录 → [目标与输出](targets-and-output.md)
+- 客户端服务端分字段、产物分目录、测试数据不进包 → [常见需求怎么配](recipes.md)
+- 格式怎么配套、target 是三个不同的东西 → [目标与输出](targets-and-output.md)
 - `xargs` 里其余的键都在做什么 → [配置参考](configuration.md)
 - 让策划开始填表 → [写一张表](writing-tables.md)

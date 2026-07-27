@@ -92,7 +92,26 @@ l10n.convertTextKeyToValue=1
 ## 一个容易漏掉的点
 
 `languageFieldName` 是**导出时**的参数，不是表里的属性。同一份表配不同的语言列
-重导，就得到不同语言的产物 —— 它们的文件名是一样的，所以要么分别导到不同目录，
-要么导完就搬走。
+重导，就得到不同语言的产物 —— 它们的文件名是一样的，所以必须分别导到不同目录。
 
-按 target 分目录的做法见 [目标与输出](targets-and-output.md)。
+## 按语言分目录出包
+
+每种语言导一次，换 `languageFieldName`，换 `outputDataDir`：
+
+```bat
+gen.bat -t client -d json -c cs-simple-json ^
+  -x l10n.textFile.languageFieldName=zh ^
+  -x outputDataDir=..\Client\Conf\zh
+
+gen.bat -t client -d json ^
+  -x l10n.textFile.languageFieldName=en ^
+  -x outputDataDir=..\Client\Conf\en
+```
+
+同一张业务表，`zh` 目录里是「长剑」，`en` 目录里是「Sword」。发行时按语言挑一个
+目录打进包，运行时不需要任何查表逻辑。
+
+**代码只生成一次** —— 各语言的数据结构完全相同，所以第二条命令不带 `-c`。
+
+这套做法要配 `convertTextKeyToValue=1`；用 `=0` 的话产物里是 key，本来就与语言
+无关，不需要分目录。

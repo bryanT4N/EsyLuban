@@ -18,9 +18,20 @@ namespace Luban.Schema.Builtin;
 /// <b>为什么以 Priority 覆盖 "default"</b>：自包含表定义是本 fork 的唯一形态，
 /// 不是可选项。借 Luban 既有的 behaviour 优先级机制接管默认 importer 之后，
 /// 使用者无需在 luban.conf 里写 <c>tableImporter.name</c> —— 少一个不该暴露的旋钮，
-/// 也就少一处需要在各工程间同步的配置。上游按 <c>#xxx</c> 文件名模式导表的
-/// DefaultTableImporter 未被改动，显式配置 <c>tableImporter.name=default</c> 以外的
-/// 名字仍可回到上游行为。
+/// 也就少一处需要在各工程间同步的配置。
+/// </para>
+///
+/// <para>
+/// <b>代价：上游的 <c>#xxx</c> 文件名自动导表不再可达。</b> 上游 DefaultTableImporter
+/// 的源码未被改动，但它注册的名字同样是 "default"，本类以更高 Priority 压过它，
+/// 而 Luban 按「名字 + 优先级」选行为，没有第二个名字能选回上游那个。实测：
+/// <c>tableImporter.name=default</c> 得到本类；不存在的名字明确报
+/// <c>behaviour:xxx type:ITableImporter not exists</c>；<c>none</c> 是真实存在的空
+/// importer，导入零张表。
+///
+/// 这是有意的取舍 —— 两种发现方式并存会让「这张表为什么被导出」多一个分支，
+/// 而自包含定义本就覆盖了 <c>#xxx</c> 的全部场景，还多支持多数据源、按 sheet
+/// 导出与 one/list 模式（上游自动导表这三样都不支持）。
 /// </para>
 ///
 /// <para>
