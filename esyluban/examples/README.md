@@ -23,9 +23,10 @@
 
 ## 我们的 XML 与上游差在哪（完整清单）
 
-`Defines/*.xml` 没有经过迁移脚本 —— `migrate_xlsx.py` 只处理 `xlsx/xls/xlsm/csv`。
-所以这 7 个文件能跟上游逐字节对，差异是可以穷举的，不必靠信任。归一化掉格式噪音
-后，**全部非 `<table>` 差异只有两类**：
+`Defines/` 下有 8 个 XML，其中 7 个来自上游（`matrix.xml` 是本仓库自建的，见下节）。
+这 7 个没有经过迁移脚本 —— `migrate_xlsx.py` 只处理 `xlsx/xls/xlsm/csv` —— 所以能跟
+上游逐字节对，差异是可以穷举的，不必靠信任。归一化掉格式噪音后，
+**全部非 `<table>` 差异只有两类**：
 
 | 类别 | 数量 | 性质 |
 |---|---|---|
@@ -144,11 +145,12 @@ git -C luban_examples checkout 879f5c5
 
 ## 哪些是 EsyLuban 自建的
 
-`dev/DataTables` 约 139 个文件中，自建的只有 8 个：
+`dev/DataTables` 约 140 个文件中，自建的只有 9 个：
 
 | 路径 | 用途 |
 |---|---|
 | `matrix/`（3 个） | 功能覆盖矩阵测例，含 `group_fields.xlsx`：字段级 group 的三种写法及优先级 |
+| `Defines/matrix.xml` | **唯一一份自建的 schema XML**。声明带 group 的 bean / enum —— 上游语料里这两种写法是零使用，没有它就测不到类型级过滤。故意不被任何表引用：类型级 group 在 `CollectRefTypes` 里判定，与有没有表指向它无关 |
 | `negatives/`（2 个） | 故意失败的负例（regex / range / set / not-default / path） |
 | `Assets/`（1 个） | path 校验用的占位资源 |
 | `test/inline_defs.xlsx` | 内联 `__enums__` / `__beans__` 子表测例 |

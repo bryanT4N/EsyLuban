@@ -1,0 +1,16 @@
+<module name="matrix">
+	<enum name="EGroupClient" group="c">
+		<var name="A" value="1" />
+		<var name="B" value="2" />
+	</enum>
+	<enum name="EGroupServer" group="s">
+		<var name="X" value="1" />
+		<var name="Y" value="2" />
+	</enum>
+	<bean name="GroupClientBean" group="c">
+		<var name="v" type="int" />
+	</bean>
+	<bean name="GroupServerBean" group="s">
+		<var name="v" type="int" />
+	</bean>
+</module>

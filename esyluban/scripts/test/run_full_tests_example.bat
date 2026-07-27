@@ -42,6 +42,8 @@ rem Single-group exports. Not baselined -- the assertion is about which fields
 rem survive filtering, which a baseline would state far less legibly.
 set OUTPUT_DIR_GROUP_C=%EXAMPLE_ROOT%\TestOutputs\group_client
 set OUTPUT_DIR_GROUP_S=%EXAMPLE_ROOT%\TestOutputs\group_server
+set CODE_DIR_GROUP_C=%EXAMPLE_ROOT%\TestOutputs\group_code_client
+set CODE_DIR_GROUP_S=%EXAMPLE_ROOT%\TestOutputs\group_code_server
 set BASELINE_DIR_XML=%ESY_ROOT%\baselines\xml
 set BASELINE_DIR_CODE=%ESY_ROOT%\baselines\code_cs
 set BASELINE_DIR_L10N=%ESY_ROOT%\baselines\json_l10n
@@ -239,22 +241,29 @@ if errorlevel 1 (
   set /a FAILED+=1
 )
 
-rem Every data baseline above comes from "-t all", which binds c/s/e -- so it
-rem filters nothing but group "t", and field-level group filtering was never
-rem compared against anything. Export two single-group targets and look inside.
+rem Every baseline above comes from "-t all", which binds c/s/e -- so it filters
+rem nothing but group "t", and group's actual job was never compared against
+rem anything. Export two single-group targets, data AND code, and look inside.
+rem
+rem Code as well as data, because group shapes both and they are separate code
+rem paths: the data side drops fields from the json, the code side drops whole
+rem table classes and the matching members from the bean classes.
 echo [EXAMPLE] generate single-group outputs -- via gen.bat
-call "!LUBAN_DIR!\gen.bat" -t client -d json -x outputDataDir="!OUTPUT_DIR_GROUP_C!"
+call "!LUBAN_DIR!\gen.bat" -t client -d json -c cs-simple-json ^
+  -x outputDataDir="!OUTPUT_DIR_GROUP_C!" -x outputCodeDir="!CODE_DIR_GROUP_C!"
 if errorlevel 1 (
   echo [FAIL] client export returned !errorlevel!
   set /a FAILED+=1
 )
-call "!LUBAN_DIR!\gen.bat" -t server -d json -x outputDataDir="!OUTPUT_DIR_GROUP_S!"
+call "!LUBAN_DIR!\gen.bat" -t server -d json -c cs-simple-json ^
+  -x outputDataDir="!OUTPUT_DIR_GROUP_S!" -x outputCodeDir="!CODE_DIR_GROUP_S!"
 if errorlevel 1 (
   echo [FAIL] server export returned !errorlevel!
   set /a FAILED+=1
 )
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0check_group_filtering.ps1" ^
-  "!OUTPUT_DIR_GROUP_C!" "!OUTPUT_DIR_GROUP_S!"
+  "!OUTPUT_DIR_GROUP_C!" "!OUTPUT_DIR_GROUP_S!" ^
+  "!CODE_DIR_GROUP_C!" "!CODE_DIR_GROUP_S!"
 if errorlevel 1 set /a FAILED+=1
 set /a CHECKS+=1
 

@@ -1,161 +1,225 @@
-# Assert that a target's `groups` actually filters FIELDS, not just tables.
+# Assert what `group` actually does, across every level it operates on.
 #
 # WHY THIS EXISTS
 # ---------------
-# Every data baseline in this repo comes from `-t all`, which binds c/s/e. Under
-# that target nothing gets filtered except group "t", so field-level group
-# filtering -- the thing test.DemoGroup exists to demonstrate -- was never
-# compared against anything. The right-click chain does run client/server/editor,
-# but it only counts output files; it never looks inside them.
+# Every baseline in this repo comes from `-t all`, which binds c/s/e. Under that
+# target group filters nothing but the "t" group, so group's real behaviour was
+# never compared against anything. The right-click chain does run client and
+# server, but it only counts output files; it never looks inside them.
 #
-# Net effect: group filtering could have started exporting every field to every
-# target and the whole 17-check regression would have stayed green.
+# Net effect: group filtering could have stopped working entirely -- every table
+# and every field exported to every target -- and the whole regression would
+# still have been green.
 #
-# The corpus makes this checkable without a new baseline set, because
-# test.DemoGroup covers all four cases in one record:
+# WHAT IS COVERED
+# ---------------
+#   table level, both directions   test.TbDemoGroup_C / _S / _E
+#   default:false                  test.TbDemoGroup_T -- group "t" is declared
+#                                  default:false, so it must appear NOWHERE
+#                                  except a target that binds "t" explicitly
+#   field level (XML <var group=>) test.DemoGroup x1..x4
+#   nested bean fields             test.InnerGroup, reached through x5 -- a
+#                                  separate recursion path from top-level fields
+#   field level (##group row)      matrix.TbGroupFields f_row_*
+#   field level (&group= in cell)  matrix.TbGroupFields f_cell_*
+#   precedence between those two   matrix.TbGroupFields f_conflict
+#   ',' vs ';' separator           matrix.TbBasic, declared group="c;s"
+#   generated code                 all of the above again on the code side,
+#                                  which is a different path: it drops whole
+#                                  table classes and bean members, not json keys
+#   <bean group=> / <enum group=>  matrix.xml -- the one define file in this
+#                                  repo that is ours, added because the corpus
+#                                  had zero uses of either. They are referenced
+#                                  by no table on purpose: type-level group is
+#                                  decided in CollectRefTypes, independently of
+#                                  whether anything points at the type
 #
-#   x1  group="c"     client only
-#   x2  group="s"     server only
-#   x3  group="e"     neither (both targets bind a single group)
-#   x4  group="c,s"   both
-#   x5  no group      both -- and it is a nested bean whose OWN fields are
-#                     filtered too (y2 is c, y3 is s), so this covers
-#                     recursion into beans, which is a separate code path.
-#
-# Both directions matter. Asserting only "x1 is present for client" passes just
-# as well when filtering is off entirely; the absence assertions are what
-# actually pin the behaviour down.
+# Both directions matter everywhere. "x1 is present for client" passes just as
+# well when filtering is off entirely; the absence assertions are what pin the
+# behaviour down. Every check below therefore has a matching negative.
 #
 # NOTE: keep this file ASCII-only. Windows PowerShell 5.1 reads .ps1 using the
 # system ANSI code page unless the file has a UTF-8 BOM, so non-ASCII comments
 # break the parser outright.
 #
-# Usage: check_group_filtering.ps1 <clientOutputDir> <serverOutputDir>
+# Usage: check_group_filtering.ps1 <clientData> <serverData> <clientCode> <serverCode>
 
 param(
     [Parameter(Mandatory = $true)][string]$ClientDir,
-    [Parameter(Mandatory = $true)][string]$ServerDir
+    [Parameter(Mandatory = $true)][string]$ServerDir,
+    [Parameter(Mandatory = $true)][string]$ClientCodeDir,
+    [Parameter(Mandatory = $true)][string]$ServerCodeDir
 )
 
 $ErrorActionPreference = 'Stop'
 $failed = 0
 
-# target -> dir, fields that must appear, fields that must NOT appear.
-#
-# GroupFields* covers matrix/group_fields.xlsx, which exercises the two
-# field-level spellings the corpus never used before -- a `##group` row with
-# actual values (all 51 in the corpus were bare markers), and `&group=` inside
-# the `##type` cell (zero uses) -- plus the documented precedence between them.
-#
-# f_conflict is the precedence case: its `##group` row says c while its type
-# cell says s. The docs say the row wins, so it must land in client and NOT in
-# server. That assertion is only meaningful because f_cell_s proves the cell
-# spelling works on its own; otherwise "row wins" and "cell ignored entirely"
-# would look identical.
+function Fail($title, $lines) {
+    Write-Host "[FAIL] $title"
+    foreach ($l in $lines) { Write-Host "       $l" }
+    $script:failed++
+}
+
 $cases = @(
-    @{ Name = 'client'; Dir = $ClientDir
+    @{ Name = 'client'; Dir = $ClientDir; CodeDir = $ClientCodeDir
+       # test.DemoGroup: x1=c x2=s x3=e x4=c,s x5=(none, nested bean)
        Present = @('id', 'x1', 'x4', 'x5'); Absent = @('x2', 'x3')
+       # test.InnerGroup: y1=(none) y2=c y3=s y4=c,s
        BeanPresent = @('y1', 'y2', 'y4'); BeanAbsent = @('y3')
        GroupFieldsPresent = @('id', 'f_none', 'f_row_c', 'f_cell_c', 'f_conflict')
-       GroupFieldsAbsent  = @('f_row_s', 'f_cell_s') },
-    @{ Name = 'server'; Dir = $ServerDir
+       GroupFieldsAbsent  = @('f_row_s', 'f_cell_s')
+       TablesPresent = @('test_tbdemogroup_c.json')
+       TablesAbsent  = @('test_tbdemogroup_s.json', 'test_tbdemogroup_e.json',
+                         'test_tbdemogroup_t.json')
+       CodePresent = @('TbDemoGroup_C.cs', 'GroupClientBean.cs', 'EGroupClient.cs')
+       CodeAbsent  = @('TbDemoGroup_S.cs', 'TbDemoGroup_E.cs', 'TbDemoGroup_T.cs',
+                       'GroupServerBean.cs', 'EGroupServer.cs')
+       MemberPresent = @('X1'); MemberAbsent = @('X2', 'X3') },
+
+    @{ Name = 'server'; Dir = $ServerDir; CodeDir = $ServerCodeDir
        Present = @('id', 'x2', 'x4', 'x5'); Absent = @('x1', 'x3')
        BeanPresent = @('y1', 'y3', 'y4'); BeanAbsent = @('y2')
        GroupFieldsPresent = @('id', 'f_none', 'f_row_s', 'f_cell_s')
-       GroupFieldsAbsent  = @('f_row_c', 'f_cell_c', 'f_conflict') }
+       GroupFieldsAbsent  = @('f_row_c', 'f_cell_c', 'f_conflict')
+       TablesPresent = @('test_tbdemogroup_s.json')
+       TablesAbsent  = @('test_tbdemogroup_c.json', 'test_tbdemogroup_e.json',
+                         'test_tbdemogroup_t.json')
+       CodePresent = @('TbDemoGroup_S.cs', 'GroupServerBean.cs', 'EGroupServer.cs')
+       CodeAbsent  = @('TbDemoGroup_C.cs', 'TbDemoGroup_E.cs', 'TbDemoGroup_T.cs',
+                       'GroupClientBean.cs', 'EGroupClient.cs')
+       MemberPresent = @('X2'); MemberAbsent = @('X1', 'X3') }
 )
 
-foreach ($c in $cases) {
-    $path = Join-Path $c.Dir 'test_tbdemogroup.json'
-    if (-not (Test-Path $path)) {
-        Write-Host "[FAIL] group filtering: $($c.Name) produced no test_tbdemogroup.json"
-        Write-Host "       looked in: $($c.Dir)"
-        $failed++
-        continue
-    }
-
+function KeysOf($path) {
+    if (-not (Test-Path $path)) { return $null }
     $records = Get-Content $path -Raw | ConvertFrom-Json
-    if (-not $records -or $records.Count -eq 0) {
-        Write-Host "[FAIL] group filtering: $($c.Name) exported an empty table"
-        $failed++
-        continue
-    }
-
-    $top = @($records[0].PSObject.Properties.Name)
-    $bean = @()
-    if ($records[0].x5) { $bean = @($records[0].x5.PSObject.Properties.Name) }
-
-    $problems = @()
-    foreach ($f in $c.Present)     { if ($top -notcontains $f)   { $problems += "missing top-level '$f'" } }
-    foreach ($f in $c.Absent)      { if ($top -contains $f)      { $problems += "leaked top-level '$f'" } }
-    foreach ($f in $c.BeanPresent) { if ($bean -notcontains $f)  { $problems += "missing nested '$f'" } }
-    foreach ($f in $c.BeanAbsent)  { if ($bean -contains $f)     { $problems += "leaked nested '$f'" } }
-
-    if ($problems.Count -eq 0) {
-        Write-Host "[ok]   group filtering: $($c.Name) -> $($top -join ',') / x5{$($bean -join ',')}"
-    } else {
-        Write-Host "[FAIL] group filtering: $($c.Name)"
-        foreach ($p in $problems) { Write-Host "       $p" }
-        Write-Host "       got top-level: $($top -join ',')"
-        Write-Host "       got nested x5: $($bean -join ',')"
-        $failed++
-    }
+    if (-not $records -or $records.Count -eq 0) { return @() }
+    return @($records[0].PSObject.Properties.Name)
 }
 
 foreach ($c in $cases) {
-    $path = Join-Path $c.Dir 'matrix_tbgroupfields.json'
-    if (-not (Test-Path $path)) {
-        Write-Host "[FAIL] field-level group: $($c.Name) produced no matrix_tbgroupfields.json"
-        $failed++
-        continue
-    }
-    $records = Get-Content $path -Raw | ConvertFrom-Json
-    $got = @($records[0].PSObject.Properties.Name)
+    $n = $c.Name
 
+    # --- 1. table level -----------------------------------------------------
     $problems = @()
-    foreach ($f in $c.GroupFieldsPresent) { if ($got -notcontains $f) { $problems += "missing '$f'" } }
-    foreach ($f in $c.GroupFieldsAbsent)  { if ($got -contains $f)    { $problems += "leaked '$f'" } }
-
+    foreach ($f in $c.TablesPresent) {
+        if (-not (Test-Path (Join-Path $c.Dir $f))) { $problems += "missing table $f" }
+    }
+    foreach ($f in $c.TablesAbsent) {
+        if (Test-Path (Join-Path $c.Dir $f)) { $problems += "leaked table $f" }
+    }
     if ($problems.Count -eq 0) {
-        Write-Host "[ok]   field-level group: $($c.Name) -> $($got -join ',')"
+        Write-Host "[ok]   table-level group: $n"
     } else {
-        Write-Host "[FAIL] field-level group: $($c.Name)"
-        foreach ($p in $problems) { Write-Host "       $p" }
-        if ($problems -match "f_conflict") {
-            Write-Host "       f_conflict is the precedence case: its ##group row says c,"
-            Write-Host "       its type cell says s. The row is documented to win."
+        # Only explain default:false when that is the check that actually broke;
+        # printing it next to an unrelated leak sends the reader after the wrong
+        # thing.
+        $extra = @()
+        if ("$problems" -match 'tbdemogroup_t') {
+            $extra += "TbDemoGroup_T carries group 't', declared default:false in luban.conf,"
+            $extra += "so it must not appear for any target that does not bind 't' by name."
         }
-        Write-Host "       got: $($got -join ',')"
-        $failed++
+        Fail "table-level group: $n" ($problems + $extra)
+    }
+
+    # --- 2. field level, XML <var group=> + nested bean ----------------------
+    $top = KeysOf (Join-Path $c.Dir 'test_tbdemogroup.json')
+    if ($null -eq $top) {
+        Fail "field-level group: $n" @("no test_tbdemogroup.json in $($c.Dir)")
+    } else {
+        $records = Get-Content (Join-Path $c.Dir 'test_tbdemogroup.json') -Raw | ConvertFrom-Json
+        $bean = @()
+        if ($records[0].x5) { $bean = @($records[0].x5.PSObject.Properties.Name) }
+
+        $problems = @()
+        foreach ($f in $c.Present)     { if ($top -notcontains $f)  { $problems += "missing top-level '$f'" } }
+        foreach ($f in $c.Absent)      { if ($top -contains $f)     { $problems += "leaked top-level '$f'" } }
+        foreach ($f in $c.BeanPresent) { if ($bean -notcontains $f) { $problems += "missing nested '$f'" } }
+        foreach ($f in $c.BeanAbsent)  { if ($bean -contains $f)    { $problems += "leaked nested '$f'" } }
+
+        if ($problems.Count -eq 0) {
+            Write-Host "[ok]   field-level group (XML): $n -> $($top -join ',') / x5{$($bean -join ',')}"
+        } else {
+            Fail "field-level group (XML): $n" ($problems + @(
+                "got top-level: $($top -join ',')", "got nested x5: $($bean -join ',')"))
+        }
+    }
+
+    # --- 3. field level, ##group row vs &group= in the type cell ------------
+    $got = KeysOf (Join-Path $c.Dir 'matrix_tbgroupfields.json')
+    if ($null -eq $got) {
+        Fail "field-level group (Excel): $n" @("no matrix_tbgroupfields.json in $($c.Dir)")
+    } else {
+        $problems = @()
+        foreach ($f in $c.GroupFieldsPresent) { if ($got -notcontains $f) { $problems += "missing '$f'" } }
+        foreach ($f in $c.GroupFieldsAbsent)  { if ($got -contains $f)    { $problems += "leaked '$f'" } }
+        if ($problems.Count -eq 0) {
+            Write-Host "[ok]   field-level group (Excel): $n -> $($got -join ',')"
+        } else {
+            $extra = @("got: $($got -join ',')")
+            if ("$problems" -match 'f_conflict') {
+                $extra += "f_conflict is the precedence case: its ##group row says c,"
+                $extra += "its type cell says s. The row is documented to win."
+            }
+            Fail "field-level group (Excel): $n" ($problems + $extra)
+        }
+    }
+
+    # --- 4. the same thing on the generated-code side -----------------------
+    if (-not (Test-Path $c.CodeDir)) {
+        Fail "group in generated code: $n" @("no code output at $($c.CodeDir)")
+    } else {
+        $files = @(Get-ChildItem $c.CodeDir -Recurse -Filter *.cs | ForEach-Object { $_.Name })
+        $problems = @()
+        foreach ($f in $c.CodePresent) { if ($files -notcontains $f) { $problems += "missing class file $f" } }
+        foreach ($f in $c.CodeAbsent)  { if ($files -contains $f)    { $problems += "leaked class file $f" } }
+
+        # Members of the bean class follow the field-level groups too.
+        $beanFile = Join-Path $c.CodeDir 'test\DemoGroup.cs'
+        if (-not (Test-Path $beanFile)) {
+            $problems += "missing test\DemoGroup.cs"
+        } else {
+            $src = [System.IO.File]::ReadAllText($beanFile, [System.Text.Encoding]::UTF8)
+            foreach ($m in $c.MemberPresent) {
+                if ($src -notmatch "readonly\s+\w+\s+$m;") { $problems += "missing member $m" }
+            }
+            foreach ($m in $c.MemberAbsent) {
+                if ($src -match "readonly\s+\w+\s+$m;") { $problems += "leaked member $m" }
+            }
+        }
+
+        if ($problems.Count -eq 0) {
+            Write-Host "[ok]   group in generated code: $n"
+        } else {
+            Fail "group in generated code: $n" $problems
+        }
     }
 }
 
-# matrix.TbBasic carries group="c;s" -- a SEMICOLON, on purpose.
+# --- 5. ';' is a group separator, same as ',' -------------------------------
 #
-# B1's group= replaces the XML <table group="..."> attribute, and the XML side
-# has always split on both ',' and ';'. B1 split on ',' only, so group="c;s"
-# became one group literally named "c;s", which matches no target: the table
-# vanished from every export without a word. The docs meanwhile described the
-# XML behaviour, so following them produced a silently missing table.
+# matrix.TbBasic carries group="c;s" on purpose. Upstream splits group values on
+# both ',' and ';' (SchemaLoaderUtil.CreateGroups), and B1's group= replaces the
+# very attribute that goes through it. B1 once had its own copy that split on
+# ',' alone, so group="c;s" became a single group named literally "c;s" -- it
+# matched no target and the table silently exported nowhere.
 #
-# Asserting it appears under BOTH single-group targets pins the separator down.
-# A regression here shows up as this table missing, not as a wrong field list.
+# Upstream's own corpus has no ';' in any group value, which is why nothing ever
+# exercised this. The detection was never missing; the data was.
 foreach ($c in $cases) {
-    $path = Join-Path $c.Dir 'matrix_tbbasic.json'
-    if (Test-Path $path) {
-        Write-Host "[ok]   semicolon group: matrix.TbBasic present for $($c.Name)"
+    if (Test-Path (Join-Path $c.Dir 'matrix_tbbasic.json')) {
+        Write-Host "[ok]   ';' separator: matrix.TbBasic present for $($c.Name)"
     } else {
-        Write-Host "[FAIL] semicolon group: matrix.TbBasic missing for $($c.Name)"
-        Write-Host "       Its B1 says group=`"c;s`". If ';' stopped being a separator,"
-        Write-Host "       the group is now one name -- `"c;s`" -- matching no target."
-        $failed++
+        Fail "';' separator: matrix.TbBasic missing for $($c.Name)" @(
+            'Its B1 says group="c;s". If ";" stopped being a separator, that is',
+            'one group named "c;s", which matches no target.')
     }
 }
 
 if ($failed -gt 0) {
     Write-Host ""
-    Write-Host "[FAIL] group filtering: $failed problem(s)."
+    Write-Host "[FAIL] group: $failed check(s) wrong."
     exit 1
 }
-Write-Host "[OK] group filtering: fields, nested bean fields, and ';' separator all correct."
+Write-Host "[OK] group: table level, field level, nested beans, precedence, ';' and generated code all correct."
 exit 0

@@ -76,22 +76,38 @@ foreach ($root in $roots) {
     }
 }
 
-# Third: the two copies must stay byte-identical. Get-FileHash is absent on the
-# PowerShell builds this repo targets, hence the raw SHA256.
+# Third: the upstream-derived defines must stay byte-identical between the two
+# projects. Named explicitly rather than globbed: dev also carries test-only
+# schema (matrix.xml, which declares grouped beans/enums for the group guard)
+# that release has no reason to ship, and a glob would either fail on those or
+# quietly stop covering a file that got renamed.
+#
+# Get-FileHash is absent on the PowerShell builds this repo targets, hence the
+# raw SHA256.
+$shared = @('ai.xml', 'builtin.xml', 'common.xml', 'item.xml',
+            'l10n.xml', 'tag.xml', 'test.xml')
+
 $sha = [System.Security.Cryptography.SHA256]::Create()
 try {
-    foreach ($f in (Get-ChildItem $roots[0] -Filter *.xml)) {
-        $other = Join-Path $roots[1] $f.Name
+    foreach ($name in $shared) {
+        $f = Get-Item (Join-Path $roots[0] $name) -ErrorAction SilentlyContinue
+        if (-not $f) {
+            Write-Host "[FAIL] dev/${name}: missing -- it is one of the seven upstream defines"
+            $failed++
+            continue
+        }
+        $other = Join-Path $roots[1] $name
         if (-not (Test-Path $other)) {
-            Write-Host "[FAIL] release/$($f.Name): missing, but dev has it"
+            Write-Host "[FAIL] release/${name}: missing, but dev has it"
             $failed++
             continue
         }
         $a = [BitConverter]::ToString($sha.ComputeHash([System.IO.File]::ReadAllBytes($f.FullName)))
         $b = [BitConverter]::ToString($sha.ComputeHash([System.IO.File]::ReadAllBytes($other)))
         if ($a -ne $b) {
-            Write-Host "[FAIL] $($f.Name): dev and release copies differ"
-            Write-Host "       They are identical by intent -- edit one, copy to the other."
+            Write-Host "[FAIL] ${name}: dev and release copies differ"
+            Write-Host "       The seven upstream defines are identical by intent --"
+            Write-Host "       edit one, copy to the other."
             $failed++
         }
     }
@@ -104,5 +120,5 @@ if ($failed -gt 0) {
     Write-Host "[FAIL] Defines XML check: $failed problem(s)."
     exit 1
 }
-Write-Host "[OK] Defines XML comments intact, no live table declarations."
+Write-Host "[OK] Defines XML: comments intact, no live table declarations, upstream seven in sync."
 exit 0
