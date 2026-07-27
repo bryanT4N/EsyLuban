@@ -1,6 +1,6 @@
 # 参与开发
 
-**给谁看**：想改 EsyLuban 本身的人。只是想用它的话，去 [文档索引](esyluban/docs/README.md)。
+**给谁看**：想改 EsyLuban 本身的人。只是想用它的话，去 [文档索引](README.md)。
 
 **读完你能做什么**：把仓库跑起来、知道改动会被哪些东西检查、知道怎么加一条检查。
 
@@ -87,7 +87,7 @@ xml / code_cs / json_l10n 三套目前需要手工同步，这是已知缺口。
 
 | 守卫 | 它守住什么 |
 |---|---|
-| `check_upstream_boundary.ps1` | 对上游的改动面必须与 [`upstream_boundary.txt`](esyluban/upstream_boundary.txt) 完全一致 |
+| `check_upstream_boundary.ps1` | 对上游的改动面必须与 [`upstream_boundary.txt`](../upstream_boundary.txt) 完全一致 |
 | `check_tool_copies.ps1` | 三份 `gen.bat`/`check.bat` 副本必须一致（发布给用户的是 `templates/` 那份） |
 | `check_doc_facts.ps1` | 文档里可被源码证否的说法：target 数量、右键的实现机制、安装器行为、模板可用性、引用的路径是否存在 |
 | `check_gitignore_traps.ps1` | 自有源文件不被 `.gitignore` 静默吞掉 |
@@ -117,7 +117,7 @@ xml / code_cs / json_l10n 三套目前需要手工同步，这是已知缺口。
 
 ## 文档
 
-文档有自己的规矩，写在 [文档索引](esyluban/docs/README.md) 末尾。核心一条：
+文档有自己的规矩，写在 [文档索引](README.md) 末尾。核心一条：
 **能被源码证否的说法，都要由回归守着**。
 
-修复历史写进 [CHANGELOG](CHANGELOG.md)，不写进说明书。
+修复历史写进 [CHANGELOG](../../CHANGELOG.md)，不写进说明书。

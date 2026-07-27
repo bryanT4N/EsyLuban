@@ -22,12 +22,13 @@
 | 配右键菜单，或者它不工作 | [右键菜单](context-menu.md) |
 | 做多语言 | [本地化](localization.md) |
 | 想知道从 Excel 到产物中间发生了什么 | [它是怎么工作的](how-it-works.md) |
+| 改 EsyLuban 本身、提 PR | [参与开发](contributing.md) |
 
 ## 我在评估要不要用它
 
 - 它是什么、和上游 Luban 什么关系 → [仓库首页](../../README.md)
 - 改了上游哪些文件、为什么绕不开 → [上游边界清单](../upstream_boundary.txt)
-- 它可靠吗、怎么验证 → [参与开发](../../CONTRIBUTING.md)
+- 它可靠吗、怎么验证 → [参与开发](contributing.md)
 
 ## 这些文档遵守的几条规矩
 

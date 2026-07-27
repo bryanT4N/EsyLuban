@@ -2,9 +2,8 @@
 
 # EsyLuban
 
-**Let designers export their own spreadsheet from the right-click menu**
+**A game config table exporter built for designers**
 
-[![CI](https://github.com/bryanT4N/EsyLuban/actions/workflows/ci.yml/badge.svg)](https://github.com/bryanT4N/EsyLuban/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg?style=flat-square)](#platform)
 [![based on](https://img.shields.io/badge/based%20on-Luban%204.10.2-informational.svg?style=flat-square)](https://github.com/focus-creative-games/luban)
@@ -80,19 +79,4 @@ code more comfortably than Chinese, these are the two things worth knowing:
 
 Full documentation: [esyluban/docs/](esyluban/docs/README.md) (Chinese).
 
-## Contributing
-
-```bat
-git clone <this repo>
-cd EsyLuban
-esyluban\scripts\build.bat
-esyluban\scripts\test\run_full_tests_example.bat
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) (Chinese).
-
-## License
-
-MIT. Upstream Luban is Copyright (c) Code Philosophy Technology Ltd. — see
-[LICENSE](LICENSE). Upstream's original README is kept at
-[docs/UPSTREAM_README.md](docs/UPSTREAM_README.md).
+MIT. Upstream Luban is Copyright (c) Code Philosophy Technology Ltd. — see [LICENSE](LICENSE).

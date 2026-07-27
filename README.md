@@ -2,14 +2,13 @@
 
 # EsyLuban
 
-**让策划右键自己那张 Excel 就能导表**
+**面向策划的游戏配置表导出工具**
 
-[![CI](https://github.com/bryanT4N/EsyLuban/actions/workflows/ci.yml/badge.svg)](https://github.com/bryanT4N/EsyLuban/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg?style=flat-square)](#平台)
 [![based on](https://img.shields.io/badge/based%20on-Luban%204.10.2-informational.svg?style=flat-square)](https://github.com/focus-creative-games/luban)
 
-[快速开始](#快速开始) · [文档](esyluban/docs/README.md) · [与 Luban 的区别](#与-luban-的区别) · [参与开发](CONTRIBUTING.md)
+[快速开始](#快速开始) · [文档](esyluban/docs/README.md) · [与 Luban 的区别](#与-luban-的区别)
 
 [English](README_EN.md)
 
@@ -22,7 +21,10 @@
 每张表在自己的第一行声明自己，改哪张表就右键哪张表 —— 不必维护集中式的
 `__tables__.xlsx`，也不必让策划开命令行。
 
-数据输出与上游逐字节相同，由回归基线保证。
+数据输出与上游逐字节相同，由回归基线保证。对上游代码只新增、不修改，完整改动面
+登记在 [`upstream_boundary.txt`](esyluban/upstream_boundary.txt) 并由回归逐条比对。
+
+MIT 许可；上游 Luban 版权归 Code Philosophy Technology Ltd. 所有。
 
 ## 快速开始
 
@@ -80,28 +82,3 @@ B1 里只有 `full_name` 是必填的。
 | [它是怎么工作的](esyluban/docs/how-it-works.md) | 导表链路与扩展点 |
 
 完整索引见 [esyluban/docs/](esyluban/docs/README.md)。
-
-## 与上游的关系
-
-对上游代码**只新增、不修改**是本 fork 的核心约束。完整改动面登记在
-[`upstream_boundary.txt`](esyluban/upstream_boundary.txt)，并由回归逐条比对 ——
-它不是说明，是断言。
-
-三个核心能力全部靠新增文件经 `Priority` 自注册实现，不参与跟进上游时的合并冲突。
-不得不改动的上游文件目前有三个，每个都在清单里写明了绕不开的理由。
-
-## 参与开发
-
-```bat
-git clone <this repo>
-cd EsyLuban
-esyluban\scripts\build.bat
-esyluban\scripts\test\run_full_tests_example.bat
-```
-
-详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-
-## License
-
-MIT。上游 Luban 版权归 Code Philosophy Technology Ltd. 所有，见 [LICENSE](LICENSE)。
-上游原始 README 保留在 [docs/UPSTREAM_README.md](docs/UPSTREAM_README.md)。

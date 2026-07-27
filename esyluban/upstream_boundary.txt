@@ -168,12 +168,12 @@ D	docs/sponsor/zhifubao.JPG
 
 # ── 新增文件（A）：靠 Priority=100 自注册覆盖内置实现，不动上游代码 ──
 #
-# 下面三个都是被这份守卫抓出来的 —— 加它们的那几次提交都忘了同步清单，且都是
+# 下面这些都是被这份守卫抓出来的 —— 加它们的那几次提交都忘了同步清单，且都是
 # 从【全新克隆】跑回归时才报出来（本机 git diff 比的是工作区，提交前的那一刻
-# 恰好看不出差异）。守卫在它作者身上先后生效了三次。
+# 恰好看不出差异）。守卫在它作者身上先后生效了四次 —— 最后一次是把
+# CONTRIBUTING.md 搬进 esyluban/ 子树后，它不再属于对上游的改动面。
 A	.github/workflows/ci.yml
 A	CHANGELOG.md
-A	CONTRIBUTING.md
 # 上游 README 的原文。根 README 被完全重写成 EsyLuban 自己的门面后，把上游那份
 # 原样挪到这里保留 —— fork 的首屏不该由被 fork 者占据，但也不该把它抹掉。
 A	docs/UPSTREAM_README.md

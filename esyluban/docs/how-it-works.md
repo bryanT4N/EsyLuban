@@ -109,4 +109,4 @@ esyluban\scripts\test\run_full_tests_example.bat
 
 回归会报出它跑了多少项检查。里面既有产物的 SHA256 基线，也有守卫 —— 包括上面
 那张「不得不改的上游文件」表是否仍然属实。想知道每一项在检查什么，见
-[参与开发](../../CONTRIBUTING.md)。
+[参与开发](contributing.md)。
