@@ -110,6 +110,7 @@ echo [EXAMPLE] check.bat must reject the corpus (it contains deliberate negative
 call "!LUBAN_DIR!\check.bat" -t all >nul 2>&1
 if errorlevel 1 (
   echo [OK]   check.bat correctly rejected the corpus
+  set /a CHECKS+=1
 ) else (
   echo [FAIL] check.bat reported success on a corpus with known-bad records
   echo        it is no longer validating anything
@@ -140,6 +141,15 @@ rem records that are meant to fail. check.bat covers the "must reject" side.
 set VALIDATOR_FAILED=0
 set VALIDATOR_TOTAL=0
 set RC_FAILED=0
+set CHECKS=0
+rem The count is asserted too: deleting an assertion cannot pass unnoticed.
+rem
+rem This counts decision points REACHED in a green run, not the total number of
+rem assertions in the file -- a few failure-only paths (an export returning
+rem non-zero, the negatives corpus missing) contribute nothing when everything
+rem passes, which is the state this number is pinned to. Add or remove a check
+rem and this number must move with it; the run reports INCONCLUSIVE until it does.
+set EXPECTED_CHECKS=15
 set DEADX_LOG=%EXAMPLE_ROOT%\TestOutputs\dead_xargs.log
 set DEADX_OUT=%EXAMPLE_ROOT%\TestOutputs\dead_xargs_out
 
@@ -167,6 +177,7 @@ if !HARD_FAILED! gtr 0 (
   set /a FAILED+=1
 ) else (
   echo [OK]   hard-failure negatives: both aborted with the expected message
+  set /a CHECKS+=1
 )
 
 if !VALIDATOR_FAILED! gtr 0 (
@@ -176,6 +187,7 @@ if !VALIDATOR_FAILED! gtr 0 (
   set /a FAILED+=1
 ) else (
   echo [OK]   validator check: all !VALIDATOR_TOTAL! error categories as expected
+  set /a CHECKS+=1
 )
 
 rem This run exports the negatives on purpose, under target "test" (group "t"),
@@ -266,6 +278,7 @@ if errorlevel 1 (
     set /a FAILED+=1
   ) else (
     echo [OK]   inline-schema sheets silent, B1 warning still fires where it should
+    set /a CHECKS+=1
   )
 ) else (
   echo [FAIL] inline-schema __beans__/__enums__ sheets still warn about missing B1
@@ -295,6 +308,7 @@ if errorlevel 1 (
   findstr /c:"[dead xargs]" "!MAIN_LOG!" >nul
   if errorlevel 1 (
     echo [OK]   dead-xargs warning: fires on a dead key, silent on a clean conf
+    set /a CHECKS+=1
   ) else (
     echo [FAIL] dead-xargs warning fired on the normal export, which has no dead keys
     set /a FAILED+=1
@@ -305,6 +319,7 @@ if !RC_FAILED! gtr 0 (
   set /a FAILED+=1
 ) else (
   echo [OK]   right-click chain: 4 folders + standalone entry, !RC_TOTAL! file^(s^) total
+  set /a CHECKS+=1
 )
 
 rem examples/release is the project users are told to copy: a Unity project,
@@ -328,10 +343,12 @@ if errorlevel 1 (
     -BaselineDir "!RELEASE_ASSETS!\GenData" -OutputDir "!RELEASE_TMP!\GenData" ^
     -ReportPath "!RELEASE_ROOT!\TestOutputs\compare_report_data.json" -Label "release data"
   if errorlevel 1 set /a FAILED+=1
+  set /a CHECKS+=1
   powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
     -BaselineDir "!RELEASE_ASSETS!\GenCode" -OutputDir "!RELEASE_TMP!\GenCode" ^
     -ReportPath "!RELEASE_ROOT!\TestOutputs\compare_report_code.json" -Label "release code"
   if errorlevel 1 set /a FAILED+=1
+  set /a CHECKS+=1
 )
 
 rem core/ is upstream's own output: we legitimately have more tables than it
@@ -341,21 +358,25 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
   -BaselineDir "!BASELINE_DIR_CORE!" -OutputDir "!OUTPUT_DIR_NO_L10N!" ^
   -ReportPath "!COMPARE_REPORT_CORE!" -Label "core baseline" -AllowExtra
 if errorlevel 1 set /a FAILED+=1
+set /a CHECKS+=1
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
   -BaselineDir "!BASELINE_DIR_COVERAGE!" -OutputDir "!OUTPUT_DIR_NO_L10N!" ^
   -ReportPath "!COMPARE_REPORT_COVERAGE!" -Label "coverage baseline"
 if errorlevel 1 set /a FAILED+=1
+set /a CHECKS+=1
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
   -BaselineDir "!BASELINE_DIR_XML!" -OutputDir "!OUTPUT_DIR_XML!" ^
   -ReportPath "!COMPARE_REPORT_XML!" -Label "xml baseline"
 if errorlevel 1 set /a FAILED+=1
+set /a CHECKS+=1
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
   -BaselineDir "!BASELINE_DIR_CODE!" -OutputDir "!OUTPUT_DIR_CODE!" ^
   -ReportPath "!COMPARE_REPORT_CODE!" -Label "code baseline"
 if errorlevel 1 set /a FAILED+=1
+set /a CHECKS+=1
 
 rem The with-l10n export ran on every regression but was never compared --
 rem only the no-l10n copy went to a baseline. Text-key substitution therefore
@@ -366,11 +387,28 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
   -BaselineDir "!BASELINE_DIR_L10N!" -OutputDir "!OUTPUT_DIR!" ^
   -ReportPath "!COMPARE_REPORT_L10N!" -Label "l10n baseline"
 if errorlevel 1 set /a FAILED+=1
+set /a CHECKS+=1
 
 rem Owned files silently swallowed by .gitignore are invisible until someone
 rem clones. Cheap to check, and it has already caught two real losses.
+rem Two guards that turn a promise into an assertion.
+rem
+rem The upstream boundary ("we only add to upstream, never modify it") was a
+rem sentence in the README maintained by memory -- and it had already gone stale
+rem by one file. The three copies of gen.bat were held together by nothing at all
+rem after the sync script was deleted, and the copy that ships to users is the
+rem one no test runs.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0check_upstream_boundary.ps1"
+if errorlevel 1 set /a FAILED+=1
+set /a CHECKS+=1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0check_tool_copies.ps1"
+if errorlevel 1 set /a FAILED+=1
+set /a CHECKS+=1
+
+
 call "%~dp0check_gitignore_traps.bat"
 if errorlevel 1 set /a FAILED+=1
+set /a CHECKS+=1
 
 echo.
 if !FAILED! gtr 0 (
@@ -380,7 +418,14 @@ if !FAILED! gtr 0 (
   exit /b 1
 )
 echo ==========================================
-echo   REGRESSION PASSED
+if not "!CHECKS!"=="!EXPECTED_CHECKS!" (
+  echo   REGRESSION INCONCLUSIVE - ran !CHECKS! checks, expected !EXPECTED_CHECKS!
+  echo   An assertion was added or removed without updating EXPECTED_CHECKS.
+  echo   A regression whose size nobody tracks can lose a check silently.
+  echo ==========================================
+  exit /b 1
+)
+echo   REGRESSION PASSED - !CHECKS!/!EXPECTED_CHECKS! checks
 echo ==========================================
 exit /b 0
 

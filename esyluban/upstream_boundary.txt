@@ -1,0 +1,50 @@
+# EsyLuban 相对上游 Luban 的完整改动面
+#
+# 这份清单不是说明，是【断言】。scripts/test/check_upstream_boundary.ps1 会把它
+# 与 git 的实际 diff 逐条比对，多一个少一个都失败，并已接入回归。
+#
+# 为什么需要它：「对上游只新增、不修改」是本 fork 的核心约束，也是陌生人判断
+# 「你在上游代码里动了什么手脚」的唯一依据。此前它只写在 README 里靠人维护 ——
+# 而 README 曾长期声称「src/ 下有两处修改」，实际是三处，且 README 就在上一行
+# 教读者跑命令验证。一条能被读者当场证否的承诺，比没有承诺更伤。
+#
+# 改动了上游文件时：先改这份清单，再改代码。回归会替你确认两者一致。
+#
+# 格式：每行 <状态><TAB><路径>，# 开头为注释。
+# 状态 A=新增  M=修改  D=删除
+
+# ── 基点：本 fork 从这个上游提交分出 ───────────────────────────
+BASE	52184b9ab017d994ed1a42c2c93e22acf28efdde
+
+# ── 修改上游文件（M）：能不改就不改，每一个都要有绕不开的理由 ──
+#
+# SheetLoadUtil.cs   识别 A1 的 ##export 标记，并把它造成的行偏移一路带到
+#                    合并单元格与报错坐标。Excel 读取是纯静态方法，无扩展点。
+# Program.cs         新增 --listTables（右键局部导表要先知道选中范围有哪些表）
+#                    与「表 target 前缀的 xargs 键」告警。命令行选项无处注册。
+# CustomBehaviourManager.cs
+#                    加一个 HasBehaviour<C>() 纯查询方法，供上面那条告警判断
+#                    某名字是不是已注册的 dataTarget/codeTarget。
+M	README.md
+M	README_EN.md
+M	src/Luban.Core/CustomBehaviour/CustomBehaviourManager.cs
+M	src/Luban.DataLoader.Builtin/Excel/SheetLoadUtil.cs
+M	src/Luban/Program.cs
+
+# ── 删除上游文件（D）：fork 不该继承上游的发布与赞助管线 ────────
+#
+# FUNDING.yml        会在本仓库页面渲染 Sponsor 按钮，指向上游作者的收款方式
+# sync_gitee.yml     push 到 main 时把代码推向上游的 gitee 镜像
+# .travis.yml        dotnet 6.0 的死配置，与本项目要求的 .NET 8 矛盾
+D	.github/FUNDING.yml
+D	.github/workflows/sync_gitee.yml
+D	.travis.yml
+
+# ── 新增文件（A）：靠 Priority=100 自注册覆盖内置实现，不动上游代码 ──
+A	.vscode/settings.json
+A	src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs
+A	src/Luban.Core/Utils/B1Parser.cs
+A	src/Luban.Schema.Builtin/SelfContainedSchemaCollector.cs
+A	src/Luban.Schema.Builtin/SelfContainedTableImporter.cs
+A	src/Luban.Tests/B1ParserTests.cs
+A	src/Luban.Tests/Luban.Tests.csproj
