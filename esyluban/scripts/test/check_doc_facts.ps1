@@ -200,6 +200,25 @@ for ($i = 0; $i -lt $guideLines.Count; $i++) {
     }
 }
 
+# ---- the version in VERSION must head the CHANGELOG -------------------------
+# Two hand-maintained copies of the same number drift. This one matters because
+# the package filename is built from VERSION while readers look up what changed
+# in the CHANGELOG -- a mismatch means the release notes describe a build nobody
+# can identify.
+$versionFile = Join-Path $esy 'VERSION'
+$changelog   = Read-Text 'CHANGELOG.md'
+if ((Test-Path -LiteralPath $versionFile) -and $null -ne $changelog) {
+    $ver = ([System.IO.File]::ReadAllText($versionFile)).Trim()
+    $firstEntry = [regex]::Match($changelog, '(?m)^##\s+(\S+)')
+    if (-not $firstEntry.Success) {
+        Write-Host "[FAIL] doc facts: CHANGELOG.md has no version heading"
+        $failed++
+    } elseif ($firstEntry.Groups[1].Value -notlike "$ver*") {
+        Write-Host "[FAIL] doc facts: esyluban/VERSION says $ver, CHANGELOG's newest entry is $($firstEntry.Groups[1].Value)"
+        $failed++
+    }
+}
+
 if ($failed -eq 0) {
     Write-Host "[OK]   doc facts: target counts, baselines, paths and mechanisms all agree"
     exit 0

@@ -4,7 +4,7 @@
 
 **让策划右键自己那张 Excel 就能导表**
 
-[![CI](https://github.com/OWNER/EsyLuban/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/EsyLuban/actions/workflows/ci.yml)
+[![CI](https://github.com/bryanT4N/EsyLuban/actions/workflows/ci.yml/badge.svg)](https://github.com/bryanT4N/EsyLuban/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg?style=flat-square)](#平台)
 [![based on](https://img.shields.io/badge/based%20on-Luban%204.10.2-informational.svg?style=flat-square)](https://github.com/focus-creative-games/luban)

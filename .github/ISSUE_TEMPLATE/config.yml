@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/focus-creative-games/luban/issues
     about: 表格式、类型系统、代码生成这些是上游 Luban 的能力，用上游也复现的话请提到那边
   - name: 文档没讲清楚
-    url: https://github.com/OWNER/EsyLuban/issues/new
+    url: https://github.com/bryanT4N/EsyLuban/issues/new
     about: 直接开 issue 说哪一句读不懂 —— 文档读不懂就是文档的问题

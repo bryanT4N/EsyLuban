@@ -4,7 +4,7 @@
 
 **Let designers export their own spreadsheet from the right-click menu**
 
-[![CI](https://github.com/OWNER/EsyLuban/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/EsyLuban/actions/workflows/ci.yml)
+[![CI](https://github.com/bryanT4N/EsyLuban/actions/workflows/ci.yml/badge.svg)](https://github.com/bryanT4N/EsyLuban/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg?style=flat-square)](#platform)
 [![based on](https://img.shields.io/badge/based%20on-Luban%204.10.2-informational.svg?style=flat-square)](https://github.com/focus-creative-games/luban)

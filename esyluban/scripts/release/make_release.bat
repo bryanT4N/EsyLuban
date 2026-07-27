@@ -41,22 +41,34 @@ set PKG_SUFFIX=-standalone
 set BUILD_HINT=scripts\build.bat --self-contained
 :NOSC
 
+rem EsyLuban carries its own version, separate from the upstream baseline it was
+rem built on. Package names look like:
+rem
+rem   EsyLuban-0.1.0+luban4.10.2-win-x64.zip
+rem            ^^^^^ ^^^^^^^^^^^
+rem            ours  upstream code this was built from
+rem
+rem Taking the version straight from Luban.csproj is what it used to do, and that
+rem produced "EsyLuban 4.10.2" -- a different artifact wearing the same number as
+rem upstream Luban 4.10.2, with no way to tell two EsyLuban builds apart when the
+rem upstream baseline had not moved.
 set VERSION=%~1
 if /i "%VERSION%"=="--self-contained" set VERSION=
 if "%VERSION%"=="" (
-  rem Select-Object -First 1, not [0]: a single matching PropertyGroup makes
-  rem .Version a bare string, and [0] would index into it and yield one char.
-  for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command ^
-    "$p=[xml](Get-Content '!REPO_ROOT!\src\Luban\Luban.csproj');" ^
-    "$p.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1"`) do set VERSION=%%A
+  set /p VERSION=<"%ESY_ROOT%\VERSION"
 )
 if "%VERSION%"=="" (
-  echo [ERROR] Could not determine version. Pass it explicitly:
-  echo         make_release.bat 4.10.2
+  echo [ERROR] Could not read esyluban\VERSION. Pass a version explicitly:
+  echo         make_release.bat 0.1.0
   exit /b 1
 )
 
-set PKG_NAME=EsyLuban-%VERSION%-win-x64%PKG_SUFFIX%
+rem Select-Object -First 1, not [0]: a single matching PropertyGroup makes
+rem .Version a bare string, and [0] would index into it and yield one char.
+for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command ^
+  "$p=[xml](Get-Content '!REPO_ROOT!\src\Luban\Luban.csproj');" ^
+  "$p.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1"`) do set UPSTREAM_VERSION=%%A
+set PKG_NAME=EsyLuban-%VERSION%+luban%UPSTREAM_VERSION%-win-x64%PKG_SUFFIX%
 set STAGE=%DIST_ROOT%\%PKG_NAME%
 
 if not exist "%RUNTIME_DIR%\Luban.exe" (

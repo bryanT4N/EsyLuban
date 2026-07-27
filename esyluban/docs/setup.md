@@ -19,6 +19,10 @@
 | `EsyLuban-<版本>-win-x64-standalone.zip` | 约 34 MB | 无，解压即用 | 约 76 MB |
 | `EsyLuban-<版本>-win-x64.zip` | 约 2 MB | 机器上要有 .NET 8 运行时 | 约 6 MB |
 
+> 版本号形如 `0.1.0+luban4.10.2` —— 前半是 EsyLuban 自己的版本，`+luban` 之后是
+> 它基于的上游 Luban 代码基线。同一个上游基线下可以有多个 EsyLuban 版本。
+
+
 因为约定是「每个项目自带一套 `Tools/Luban/`」，取舍就是**一次性安装成本 vs 每个项目的磁盘占用**。
 团队机器统一装了 .NET 8 就用小包，否则 standalone 省事。
 
