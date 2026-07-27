@@ -10,6 +10,11 @@
 	<bean name="GroupClientBean" group="c">
 		<var name="v" type="int" />
 	</bean>
+	<!-- group="*" 展开为 luban.conf 里声明的全部分组，包括 default:false 的。
+	     与「不写 group」不同：后者只属于默认分组。 -->
+	<bean name="GroupAllBean" group="*">
+		<var name="v" type="int" />
+	</bean>
 	<bean name="GroupServerBean" group="s">
 		<var name="v" type="int" />
 	</bean>

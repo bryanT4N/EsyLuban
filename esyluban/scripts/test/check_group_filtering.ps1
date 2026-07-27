@@ -33,6 +33,10 @@
 #                                  by no table on purpose: type-level group is
 #                                  decided in CollectRefTypes, independently of
 #                                  whether anything points at the type
+#   group="*"                      GroupAllBean -- expands to every declared
+#                                  group, which is NOT the same as writing no
+#                                  group (that means the default ones only).
+#                                  It must therefore appear for every target
 #
 # Both directions matter everywhere. "x1 is present for client" passes just as
 # well when filtering is off entirely; the absence assertions are what pin the
@@ -71,7 +75,8 @@ $cases = @(
        TablesPresent = @('test_tbdemogroup_c.json')
        TablesAbsent  = @('test_tbdemogroup_s.json', 'test_tbdemogroup_e.json',
                          'test_tbdemogroup_t.json')
-       CodePresent = @('TbDemoGroup_C.cs', 'GroupClientBean.cs', 'EGroupClient.cs')
+       CodePresent = @('TbDemoGroup_C.cs', 'GroupClientBean.cs', 'EGroupClient.cs',
+                       'GroupAllBean.cs')
        CodeAbsent  = @('TbDemoGroup_S.cs', 'TbDemoGroup_E.cs', 'TbDemoGroup_T.cs',
                        'GroupServerBean.cs', 'EGroupServer.cs')
        MemberPresent = @('X1'); MemberAbsent = @('X2', 'X3') },
@@ -84,7 +89,8 @@ $cases = @(
        TablesPresent = @('test_tbdemogroup_s.json')
        TablesAbsent  = @('test_tbdemogroup_c.json', 'test_tbdemogroup_e.json',
                          'test_tbdemogroup_t.json')
-       CodePresent = @('TbDemoGroup_S.cs', 'GroupServerBean.cs', 'EGroupServer.cs')
+       CodePresent = @('TbDemoGroup_S.cs', 'GroupServerBean.cs', 'EGroupServer.cs',
+                       'GroupAllBean.cs')
        CodeAbsent  = @('TbDemoGroup_C.cs', 'TbDemoGroup_E.cs', 'TbDemoGroup_T.cs',
                        'GroupClientBean.cs', 'EGroupClient.cs')
        MemberPresent = @('X2'); MemberAbsent = @('X1', 'X3') }
@@ -201,18 +207,25 @@ foreach ($c in $cases) {
 # matrix.TbBasic carries group="c;s" on purpose. Upstream splits group values on
 # both ',' and ';' (SchemaLoaderUtil.CreateGroups), and B1's group= replaces the
 # very attribute that goes through it. B1 once had its own copy that split on
-# ',' alone, so group="c;s" became a single group named literally "c;s" -- it
-# matched no target and the table silently exported nowhere.
+# ',' alone, so group="c;s" became a single group named literally "c;s".
+#
+# Table groups ARE validated (DefTypeBase.PreCompile checks them against the
+# declared set), so the failure mode was an abort with `group:c;s not found` --
+# a message naming a group nobody wrote. Measured, not assumed: an unsplittable
+# table group exits 1; it is FIELD-level groups that fail silently.
 #
 # Upstream's own corpus has no ';' in any group value, which is why nothing ever
 # exercised this. The detection was never missing; the data was.
+#
+# This check therefore also covers the abort path: a regression here shows up as
+# the whole export failing, not just this table going missing.
 foreach ($c in $cases) {
     if (Test-Path (Join-Path $c.Dir 'matrix_tbbasic.json')) {
         Write-Host "[ok]   ';' separator: matrix.TbBasic present for $($c.Name)"
     } else {
         Fail "';' separator: matrix.TbBasic missing for $($c.Name)" @(
             'Its B1 says group="c;s". If ";" stopped being a separator, that is',
-            'one group named "c;s", which matches no target.')
+            'one group named "c;s" -- the export aborts with `group:c;s not found`.')
     }
 }
 

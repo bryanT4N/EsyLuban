@@ -318,9 +318,16 @@ public class SelfContainedTableImporter : ITableImporter
     //
     // This started life as a private copy that split on ',' only. The divergence
     // was invisible until data used it: group="c;s" became a single group named
-    // literally "c;s", which matches no target, so a table that worked in
-    // __tables__.xlsx silently exported nowhere after migration. Sharing the
-    // function means a future change to upstream's separator rules follows us.
+    // literally "c;s". DefTypeBase.PreCompile validates table groups against the
+    // declared set, so the export then aborted with `group:c;s not found` -- a
+    // table that worked in __tables__.xlsx stopped building after migration, and
+    // the message named a group nobody wrote.
+    //
+    // (Measured, not assumed. Field-level groups are the ones that fail
+    // silently; table and type level are validated and abort.)
+    //
+    // Sharing the function means a future change to upstream's separator rules
+    // follows us.
     private static List<string> ParseGroups(string groupStr)
     {
         return SchemaLoaderUtil.CreateGroups(groupStr ?? "");
