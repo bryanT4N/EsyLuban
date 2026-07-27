@@ -1,0 +1,57 @@
+name: 报告问题
+description: 导表出错、右键菜单不工作、产物不对
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提之前先翻一下 [出错了怎么办](../../blob/main/esyluban/docs/troubleshooting.md)，
+        常见报错那里都有对应的原因。
+
+  - type: dropdown
+    id: upstream
+    attributes:
+      label: 上游 Luban 是否也这样
+      description: |
+        EsyLuban 是 Luban 的 fork。同样的表和配置，用上游 Luban 是否复现？
+        这一条能省掉大量来回 —— 如果上游也这样，问题多半不在这里。
+      options:
+        - 上游也复现（可能是 Luban 本身的问题）
+        - 上游正常，只有 EsyLuban 这样
+        - 没法用上游试（用到了 EsyLuban 特有的功能）
+        - 没试过
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么
+      description: 你做了什么、期望什么、实际得到什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: 报错信息
+      description: |
+        贴 `gen.bat` 输出里带 `|ERROR|` 的那几行。它们会写明具体是哪张表、哪个单元格。
+      render: text
+
+  - type: textarea
+    id: table
+    attributes:
+      label: 出问题的表长什么样
+      description: |
+        A1 和 B1 的内容，以及相关的 `##var` / `##type` 行。
+        能贴一个最小复现的表最好。
+      render: text
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: 发布包文件名，或 `git rev-parse --short HEAD`
+    validations:
+      required: true
