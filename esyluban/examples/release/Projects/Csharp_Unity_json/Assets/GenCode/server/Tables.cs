@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 
 using Luban;
-using SimpleJSON;
+using Luban.SimpleJSON;
 
 namespace dataTables
 {
@@ -25,54 +25,51 @@ public partial class Tables
     public l10n.TbPatchDemo TbPatchDemo {get; }
     public matrix.TbBasic TbBasic {get; }
     public matrix.TbContainers TbContainers {get; }
-    public matrix.TbMatrixList TbMatrixList {get; }
     public matrix.TbMatrixSingleton TbMatrixSingleton {get; }
+    public matrix.TbMatrixList TbMatrixList {get; }
     public matrix.TbValidators TbValidators {get; }
     public tag.TbTestTag TbTestTag {get; }
+    public test.TbTestFormat TbTestFormat {get; }
+    public test.TbCompositeJsonTable3 TbCompositeJsonTable3 {get; }
     public test.TbCompositeJsonTable1 TbCompositeJsonTable1 {get; }
     public test.TbCompositeJsonTable2 TbCompositeJsonTable2 {get; }
-    public test.TbCompositeJsonTable3 TbCompositeJsonTable3 {get; }
-    public test.TbDataFromMisc TbDataFromMisc {get; }
     public test.TbDefineFromExcel2 TbDefineFromExcel2 {get; }
     public test.TbDemoGroup TbDemoGroup {get; }
-    public test.TbDemoGroup_C TbDemoGroupC {get; }
-    public test.TbDemoGroup_E TbDemoGroupE {get; }
     public test.TbDemoGroup_S TbDemoGroupS {get; }
-    public test.TbDemoGroup_T TbDemoGroupT {get; }
     public test.TbDemoPrimitive TbDemoPrimitive {get; }
     public test.TbDetectCsvEncoding TbDetectCsvEncoding {get; }
     public test.TbExcelFromJson TbExcelFromJson {get; }
     public test.TbExcelFromJsonMultiRow TbExcelFromJsonMultiRow {get; }
+    public test.TbTestFieldVariant2 TbTestFieldVariant2 {get; }
     public test.TbFullTypes TbFullTypes {get; }
+    public test.TbTestGlobal TbTestGlobal {get; }
     public test.TbInlineEnum TbInlineEnum {get; }
     public test.TbItem2 TbItem2 {get; }
-    public test.TbMultiIndexList TbMultiIndexList {get; }
-    public test.TbMultiRowRecord TbMultiRowRecord {get; }
-    public test.TbMultiRowTitle TbMultiRowTitle {get; }
-    public test.TbMultiUnionIndexList TbMultiUnionIndexList {get; }
     public test.TbNotIndexList TbNotIndexList {get; }
+    public test.TbMultiIndexList TbMultiIndexList {get; }
+    public test.TbMultiUnionIndexList TbMultiUnionIndexList {get; }
+    public test.TbDataFromMisc TbDataFromMisc {get; }
+    public test.TbTestMultiColumn TbTestMultiColumn {get; }
+    public test.TbMultiRowTitle TbMultiRowTitle {get; }
+    public test.TbMultiRowRecord TbMultiRowRecord {get; }
     public test.TbPath TbPath {get; }
     public test.TbSingleton TbSingleton {get; }
-    public test.TbTestBeRef TbTestBeRef {get; }
-    public test.TbTestBeRef2 TbTestBeRef2 {get; }
     public test.TbTestConstAlias TbTestConstAlias {get; }
-    public test.TbTestFieldAlias TbTestFieldAlias {get; }
-    public test.TbTestFieldVariant TbTestFieldVariant {get; }
-    public test.TbTestFieldVariant2 TbTestFieldVariant2 {get; }
-    public test.TbTestFormat TbTestFormat {get; }
-    public test.TbTestGlobal TbTestGlobal {get; }
     public test.TbTestIndex TbTestIndex {get; }
     public test.TbTestMap TbTestMap {get; }
-    public test.TbTestMapper TbTestMapper {get; }
-    public test.TbTestMultiColumn TbTestMultiColumn {get; }
-    public test.TbTestNull TbTestNull {get; }
     public test.TbTestRange TbTestRange {get; }
     public test.TbTestRef TbTestRef {get; }
-    public test.TbTestScriptableObject TbTestScriptableObject {get; }
+    public test.TbTestBeRef TbTestBeRef {get; }
+    public test.TbTestBeRef2 TbTestBeRef2 {get; }
     public test.TbTestSep TbTestSep {get; }
     public test.TbTestSet TbTestSet {get; }
     public test.TbTestSize TbTestSize {get; }
     public test.TbTestString TbTestString {get; }
+    public test.TbTestMapper TbTestMapper {get; }
+    public test.TbTestScriptableObject TbTestScriptableObject {get; }
+    public test.TbTestFieldAlias TbTestFieldAlias {get; }
+    public test.TbTestFieldVariant TbTestFieldVariant {get; }
+    public test.TbTestNull TbTestNull {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
@@ -84,54 +81,51 @@ public partial class Tables
         TbPatchDemo = new l10n.TbPatchDemo(loader("l10n_tbpatchdemo"));
         TbBasic = new matrix.TbBasic(loader("matrix_tbbasic"));
         TbContainers = new matrix.TbContainers(loader("matrix_tbcontainers"));
-        TbMatrixList = new matrix.TbMatrixList(loader("matrix_tbmatrixlist"));
         TbMatrixSingleton = new matrix.TbMatrixSingleton(loader("matrix_tbmatrixsingleton"));
+        TbMatrixList = new matrix.TbMatrixList(loader("matrix_tbmatrixlist"));
         TbValidators = new matrix.TbValidators(loader("matrix_tbvalidators"));
         TbTestTag = new tag.TbTestTag(loader("tag_tbtesttag"));
+        TbTestFormat = new test.TbTestFormat(loader("test_tbtestformat"));
+        TbCompositeJsonTable3 = new test.TbCompositeJsonTable3(loader("test_tbcompositejsontable3"));
         TbCompositeJsonTable1 = new test.TbCompositeJsonTable1(loader("test_tbcompositejsontable1"));
         TbCompositeJsonTable2 = new test.TbCompositeJsonTable2(loader("test_tbcompositejsontable2"));
-        TbCompositeJsonTable3 = new test.TbCompositeJsonTable3(loader("test_tbcompositejsontable3"));
-        TbDataFromMisc = new test.TbDataFromMisc(loader("test_tbdatafrommisc"));
         TbDefineFromExcel2 = new test.TbDefineFromExcel2(loader("test_tbdefinefromexcel2"));
         TbDemoGroup = new test.TbDemoGroup(loader("test_tbdemogroup"));
-        TbDemoGroupC = new test.TbDemoGroup_C(loader("test_tbdemogroup_c"));
-        TbDemoGroupE = new test.TbDemoGroup_E(loader("test_tbdemogroup_e"));
         TbDemoGroupS = new test.TbDemoGroup_S(loader("test_tbdemogroup_s"));
-        TbDemoGroupT = new test.TbDemoGroup_T(loader("test_tbdemogroup_t"));
         TbDemoPrimitive = new test.TbDemoPrimitive(loader("test_tbdemoprimitive"));
         TbDetectCsvEncoding = new test.TbDetectCsvEncoding(loader("test_tbdetectcsvencoding"));
         TbExcelFromJson = new test.TbExcelFromJson(loader("test_tbexcelfromjson"));
         TbExcelFromJsonMultiRow = new test.TbExcelFromJsonMultiRow(loader("test_tbexcelfromjsonmultirow"));
+        TbTestFieldVariant2 = new test.TbTestFieldVariant2(loader("test_tbtestfieldvariant2"));
         TbFullTypes = new test.TbFullTypes(loader("test_tbfulltypes"));
+        TbTestGlobal = new test.TbTestGlobal(loader("test_tbtestglobal"));
         TbInlineEnum = new test.TbInlineEnum(loader("test_tbinlineenum"));
         TbItem2 = new test.TbItem2(loader("test_tbitem2"));
-        TbMultiIndexList = new test.TbMultiIndexList(loader("test_tbmultiindexlist"));
-        TbMultiRowRecord = new test.TbMultiRowRecord(loader("test_tbmultirowrecord"));
-        TbMultiRowTitle = new test.TbMultiRowTitle(loader("test_tbmultirowtitle"));
-        TbMultiUnionIndexList = new test.TbMultiUnionIndexList(loader("test_tbmultiunionindexlist"));
         TbNotIndexList = new test.TbNotIndexList(loader("test_tbnotindexlist"));
+        TbMultiIndexList = new test.TbMultiIndexList(loader("test_tbmultiindexlist"));
+        TbMultiUnionIndexList = new test.TbMultiUnionIndexList(loader("test_tbmultiunionindexlist"));
+        TbDataFromMisc = new test.TbDataFromMisc(loader("test_tbdatafrommisc"));
+        TbTestMultiColumn = new test.TbTestMultiColumn(loader("test_tbtestmulticolumn"));
+        TbMultiRowTitle = new test.TbMultiRowTitle(loader("test_tbmultirowtitle"));
+        TbMultiRowRecord = new test.TbMultiRowRecord(loader("test_tbmultirowrecord"));
         TbPath = new test.TbPath(loader("test_tbpath"));
         TbSingleton = new test.TbSingleton(loader("test_tbsingleton"));
-        TbTestBeRef = new test.TbTestBeRef(loader("test_tbtestberef"));
-        TbTestBeRef2 = new test.TbTestBeRef2(loader("test_tbtestberef2"));
         TbTestConstAlias = new test.TbTestConstAlias(loader("test_tbtestconstalias"));
-        TbTestFieldAlias = new test.TbTestFieldAlias(loader("test_tbtestfieldalias"));
-        TbTestFieldVariant = new test.TbTestFieldVariant(loader("test_tbtestfieldvariant"));
-        TbTestFieldVariant2 = new test.TbTestFieldVariant2(loader("test_tbtestfieldvariant2"));
-        TbTestFormat = new test.TbTestFormat(loader("test_tbtestformat"));
-        TbTestGlobal = new test.TbTestGlobal(loader("test_tbtestglobal"));
         TbTestIndex = new test.TbTestIndex(loader("test_tbtestindex"));
         TbTestMap = new test.TbTestMap(loader("test_tbtestmap"));
-        TbTestMapper = new test.TbTestMapper(loader("test_tbtestmapper"));
-        TbTestMultiColumn = new test.TbTestMultiColumn(loader("test_tbtestmulticolumn"));
-        TbTestNull = new test.TbTestNull(loader("test_tbtestnull"));
         TbTestRange = new test.TbTestRange(loader("test_tbtestrange"));
         TbTestRef = new test.TbTestRef(loader("test_tbtestref"));
-        TbTestScriptableObject = new test.TbTestScriptableObject(loader("test_tbtestscriptableobject"));
+        TbTestBeRef = new test.TbTestBeRef(loader("test_tbtestberef"));
+        TbTestBeRef2 = new test.TbTestBeRef2(loader("test_tbtestberef2"));
         TbTestSep = new test.TbTestSep(loader("test_tbtestsep"));
         TbTestSet = new test.TbTestSet(loader("test_tbtestset"));
         TbTestSize = new test.TbTestSize(loader("test_tbtestsize"));
         TbTestString = new test.TbTestString(loader("test_tbteststring"));
+        TbTestMapper = new test.TbTestMapper(loader("test_tbtestmapper"));
+        TbTestScriptableObject = new test.TbTestScriptableObject(loader("test_tbtestscriptableobject"));
+        TbTestFieldAlias = new test.TbTestFieldAlias(loader("test_tbtestfieldalias"));
+        TbTestFieldVariant = new test.TbTestFieldVariant(loader("test_tbtestfieldvariant"));
+        TbTestNull = new test.TbTestNull(loader("test_tbtestnull"));
         ResolveRef();
     }
     
@@ -145,55 +139,53 @@ public partial class Tables
         TbPatchDemo.ResolveRef(this);
         TbBasic.ResolveRef(this);
         TbContainers.ResolveRef(this);
-        TbMatrixList.ResolveRef(this);
         TbMatrixSingleton.ResolveRef(this);
+        TbMatrixList.ResolveRef(this);
         TbValidators.ResolveRef(this);
         TbTestTag.ResolveRef(this);
+        TbTestFormat.ResolveRef(this);
+        TbCompositeJsonTable3.ResolveRef(this);
         TbCompositeJsonTable1.ResolveRef(this);
         TbCompositeJsonTable2.ResolveRef(this);
-        TbCompositeJsonTable3.ResolveRef(this);
-        TbDataFromMisc.ResolveRef(this);
         TbDefineFromExcel2.ResolveRef(this);
         TbDemoGroup.ResolveRef(this);
-        TbDemoGroupC.ResolveRef(this);
-        TbDemoGroupE.ResolveRef(this);
         TbDemoGroupS.ResolveRef(this);
-        TbDemoGroupT.ResolveRef(this);
         TbDemoPrimitive.ResolveRef(this);
         TbDetectCsvEncoding.ResolveRef(this);
         TbExcelFromJson.ResolveRef(this);
         TbExcelFromJsonMultiRow.ResolveRef(this);
+        TbTestFieldVariant2.ResolveRef(this);
         TbFullTypes.ResolveRef(this);
+        TbTestGlobal.ResolveRef(this);
         TbInlineEnum.ResolveRef(this);
         TbItem2.ResolveRef(this);
-        TbMultiIndexList.ResolveRef(this);
-        TbMultiRowRecord.ResolveRef(this);
-        TbMultiRowTitle.ResolveRef(this);
-        TbMultiUnionIndexList.ResolveRef(this);
         TbNotIndexList.ResolveRef(this);
+        TbMultiIndexList.ResolveRef(this);
+        TbMultiUnionIndexList.ResolveRef(this);
+        TbDataFromMisc.ResolveRef(this);
+        TbTestMultiColumn.ResolveRef(this);
+        TbMultiRowTitle.ResolveRef(this);
+        TbMultiRowRecord.ResolveRef(this);
         TbPath.ResolveRef(this);
         TbSingleton.ResolveRef(this);
-        TbTestBeRef.ResolveRef(this);
-        TbTestBeRef2.ResolveRef(this);
         TbTestConstAlias.ResolveRef(this);
-        TbTestFieldAlias.ResolveRef(this);
-        TbTestFieldVariant.ResolveRef(this);
-        TbTestFieldVariant2.ResolveRef(this);
-        TbTestFormat.ResolveRef(this);
-        TbTestGlobal.ResolveRef(this);
         TbTestIndex.ResolveRef(this);
         TbTestMap.ResolveRef(this);
-        TbTestMapper.ResolveRef(this);
-        TbTestMultiColumn.ResolveRef(this);
-        TbTestNull.ResolveRef(this);
         TbTestRange.ResolveRef(this);
         TbTestRef.ResolveRef(this);
-        TbTestScriptableObject.ResolveRef(this);
+        TbTestBeRef.ResolveRef(this);
+        TbTestBeRef2.ResolveRef(this);
         TbTestSep.ResolveRef(this);
         TbTestSet.ResolveRef(this);
         TbTestSize.ResolveRef(this);
         TbTestString.ResolveRef(this);
+        TbTestMapper.ResolveRef(this);
+        TbTestScriptableObject.ResolveRef(this);
+        TbTestFieldAlias.ResolveRef(this);
+        TbTestFieldVariant.ResolveRef(this);
+        TbTestNull.ResolveRef(this);
     }
 }
 
 }
+

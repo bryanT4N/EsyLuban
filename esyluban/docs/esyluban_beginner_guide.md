@@ -592,6 +592,25 @@ runtime\Luban.exe --conf luban.conf -t client --listTables <文件或目录>
 > target 分好目录。上面这份映射由右键脚本读取后，逐个翻译成
 > `-x outputDataDir=`，走的才是 Luban 真正支持的语义。
 
+**右键之外，整包导出怎么按 target 分目录。** 上面那份映射只服务右键菜单。
+`gen.bat` 一次只导一个 target，要让多个 target 各进各的目录，同样得靠
+`-x` 逐次传入：
+
+```bat
+gen.bat -t client -d json -c cs-simple-json ^
+  -x outputDataDir=..\..\Projects\<你的工程>\Assets\GenData\client ^
+  -x outputCodeDir=..\..\Projects\<你的工程>\Assets\GenCode\client
+gen.bat -t server -d json -c cs-simple-json ^
+  -x outputDataDir=..\..\Projects\<你的工程>\Assets\GenData\server ^
+  -x outputCodeDir=..\..\Projects\<你的工程>\Assets\GenCode\server
+```
+
+`examples/release/Tools/Luban/gen_all.bat` 就是这个写法的现成版本，可以直接
+抄走改 target 列表。**不要省掉 `-x` 让它们共用一个目录**：Luban 在写入前会
+清理输出目录，第二个 target 会把第一个的产物删干净，最后只剩最后一个 target
+的表 —— 这正是 `SafeLocalFileSaver` 拦下来并提示「多个 target 共用了同一个
+outputDataDir」的场景。
+
 #### ⚠ `luban.conf` 里不要写注释，也不要留尾逗号
 
 Luban 自身的 JSON 解析器**同时接受** `//` 注释与尾逗号（`AllowTrailingCommas`

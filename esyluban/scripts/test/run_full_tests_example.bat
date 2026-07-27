@@ -41,6 +41,9 @@ set OUTPUT_DIR_CODE=%EXAMPLE_ROOT%\TestOutputs\code_cs
 set BASELINE_DIR_XML=%ESY_ROOT%\baselines\xml
 set BASELINE_DIR_CODE=%ESY_ROOT%\baselines\code_cs
 set BASELINE_DIR_L10N=%ESY_ROOT%\baselines\json_l10n
+set RELEASE_ROOT=%ESY_ROOT%\examples\release
+set RELEASE_ASSETS=%RELEASE_ROOT%\Projects\Csharp_Unity_json\Assets
+set RELEASE_TMP=%RELEASE_ROOT%\TestOutputs\gen_all
 set COMPARE_REPORT_L10N=%EXAMPLE_ROOT%\TestOutputs\compare_report_l10n.json
 set COMPARE_REPORT_XML=%EXAMPLE_ROOT%\TestOutputs\compare_report_xml.json
 set COMPARE_REPORT_CODE=%EXAMPLE_ROOT%\TestOutputs\compare_report_code.json
@@ -214,6 +217,33 @@ if errorlevel 1 (
   ) else (
     echo [OK]   right-click chain produced !RC_FILES! file^(s^)
   )
+)
+
+rem examples/release is the project users are told to copy: a Unity project,
+rem its own luban.conf, and three targets each wanting its own directory.
+rem Nothing exported it, so it rotted -- the checked-in generated code was
+rem produced from an older table set and an older SimpleJSON namespace, and the
+rem handwritten Main.cs still referenced a namespace and a data path that this
+rem conf has not produced for a long time. It could not have compiled.
+rem
+rem Exporting it here to a scratch directory and diffing against the checked-in
+rem copy makes the shipped example's own output its baseline: it can no longer
+rem drift from the conf that is supposed to produce it.
+echo [RELEASE] export all targets -- via gen_all.bat
+if exist "!RELEASE_TMP!" rmdir /s /q "!RELEASE_TMP!"
+call "!RELEASE_ROOT!\Tools\Luban\gen_all.bat" "!RELEASE_TMP!" >nul 2>&1
+if errorlevel 1 (
+  echo [FAIL] release export returned !errorlevel!
+  set /a FAILED+=1
+) else (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
+    -BaselineDir "!RELEASE_ASSETS!\GenData" -OutputDir "!RELEASE_TMP!\GenData" ^
+    -ReportPath "!RELEASE_ROOT!\TestOutputs\compare_report_data.json" -Label "release data"
+  if errorlevel 1 set /a FAILED+=1
+  powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
+    -BaselineDir "!RELEASE_ASSETS!\GenCode" -OutputDir "!RELEASE_TMP!\GenCode" ^
+    -ReportPath "!RELEASE_ROOT!\TestOutputs\compare_report_code.json" -Label "release code"
+  if errorlevel 1 set /a FAILED+=1
 )
 
 rem core/ is upstream's own output: we legitimately have more tables than it

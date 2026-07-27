@@ -15,6 +15,9 @@ runtime-sc/
 
 # 回归测试产物：每次 scripts/test/run_full_tests_example.bat 都会重写
 examples/dev/TestOutputs/
+# release 工程的回归导出暂存区。它导到这里、再与 Assets 下【已提交】的
+# 生成物比对 —— 那份提交内容才是基线，所以暂存区本身不进版本控制。
+examples/release/TestOutputs/
 
 # 发布包暂存与产物：scripts/release/make_release.bat 组装出来的，
 # 内容全部是 runtime/ 与 templates/ 的副本，没有一份是原始资产。
