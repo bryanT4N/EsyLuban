@@ -76,6 +76,28 @@ if %IS_DIR%==1 (
   set SCAN_PATH=!TARGET_DIR!
 )
 
+rem Parse the conf ONCE up front and fail loudly if it cannot be read.
+rem
+rem Every setting below is read through Windows PowerShell 5.1, whose
+rem ConvertFrom-Json is stricter than Luban's own parser: it rejects // comments
+rem AND trailing commas, both of which Luban accepts. When it failed, each query
+rem returned empty and the script quietly fell back to hard-coded defaults --
+rem so the menu ran, exited 0, printed Done, and ignored the entire contextMenu
+rem section. Silently using different settings than the file says is worse than
+rem refusing to run.
+powershell -NoProfile -Command ^
+  "try { Get-Content -Raw '!CONF_FILE!' | ConvertFrom-Json | Out-Null; exit 0 }" ^
+  "catch { Write-Host $_.Exception.Message; exit 1 }"
+if errorlevel 1 (
+  echo.
+  echo [ERROR] Cannot parse: !CONF_FILE!
+  echo         The right-click menu reads it with Windows PowerShell 5.1, which
+  echo         rejects // comments and trailing commas even though Luban accepts
+  echo         them. Remove those and try again.
+  if not defined LUBAN_NO_PAUSE pause
+  exit /b 7
+)
+
 set CODE_TARGETS=
 set TARGET_NAME=
 set TARGET_NAMES=

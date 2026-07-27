@@ -571,14 +571,33 @@ runtime\Luban.exe --conf luban.conf -t client --listTables <文件或目录>
 > target 分好目录。上面这份映射由右键脚本读取后，逐个翻译成
 > `-x outputDataDir=`，走的才是 Luban 真正支持的语义。
 
-#### ⚠ `luban.conf` 不要写 `//` 注释
+#### ⚠ `luban.conf` 里不要写注释，也不要留尾逗号
 
-Luban 自身能解析带注释的 JSON，**但右键脚本读配置用的是 `powershell.exe`
-（Windows PowerShell 5.1），它的 `ConvertFrom-Json` 不支持注释**，会解析失败
-并**静默丢失全部右键配置**——菜单照常执行、退出码为 0、却什么都没导出。
+Luban 自身的 JSON 解析器**同时接受** `//` 注释与尾逗号（`AllowTrailingCommas`
++ `ReadCommentHandling.Skip`）。但右键脚本读配置用的是 `powershell.exe`
+（Windows PowerShell 5.1），它的 `ConvertFrom-Json` **两样都不接受**：
 
-PowerShell 7（`pwsh`）支持注释，因此这个问题在 pwsh 下复现不出来。
-需要写说明就写在文档里，别写进 `luban.conf`。
+```jsonc
+{
+  "contextMenu": {
+    "data": {
+      "targets": ["client"],   // 这行注释      <- PS 5.1 拒绝
+      "extraArgs": [],         <- 这个尾逗号也拒绝
+    }
+  }
+}
+```
+
+也就是说，**同一份 conf，Luban 读得了、右键读不了**。
+
+> 历史行为：解析失败时每个查询都返回空，脚本于是回落到硬编码的默认值——
+> 菜单照常执行、退出码 0、打印 Done，却完全忽略了你写的 `contextMenu` 段。
+> 「悄悄用了另一套设置」比「拒绝运行」危险得多。
+>
+> **现在会明确报错并 `exit 7`**，提示是哪个文件、以及这两个原因。
+
+PowerShell 7（`pwsh`）两样都支持，因此这个问题在 pwsh 下复现不出来。
+需要写说明就写在项目文档里，别写进 `luban.conf`。
 
 ---
 

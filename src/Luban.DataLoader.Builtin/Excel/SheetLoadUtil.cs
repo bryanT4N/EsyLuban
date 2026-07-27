@@ -84,7 +84,7 @@ public static class SheetLoadUtil
         {
             return null;
         }
-        var cells = ParseRawSheetContent(reader, orientRow, false);
+        var cells = ParseRawSheetContent(reader, orientRow, false, skippedLines);
         ValidateTitles(cells);
         var title = ParseTitle(cells, reader.MergeCells, orientRow, skippedLines);
         cells.RemoveAll(c => IsNotDataRow(c));
@@ -554,7 +554,12 @@ public static class SheetLoadUtil
 
     const int maxEmptyRowCount = 300;
 
-    private static List<List<Cell>> ParseRawSheetContent(IExcelDataReader reader, bool orientRow, bool headerOnly)
+    /// <summary>
+    /// [EsyLuban] rowOffset 是 reader 在此之前已消耗的行数。Cell.Row 会被
+    /// InvalidExcelValue 用来报告出错单元格的坐标（如 [C5]），不带上这个偏移，
+    /// 自包含表的坐标会比实际少一行 —— 正好把人指向上一行那个没问题的格子。
+    /// </summary>
+    private static List<List<Cell>> ParseRawSheetContent(IExcelDataReader reader, bool orientRow, bool headerOnly, int rowOffset = 0)
     {
         // TODO 优化性能
         // 几个思路
@@ -562,7 +567,7 @@ public static class SheetLoadUtil
         // 2. 空行优先跳过
         // 3. 跳过null或者empty的单元格
         var originRows = new List<List<Cell>>();
-        int rowIndex = 0;
+        int rowIndex = rowOffset;
         int emptyRowCount = 0;
         do
         {
@@ -662,7 +667,7 @@ public static class SheetLoadUtil
         {
             return null;
         }
-        var cells = ParseRawSheetContent(reader, orientRow, true);
+        var cells = ParseRawSheetContent(reader, orientRow, true, skippedLines);
         var title = ParseTitle(cells, reader.MergeCells, orientRow, skippedLines);
 
         int typeRowIndex = cells.FindIndex(IsTypeRow);
