@@ -144,11 +144,11 @@ git -C luban_examples checkout 879f5c5
 
 ## 哪些是 EsyLuban 自建的
 
-`dev/DataTables` 约 138 个文件中，自建的只有 7 个：
+`dev/DataTables` 约 139 个文件中，自建的只有 8 个：
 
 | 路径 | 用途 |
 |---|---|
-| `matrix/`（2 个） | 功能覆盖矩阵测例 |
+| `matrix/`（3 个） | 功能覆盖矩阵测例，含 `group_fields.xlsx`：字段级 group 的三种写法及优先级 |
 | `negatives/`（2 个） | 故意失败的负例（regex / range / set / not-default / path） |
 | `Assets/`（1 个） | path 校验用的占位资源 |
 | `test/inline_defs.xlsx` | 内联 `__enums__` / `__beans__` 子表测例 |

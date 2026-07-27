@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<table>
+  <record>
+    <id>1</id>
+    <f_none>10</f_none>
+    <f_row_c>20</f_row_c>
+    <f_row_s>30</f_row_s>
+    <f_cell_c>40</f_cell_c>
+    <f_cell_s>50</f_cell_s>
+    <f_conflict>60</f_conflict>
+  </record>
+</table>

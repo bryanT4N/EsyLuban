@@ -38,6 +38,10 @@ set MAIN_LOG=%EXAMPLE_ROOT%\TestOutputs\main_export.log
 set CONTEXTMENU_OUT=%EXAMPLE_ROOT%\TestOutputs\contextmenu
 set OUTPUT_DIR_XML=%EXAMPLE_ROOT%\TestOutputs\xml
 set OUTPUT_DIR_CODE=%EXAMPLE_ROOT%\TestOutputs\code_cs
+rem Single-group exports. Not baselined -- the assertion is about which fields
+rem survive filtering, which a baseline would state far less legibly.
+set OUTPUT_DIR_GROUP_C=%EXAMPLE_ROOT%\TestOutputs\group_client
+set OUTPUT_DIR_GROUP_S=%EXAMPLE_ROOT%\TestOutputs\group_server
 set BASELINE_DIR_XML=%ESY_ROOT%\baselines\xml
 set BASELINE_DIR_CODE=%ESY_ROOT%\baselines\code_cs
 set BASELINE_DIR_L10N=%ESY_ROOT%\baselines\json_l10n
@@ -149,7 +153,7 @@ rem assertions in the file -- a few failure-only paths (an export returning
 rem non-zero, the negatives corpus missing) contribute nothing when everything
 rem passes, which is the state this number is pinned to. Add or remove a check
 rem and this number must move with it; the run reports INCONCLUSIVE until it does.
-set EXPECTED_CHECKS=17
+set EXPECTED_CHECKS=18
 set DEADX_LOG=%EXAMPLE_ROOT%\TestOutputs\dead_xargs.log
 set DEADX_OUT=%EXAMPLE_ROOT%\TestOutputs\dead_xargs_out
 
@@ -234,6 +238,25 @@ if errorlevel 1 (
   echo [FAIL] code generation returned !errorlevel!
   set /a FAILED+=1
 )
+
+rem Every data baseline above comes from "-t all", which binds c/s/e -- so it
+rem filters nothing but group "t", and field-level group filtering was never
+rem compared against anything. Export two single-group targets and look inside.
+echo [EXAMPLE] generate single-group outputs -- via gen.bat
+call "!LUBAN_DIR!\gen.bat" -t client -d json -x outputDataDir="!OUTPUT_DIR_GROUP_C!"
+if errorlevel 1 (
+  echo [FAIL] client export returned !errorlevel!
+  set /a FAILED+=1
+)
+call "!LUBAN_DIR!\gen.bat" -t server -d json -x outputDataDir="!OUTPUT_DIR_GROUP_S!"
+if errorlevel 1 (
+  echo [FAIL] server export returned !errorlevel!
+  set /a FAILED+=1
+)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0check_group_filtering.ps1" ^
+  "!OUTPUT_DIR_GROUP_C!" "!OUTPUT_DIR_GROUP_S!"
+if errorlevel 1 set /a FAILED+=1
+set /a CHECKS+=1
 
 rem The right-click chain: forwarder -> impl -> --listTables -> -o export.
 rem

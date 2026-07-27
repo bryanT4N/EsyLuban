@@ -301,15 +301,17 @@ public class SelfContainedTableImporter : ITableImporter
         };
     }
 
+    // Delegate rather than reimplement. B1's group= replaces the group attribute
+    // of an XML <table> or a __tables__.xlsx row, and upstream parses both of
+    // those through CreateGroups -- so anything it accepts, B1 has to accept.
+    //
+    // This started life as a private copy that split on ',' only. The divergence
+    // was invisible until data used it: group="c;s" became a single group named
+    // literally "c;s", which matches no target, so a table that worked in
+    // __tables__.xlsx silently exported nowhere after migration. Sharing the
+    // function means a future change to upstream's separator rules follows us.
     private static List<string> ParseGroups(string groupStr)
     {
-        if (string.IsNullOrWhiteSpace(groupStr))
-        {
-            return new List<string>();
-        }
-        return groupStr.Split(',')
-            .Select(s => s.Trim())
-            .Where(s => !string.IsNullOrEmpty(s))
-            .ToList();
+        return SchemaLoaderUtil.CreateGroups(groupStr ?? "");
     }
 }

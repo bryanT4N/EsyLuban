@@ -1,0 +1,11 @@
+[
+  {
+    "id": 1,
+    "f_none": 10,
+    "f_row_c": 20,
+    "f_row_s": 30,
+    "f_cell_c": 40,
+    "f_cell_s": 50,
+    "f_conflict": 60
+  }
+]

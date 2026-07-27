@@ -31,3 +31,7 @@
 - 2026-07-27T01:28:21 refresh xml from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\xml
 - 2026-07-27T01:28:22 refresh code_cs from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\code_cs
 - 2026-07-27T01:28:22 refresh json_l10n from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\json
+- 2026-07-27T03:08:37 refresh coverage from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\json_nol10n
+- 2026-07-27T03:08:38 refresh xml from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\xml
+- 2026-07-27T03:08:38 refresh code_cs from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\code_cs
+- 2026-07-27T03:08:39 refresh json_l10n from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\json

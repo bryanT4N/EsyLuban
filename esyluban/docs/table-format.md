@@ -86,7 +86,20 @@
 把 `index` / `ref` / `path` / `range` / `sep` / `regex` 写成 `&ref=...`
 会得到一句明确的报错：`属于type的属性，必须用#分割，尝试 '<类型>#ref=...'`。
 
+**`&` 后面的值不要加引号。** 这里和 B1 正好相反 —— B1 写 `full_name="item.TbItem"`
+必须带引号，这里带了引号就错：
+
+| 写法 | 结果 |
+|---|---|
+| `int&group=c` | ✅ 字段属于 `c` 组 |
+| `int&group="c"` | ❌ 组名是**带引号的 `"c"`（3 个字符）** |
+
+`=` 后面的原文被整段当作值，引号不会被剥掉（`BeanSchemaFromExcelHeaderLoader`）。
+而一个匹配不上任何 target 的组名**不报错**，只是让这个字段从每个 target 里消失。
+两种写法都能通过校验，区别只在导出结果里 —— 所以这一条值得记住。
+
 同一字段既有 `##group` 行又有 `&group=` 时，`##group` 行胜出。
+（`matrix/group_fields.xlsx` 的 `f_conflict` 列就是这个用例，回归会验证它。）
 
 ### 基础类型
 

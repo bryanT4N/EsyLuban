@@ -28,6 +28,10 @@ public partial class Tables
     public matrix.TbContainers TbContainers {get; }
     public matrix.TbMatrixSingleton TbMatrixSingleton {get; }
     public matrix.TbMatrixList TbMatrixList {get; }
+    /// <summary>
+    /// 字段级 group 的三种写法及优先级
+    /// </summary>
+    public matrix.TbGroupFields TbGroupFields {get; }
     public matrix.TbValidators TbValidators {get; }
     public matrix.TbVerticalMerged TbVerticalMerged {get; }
     public tag.TbTestTag TbTestTag {get; }
@@ -91,6 +95,7 @@ public partial class Tables
         TbContainers = new matrix.TbContainers(loader("matrix_tbcontainers"));
         TbMatrixSingleton = new matrix.TbMatrixSingleton(loader("matrix_tbmatrixsingleton"));
         TbMatrixList = new matrix.TbMatrixList(loader("matrix/nested/TbMatrixList"));
+        TbGroupFields = new matrix.TbGroupFields(loader("matrix_tbgroupfields"));
         TbValidators = new matrix.TbValidators(loader("matrix_tbvalidators"));
         TbVerticalMerged = new matrix.TbVerticalMerged(loader("matrix_tbverticalmerged"));
         TbTestTag = new tag.TbTestTag(loader("tag_tbtesttag"));
@@ -156,6 +161,7 @@ public partial class Tables
         TbContainers.ResolveRef(this);
         TbMatrixSingleton.ResolveRef(this);
         TbMatrixList.ResolveRef(this);
+        TbGroupFields.ResolveRef(this);
         TbValidators.ResolveRef(this);
         TbVerticalMerged.ResolveRef(this);
         TbTestTag.ResolveRef(this);
