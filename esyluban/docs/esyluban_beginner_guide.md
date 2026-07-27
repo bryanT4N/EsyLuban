@@ -15,7 +15,8 @@
 
 1) **右键导表**是唯一入口。  
 2) 每个 Sheet 都必须有 `A1=##export` 与 `B1=表定义`。  
-3) 表头必须有 `##var`（字段名）与 `##type`（字段类型）。  
+3) 表头要有 `##var`（字段名）与 `##type`（字段类型）。  
+   （结构由程序员写在 schema 里时可以没有 `##type`，照模板来即可）  
 4) 类型写错会导致导出失败（尤其是 bool、enum、text）。  
 5) 出错看提示：会告诉你哪个表、哪一行有问题。  
 
@@ -25,7 +26,8 @@
 
 1) 按模板写表（A3）。  
 2) 保存 Excel。  
-3) 在 Excel 文件或数据目录上 **右键 -> Luban Export**。  
+3) 在 Excel 文件或数据目录上 **右键 → `Luban Export (Data)`**。  
+   （改了表结构、加删了字段时，还要再点一次 `Luban Export (Code)`）  
 4) 等待生成完成。  
 
 你不需要了解命令行或脚本细节。  
@@ -41,10 +43,15 @@
 
 ```
 A1: ##export
-B1: full_name="item.TbItem"
+B1: full_name="item.TbItem" & read_schema_from_file="true"
 ```
 
-**`full_name` 是唯一必填项**，其余字段都有缺省，能不写就不写：
+**`full_name` 是唯一必填项。** 但**结构写在本表标题行里时，还要加
+`read_schema_from_file="true"`** —— 它的默认值是 `false`（表示结构来自
+schema XML 或 `__beans__`）。整份手册的 A 章模板都属于「结构写在标题行」
+这一类，所以它们都带这一项。
+
+其余字段都有缺省，能不写就不写：
 
 | 字段 | 不写时 | 什么时候才需要写 |
 |---|---|---|
@@ -200,7 +207,7 @@ map 的写法比较容易出错，**必须按程序员提供的模板填写**。
 示例（单例表写法）：
 ```
 A1: ##export
-B1: full_name="global.TbGlobal" & mode="one"
+B1: full_name="global.TbGlobal" & mode="one" & read_schema_from_file="true"
 
 ##var  openLevel  maxBag
 ##type int        int
@@ -241,6 +248,10 @@ B1 里你会用到的只有 `full_name`（表的名字），偶尔加 `mode="one
 - **枚举报错**：写了不存在的枚举名。  
 - **text 报错**：写了不存在的 key。  
 - **路径报错**：资源路径不存在或拼写错误。  
+- **`invalid type. module:'x' type:'Y'`**：B1 少了 `read_schema_from_file="true"`，
+  Luban 于是去找一个并不存在的结构定义。  
+- **整张表没导出、也没报错**：A1 拼错了（如 `##Export` 之外的写法）。
+  日志里会有一条 WARN 指出该 sheet。  
 
 ---
 
@@ -255,13 +266,18 @@ B1 里你会用到的只有 `full_name`（表的名字），偶尔加 `mode="one
 
 ### A8. 策划常用表模板（拿来就用）
 
-> B1 里**只有 `full_name` 必须写**。下面模板里出现的其它字段，都是"确实需要偏离默认"时才加的。
+> B1 里**只有 `full_name` 必须写**，但这些模板都把结构写在 `##var` / `##type` 两行里，
+> 因此都要带 `read_schema_from_file="true"`（默认是 `false`）。
+> 除此之外出现的字段，才是"确实需要偏离默认"时才加的。
+>
+> 漏掉它的症状很好认：`invalid type. module:'item' type:'Item'` —— Luban 去找一个
+> 并不存在的 bean 了。
 
 #### A8.1 道具表（最常见）
 
 ```
 A1: ##export
-B1: full_name="item.TbItem"
+B1: full_name="item.TbItem" & read_schema_from_file="true"
 
 ##var  id  name   price  iconPath               desc
 ##type int string int    string#path=unity      text
@@ -276,7 +292,7 @@ B1: full_name="item.TbItem"
 
 ```
 A1: ##export
-B1: full_name="global.TbGlobal" & mode="one"
+B1: full_name="global.TbGlobal" & mode="one" & read_schema_from_file="true"
 
 ##var  openLevel  maxBag
 ##type int        int
@@ -289,15 +305,20 @@ B1: full_name="global.TbGlobal" & mode="one"
 
 ```
 A1: ##export
-B1: full_name="mail.TbRewards"
+B1: full_name="mail.TbRewards" & read_schema_from_file="true"
 
-##var  id  rewards#sep=;
+##var  id  rewardIds#sep=;
 ##type int list,int
 1      1001;1002;1003
 ```
 
 > list 写法依赖 `#sep`，按模板填写，不要改结构。  
 > 这里的 `list` 指字段类型；若要整张表以列表形式导出（无主键），才写 `mode="list"`。  
+>
+> **字段名不要与值类型名撞车。** 上面的字段叫 `rewardIds` 而不是 `rewards`，
+> 是因为 `mail.TbRewards` 会推导出值类型 `Rewards`，而 C# 里字段 `rewards` 与
+> 类型 `Rewards` 只差大小写，生成的代码编译不过。Luban 会直接报
+> `生成的c#字段名与类型名相同，会引起编译错误` 并终止导出。  
 
 ---
 
@@ -817,16 +838,26 @@ gen.bat -t client -d json -o your.TbFoo -x cleanUpOutputDir=0
   - **推荐**：写入 `xargs`  
   - **不推荐**：输出到临时目录  
 
-- `{target}.outputDataDir` / `{dataTarget}.outputDataDir`  
-  - **作用**：按 target / dataTarget 细分**数据**输出目录  
-  - **说明**：data 输出优先 `{target}.outputDataDir`，再回退到 `{dataTarget}.outputDataDir` 与全局 `outputDataDir`  
-  - **推荐**：多 target 时配置  
-  - **不推荐**：不同 target 共用目录  
-- `{target}.outputCodeDir` / `{codeTarget}.outputCodeDir`  
-  - **作用**：按 target / codeTarget 细分**代码**输出目录  
-  - **说明**：code 输出优先 `{target}.outputCodeDir`，再回退到 `{codeTarget}.outputCodeDir` 与全局 `outputCodeDir`  
-  - **推荐**：双端同语言但目录不同必须配置 `{target}.outputCodeDir`  
-  - **不推荐**：不同 target 共用目录  
+- `{dataTarget}.outputDataDir`（如 `json.outputDataDir`、`xml.outputDataDir`）  
+  - **作用**：按数据格式细分输出目录  
+  - **解析顺序**：`{dataTarget}.outputDataDir` → 全局 `outputDataDir`，**只有这两层**  
+- `{codeTarget}.outputCodeDir`（如 `cs-simple-json.outputCodeDir`）  
+  - **作用**：按代码语言细分输出目录  
+  - **解析顺序**：`{codeTarget}.outputCodeDir` → 全局 `outputCodeDir`，**只有这两层**  
+
+> ⚠ **不存在 `{target}.` 这一层。** `client` / `server` / `all` 是 `targets` 里的
+> target 名，而 xargs 的命名空间取自 **dataTarget / codeTarget**
+> （见 `DefaultPipeline.ProcessDataTarget` 与 `OutputSaverBase.GetOutputDir`，
+> 后者用的是 `manifest.TargetName`，那里装的是 `json`、`cs-simple-json` 这类名字）。
+>
+> 写 `client.outputCodeDir=...` 既不报错也不生效。更糟的是它常与"双端同语言
+> 但目录不同"的需求一起出现：两个 target 实际写进同一个 `outputCodeDir`，
+> 而全量导出默认还带清理，先跑那个 target 的产物会被第二次导出直接删掉，
+> 最终只剩最后一个 target 的代码，日志却一切正常。
+>
+> 要按 target 分离输出，只能**给各 target 单独调用一次**，用不带前缀的
+> `-x outputDataDir=...` 指定（右键菜单的 target→目录映射正是这么翻译的，
+> 见 B0「让各 target 输出到各自目录」）。
 
 - `{dataTarget}.fileExt`  
   - **作用**：数据文件后缀  
@@ -1000,7 +1031,8 @@ B1 字段决定表结构与导出行为。以下是必须掌握的链路。
 程序员必须保证：  
 - `Tools/Luban` 路径可被向上定位  
 - `luban.conf` 可被找到  
-- `xargs` 参数完整（尤其是 `{target}.outputDataDir` 与 `{target}.outputCodeDir`）  
+- `xargs` 参数完整（按需用 `{dataTarget}.outputDataDir` / `{codeTarget}.outputCodeDir`；
+  **没有 `{target}.` 这一层**，见 B3.1）  
 
 ---
 
@@ -1593,10 +1625,15 @@ item.Item     id    int
 - 默认扫描 `dataDir` 全目录  
 - 支持文件或目录  
 - 支持绝对路径或相对 `dataDir`  
-- 自动忽略：`__tables__` / `__beans__` / `__enums__` / `Defines`  
+- 自动忽略：文件名为 `__tables__` / `__beans__` / `__enums__` 的表，
+  以及路径中任一段以 `.` / `_` / `~` 开头的文件（`FileUtil.IsIgnoreFile`）  
+- ⚠ **`Defines` 目录不在忽略之列**。它躲过扫描只是因为里面通常只有 `.xml`。
+  若在 `Defines/` 下放一个带 `##export` 的 xlsx，它同样会被当成数据表导入  
 
-**推荐**：右键导表时用 `scanPath` 限定范围。  
-**不推荐**：在 `xargs` 里写死 `scanPath`。  
+**不推荐**：在 `xargs` 里写死 `scanPath` —— 那会限制全局扫描。  
+
+> 右键菜单**并不使用** `scanPath`。它先用 `--listTables <路径>` 取得所选范围内的
+> 表名，再用 `-o` 逐个限定输出，同时保持 schema 全量加载以便跨表引用可解析。  
 
 ---
 
@@ -1632,15 +1669,17 @@ item.Item     id    int
 
 ### B24. JSON 输出结构与加载方式
 
-JSON 输出结构示意：  
+JSON 输出是**裸数组**，没有外层包装：
+
+```json
+[
+  {"id":1001,"name":"Sword","price":200},
+  {"id":1002,"name":"Shield","price":150}
+]
 ```
-{
-  "dataList": [
-    {"id":1001,"name":"Sword","price":200},
-    {"id":1002,"name":"Shield","price":150}
-  ]
-}
-```
+
+> 曾误写为 `{"dataList": [...]}`。实际产物可自行查看 `baselines/coverage/` 下
+> 任意 json —— 顶层就是 `[`。单例表（`mode="one"`）也是数组，只是只有一个元素。
 
 运行时加载：  
 - `Tables.TbItem.Get(1001)`  
@@ -1654,7 +1693,7 @@ JSON 输出结构示意：
 
 ```
 A1: ##export
-B1: full_name="demo.TbExample"
+B1: full_name="demo.TbExample" & read_schema_from_file="true"
 
 ##var  id  name  type  desc
 ##type int string int   text
