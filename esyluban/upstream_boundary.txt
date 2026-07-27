@@ -48,6 +48,9 @@ D	.travis.yml
 A	.github/workflows/ci.yml
 A	CHANGELOG.md
 A	CONTRIBUTING.md
+# 上游 README 的原文。根 README 被完全重写成 EsyLuban 自己的门面后，把上游那份
+# 原样挪到这里保留 —— fork 的首屏不该由被 fork 者占据，但也不该把它抹掉。
+A	docs/UPSTREAM_README.md
 A	src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs
 A	src/Luban.Core/Utils/B1Parser.cs
 A	src/Luban.Schema.Builtin/SelfContainedSchemaCollector.cs

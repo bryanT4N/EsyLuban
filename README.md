@@ -1,74 +1,107 @@
+<div align="center">
 
-> ## 这是 EsyLuban —— Luban 的一个 fork
->
-> 在上游 Luban 之上增加**自包含表定义**：每张 Excel 用 `A1=##export` 与 `B1` 元数据
-> 自我描述，不再需要集中式的 `__tables__.xlsx`；配套 Windows 右键菜单，让策划右键
-> 自己那张表就能导出。
->
-> ### 要用它
->
-> **不需要 clone，也不需要构建。** 从 Releases 下载，解压后读里面的 `README.md`——
-> 那份文档讲从下载到接入游戏项目的完整过程。两个版本功能一致：
->
-> - `EsyLuban-<版本>-win-x64-standalone.zip`（约 34 MB）—— **解压即用**，无需安装
-> - `EsyLuban-<版本>-win-x64.zip`（约 2 MB）—— 需要 [.NET 8 运行时](https://dotnet.microsoft.com/download/dotnet/8.0)
->
-> 完整文档：[esyluban/docs/](./esyluban/docs/README.md) —— 按「你是谁、要做什么」分好了，
-> 发布包内也附同一套
->
-> ### 要改它
->
-> 自有内容全部位于 [`esyluban/`](./esyluban/) 目录；仓库根是上游 Luban 原物，
-> `src/` 下除两个文件外只做新增。入口文档：[esyluban/README.md](./esyluban/README.md)。
-> clone 后请先运行 `esyluban\scripts\build.bat` 构建运行时（不进版本控制）。
->
-> 以下为上游 Luban 的原始 README。
+# EsyLuban
 
-- [README 中文](./README.md)
-- [README English](./README_EN.md)
+**让策划右键自己那张 Excel 就能导表**
 
-# Luban
+[![CI](https://github.com/OWNER/EsyLuban/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/EsyLuban/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg?style=flat-square)](#平台)
+[![based on](https://img.shields.io/badge/based%20on-Luban%204.10.2-informational.svg?style=flat-square)](https://github.com/focus-creative-games/luban)
 
-![icon](docs/images/logo.png)
+[快速开始](#快速开始) · [文档](esyluban/docs/README.md) · [与 Luban 的区别](#与-luban-的区别) · [参与开发](CONTRIBUTING.md)
 
-[![license](http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT) ![star](https://img.shields.io/github/stars/focus-creative-games/luban?style=flat-square)
+[English](README_EN.md)
 
+</div>
 
-luban是一个强大、易用、优雅、稳定的游戏配置解决方案。它设计目标为满足从小型到超大型游戏项目的简单到复杂的游戏配置工作流需求。
+---
 
-luban可以处理丰富的文件类型，支持主流的语言，可以生成多种导出格式，支持丰富的数据检验功能，具有良好的跨平台能力，并且生成极快。
-luban有清晰优雅的生成管线设计，支持良好的模块化和插件化，方便开发者进行二次开发。开发者很容易就能将luban适配到自己的配置格式，定制出满足项目要求的强大的配置工具。
+[Luban](https://github.com/focus-creative-games/luban) 的一个 fork，为配置表加上**自包含定义**与 **Windows 右键导表**。
 
-luban标准化了游戏配置开发工作流，可以极大提升策划和程序的工作效率。
+每张表在自己的第一行声明自己，改哪张表就右键哪张表 —— 不必维护集中式的
+`__tables__.xlsx`，也不必让策划开命令行。
 
-## 核心特性
+数据输出与上游逐字节相同，由回归基线保证。
 
-- 丰富的源数据格式。支持excel族(csv,xls,xlsx,xlsm)、json、xml、yaml、lua等
-- 丰富的导出格式。 支持生成binary、json、bson、xml、lua、yaml等格式数据
-- 增强的excel格式。可以简洁地配置出像简单列表、子结构、结构列表，以及任意复杂的深层次的嵌套结构
-- 完备的类型系统。不仅能表达常见的规范行列表，由于**支持OOP类型继承**，能灵活优雅表达行为树、技能、剧情、副本之类复杂GamePlay数据
-- 支持多种的语言。内置支持生成c#、java、go、cpp、lua、python、javascript、typescript、rust、php、erlang、godot 等语言代码，同时还能通过protobuf之类消息方案支持其他语言
-- 支持主流的消息方案。 protobuf(schema + binary + json)、flatbuffers(schema + json)、msgpack(binary)
-- 强大的数据校验能力。ref引用检查、path资源路径、range范围检查等等
-- 完善的本地化支持
-- 支持所有主流的游戏引擎和平台。支持Unity、Unreal、Cocos2x、Godot、微信小游戏等
-- 良好的跨平台能力。能在Win,Linux,Mac平台良好运行。
-- 支持所有主流的热更新方案。hybridclr、ilruntime、{x,t,s}lua、puerts等
-- 生成的代码未调用任何反射接口，兼容[Obfuz](https://github.com/focus-creative-games/obfuz)、Obfuscator、Confuser、.Net Refactor等常见代码混淆和加固工具。
-- 清晰优雅的生成管线，很容易在luban基础上进行二次开发，定制出适合自己项目风格的配置工具。
+## 快速开始
+
+从 [Releases](../../releases) 下载解压，然后：
+
+```bat
+Tools\Luban\gen.bat -t client -d json
+```
+
+`Generated\Data\` 下出现 json，说明工具链在你的机器上是好的。接下来读
+[接入你的项目](esyluban/docs/setup.md)。
+
+两个包功能相同：`standalone` 解压即用；小包约 2 MB，需要
+[.NET 8](https://dotnet.microsoft.com/download/dotnet/8.0)。
+
+## 一张表长什么样
+
+|  | A | B | C | D |
+|---|---|---|---|---|
+| **1** | `##export` | `full_name="item.TbItem" & read_schema_from_file="true"` | | |
+| **2** | `##var` | `id` | `name` | `price` |
+| **3** | `##type` | `int` | `string` | `int` |
+| **4** | | 1001 | Sword | 200 |
+
+B1 里只有 `full_name` 是必填的。
+
+## 与 Luban 的区别
+
+| | Luban | EsyLuban |
+|---|---|---|
+| 表怎么被发现 | 在 `__tables__.xlsx` 里登记 | 表自己的 A1/B1 声明自己 |
+| 嵌套结构定义在哪 | schema XML | 可以写在同一个文件的 `__beans__` sheet |
+| 策划怎么导表 | 命令行 | 右键菜单 |
+| 输出目录被误清空 | 会 | 拦下并说明理由 |
+| 无效的 xargs 键 | 静默忽略 | 告警并指出正确写法 |
+
+两种表定义方式**可以共存**，已有的 `__tables__.xlsx` 继续有效。
+
+## 平台
+
+工具链仅支持 Windows —— 右键菜单是这个 fork 的核心，它住在注册表里。
+解析表格的核心库是普通 .NET，跨平台可用，CI 里有一个 Linux job 证明这一点。
 
 ## 文档
 
-- [官方文档](https://www.datable.cn/)
-- [快速上手](https://www.datable.cn/docs/beginner/quickstart)
-- **示例项目** ([github](https://github.com/focus-creative-games/luban_examples)) ([gitee](https://gitee.com/focus-creative-games/luban_examples))
+| | |
+|---|---|
+| [写一张表](esyluban/docs/writing-tables.md) | 给策划 |
+| [接入你的项目](esyluban/docs/setup.md) | 给程序员 |
+| [表格式参考](esyluban/docs/table-format.md) | 类型、嵌套、纵表、校验器 |
+| [配置参考](esyluban/docs/configuration.md) | `luban.conf` 与命令行 |
+| [目标与输出](esyluban/docs/targets-and-output.md) | 三种 target、格式选型、输出目录 |
+| [右键菜单](esyluban/docs/context-menu.md) | 安装、多套件、升级 |
+| [出错了怎么办](esyluban/docs/troubleshooting.md) | 报错查询 |
+| [它是怎么工作的](esyluban/docs/how-it-works.md) | 导表链路与扩展点 |
 
-## 支持与联系
+完整索引见 [esyluban/docs/](esyluban/docs/README.md)。
 
-- QQ群: 692890842 （Luban开发交流群）
-- discord: <https://discord.gg/dGY4zzGMJ4>
-- 邮箱: <luban@code-philosophy.com>
+## 与上游的关系
 
-## license
+对上游代码**只新增、不修改**是本 fork 的核心约束。完整改动面登记在
+[`upstream_boundary.txt`](esyluban/upstream_boundary.txt)，并由回归逐条比对 ——
+它不是说明，是断言。
 
-Luban is licensed under the [MIT](https://github.com/focus-creative-games/luban/blob/main/LICENSE) license
+三个核心能力全部靠新增文件经 `Priority` 自注册实现，不参与跟进上游时的合并冲突。
+不得不改动的上游文件目前有三个，每个都在清单里写明了绕不开的理由。
+
+## 参与开发
+
+```bat
+git clone <this repo>
+cd EsyLuban
+esyluban\scripts\build.bat
+esyluban\scripts\test\run_full_tests_example.bat
+```
+
+详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## License
+
+MIT。上游 Luban 版权归 Code Philosophy Technology Ltd. 所有，见 [LICENSE](LICENSE)。
+上游原始 README 保留在 [docs/UPSTREAM_README.md](docs/UPSTREAM_README.md)。

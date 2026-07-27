@@ -105,6 +105,9 @@ foreach ($md in $mdFiles) {
     foreach ($m in [regex]::Matches($text, '\]\(([^)#][^)]*)\)')) {
         $link = $m.Groups[1].Value
         if ($link -match '^[a-z]+:') { continue }        # external URL
+        # GitHub resolves ../../releases and ../../issues against the repository
+        # URL, not the file tree, so they have no on-disk counterpart to check.
+        if ($link -match '^\.\./\.\./(releases|issues|pulls|wiki|discussions)') { continue }
         $link = ($link -split '#')[0]
         if ($link -eq '') { continue }
         $target = Join-Path $md.DirectoryName $link

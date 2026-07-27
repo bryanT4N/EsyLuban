@@ -1,78 +1,98 @@
+<div align="center">
 
-> ## This is EsyLuban — a fork of Luban
->
-> It adds **self-contained table definitions** on top of upstream Luban: each Excel sheet
-> describes itself via `A1=##export` and `B1` metadata, so the central `__tables__.xlsx`
-> is no longer needed. A Windows context menu lets designers export just their own table.
->
-> ### To use it
->
-> **No clone, no build required.** Download from Releases and read the `README.md` inside —
-> it covers the whole path from download to integrating with a game project.
-> Two builds, same features:
->
-> - `EsyLuban-<version>-win-x64-standalone.zip` (~34 MB) — **runs as-is**, nothing to install
-> - `EsyLuban-<version>-win-x64.zip` (~2 MB) — needs the [.NET 8 runtime](https://dotnet.microsoft.com/download/dotnet/8.0)
->
-> Documentation (Chinese): [esyluban/docs/](./esyluban/docs/README.md)
-> (also bundled in the release package)
->
-> ### To modify it
->
-> All fork-owned content lives under [`esyluban/`](./esyluban/); the repository root stays
-> as upstream Luban, with only two modified files under `src/` and the rest additions only.
-> Entry point: [esyluban/README.md](./esyluban/README.md).
-> After cloning, run `esyluban\scripts\build.bat` first to build the runtime
-> (it is not under version control).
->
-> The original upstream Luban README follows.
+# EsyLuban
 
-- [README 中文](./README.md)
-- [README English](./README_EN.md)
+**Let designers export their own spreadsheet from the right-click menu**
 
-# Luban
+[![CI](https://github.com/OWNER/EsyLuban/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/EsyLuban/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg?style=flat-square)](#platform)
+[![based on](https://img.shields.io/badge/based%20on-Luban%204.10.2-informational.svg?style=flat-square)](https://github.com/focus-creative-games/luban)
 
-![icon](docs/images/logo.png)
+[中文](README.md)
 
-[![license](http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT) ![star](https://img.shields.io/github/stars/focus-creative-games/luban?style=flat-square)
+</div>
 
+---
 
-luban is a powerful, easy-to-use, elegant, and stable game configuration solution. It is designed to meet the needs of simple to complex game configuration workflows from small to very large game projects.
+A fork of [Luban](https://github.com/focus-creative-games/luban) that adds
+**self-contained table definitions** and a **Windows context menu**.
 
-luban can handle a variety of file types, supports popular languages, can generate multiple export formats, supports rich data inspection functions, has good cross-platform capabilities, and generates extremely fast.
-Luban has a clear and elegant generation pipeline design, supports good modularization and plug-in, and is convenient for developers to carry out secondary development. Developers can easily adapt luban to their own configuration format, and customize powerful configuration tools that meet project requirements.
+Each spreadsheet declares itself on its own first row, so there is no central
+`__tables__.xlsx` to maintain and no command line for designers to learn.
 
-Luban standardizes the game configuration development workflow, which can greatly improve the efficiency of planning and programming.
+Data output is byte-identical to upstream, held in place by regression baselines.
 
-## Core features
+## Quick start
 
-- Rich source data format. Support excel family (csv, xls, xlsx, xlsm), json, xml, yaml, lua, etc.
-- Rich export formats. Support generating binary, json, bson, xml, lua, yaml and other format data
-- Enhanced excel format. Simple configurations such as simple lists, substructures, structured lists, and arbitrarily complex deep nested structures can be concisely configured
-- Complete type system. Not only can it express common specification line lists, but it can flexibly and elegantly express complex GamePlay data such as behavior trees, skills, plots, and dungeons because **supports OOP type inheritance**
-- Support multiple languages. Supports generating language codes such as c#, java, go, cpp, lua, python, javascript, typescript, php, rust, godot, etc.
-- Support popular message schemes. protobuf(schema + binary + json), flatbuffers(schema + json), msgpack(binary)
-- Powerful data verification capability. ref reference check, path resource path, range range check, etc.
-- Perfect localization support
-- Supports all major game engines and platforms. Support Unity, Unreal, Cocos2x, Godot, WeChat games, etc.
-- Good cross-platform capability. It can run well on Win, Linux, and Mac platforms.
-- Support all mainstream hot update solutions. hybridclr, ilruntime, {x,t,s}lua, puerts, etc.
-- The generated code makes no reflection API calls, ensuring compatibility with common code obfuscation and hardening tools such as [Obfuz](https://github.com/focus-creative-games/obfuz), Obfuscator, Confuser, and .NET Refactor.
-- Clear and elegant generation pipeline, it is easy to carry out secondary development on the basis of luban, and customize a configuration tool suitable for your own project style.
+Download a release, unzip, then:
+
+```bat
+Tools\Luban\gen.bat -t client -d json
+```
+
+json files appearing under `Generated\Data\` means the toolchain works on your machine.
+
+Two packages, same features: `standalone` runs as-is; the small one needs
+[.NET 8](https://dotnet.microsoft.com/download/dotnet/8.0).
+
+## What a table looks like
+
+|  | A | B | C | D |
+|---|---|---|---|---|
+| **1** | `##export` | `full_name="item.TbItem" & read_schema_from_file="true"` | | |
+| **2** | `##var` | `id` | `name` | `price` |
+| **3** | `##type` | `int` | `string` | `int` |
+| **4** | | 1001 | Sword | 200 |
+
+`full_name` is the only required field in B1.
+
+## Differences from Luban
+
+| | Luban | EsyLuban |
+|---|---|---|
+| How tables are discovered | registered in `__tables__.xlsx` | each table declares itself in A1/B1 |
+| Where nested types live | schema XML | optionally a `__beans__` sheet in the same file |
+| How designers export | command line | right-click menu |
+| Output directory wiped by mistake | happens | refused, with the reason |
+| Ineffective xargs keys | silently ignored | warned, with the correct form |
+
+Both styles coexist — an existing `__tables__.xlsx` keeps working.
+
+## Platform
+
+The toolchain is Windows-only: the context menu is the point of this fork, and it
+lives in the Windows registry. The library that parses spreadsheets is plain .NET
+and runs anywhere — a Linux CI job exists to prove that rather than claim it.
 
 ## Documentation
 
-- [Official Documentation](https://www.datable.cn/)
-- [Quick Start](https://www.datable.cn/docs/beginner/quickstart)
-- **Example Project** ([github](https://github.com/focus-creative-games/luban_examples)) ([gitee](https://gitee.com/focus-creative-games/luban_examples) )
+**Documentation is Chinese-only.** The tool itself is language-neutral; if you read
+code more comfortably than Chinese, these are the two things worth knowing:
 
-## Support and contact
+- **Table format** — `A1` holds `##export`; `B1` holds `key="value"` pairs joined by
+  `&`, of which only `full_name` is required. Add `read_schema_from_file="true"`
+  when the structure is declared in this sheet's own `##var`/`##type` rows.
+- **Upstream boundary** — every change this fork makes to upstream code is listed in
+  [`upstream_boundary.txt`](esyluban/upstream_boundary.txt), and the regression
+  asserts that list matches reality. Three upstream files are modified; everything
+  else is additive, registered through Luban's `Priority` mechanism.
 
-- QQ group: 692890842 (Luban development exchange group)
-- discord: https://discord.gg/dGY4zzGMJ4
-- Email: luban@code-philosophy.com
+Full documentation: [esyluban/docs/](esyluban/docs/README.md) (Chinese).
 
+## Contributing
 
-## license
+```bat
+git clone <this repo>
+cd EsyLuban
+esyluban\scripts\build.bat
+esyluban\scripts\test\run_full_tests_example.bat
+```
 
-Luban is licensed under the [MIT](https://github.com/focus-creative-games/luban/blob/main/LICENSE) license
+See [CONTRIBUTING.md](CONTRIBUTING.md) (Chinese).
+
+## License
+
+MIT. Upstream Luban is Copyright (c) Code Philosophy Technology Ltd. — see
+[LICENSE](LICENSE). Upstream's original README is kept at
+[docs/UPSTREAM_README.md](docs/UPSTREAM_README.md).
