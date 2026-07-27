@@ -53,8 +53,6 @@ Two packages, same features: `standalone` runs as-is; the small one needs
 | How tables are discovered | registered in `__tables__.xlsx` | each table declares itself in A1/B1 |
 | Where nested types live | schema XML | optionally a `__beans__` sheet in the same file |
 | How designers export | command line | right-click menu |
-| Output directory wiped by mistake | happens | refused, with the reason |
-| Ineffective xargs keys | silently ignored | warned, with the correct form |
 
 Both styles coexist — an existing `__tables__.xlsx` keeps working.
 
