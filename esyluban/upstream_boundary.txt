@@ -42,9 +42,12 @@ D	.travis.yml
 
 # ── 新增文件（A）：靠 Priority=100 自注册覆盖内置实现，不动上游代码 ──
 #
-# ci.yml 是这份清单第一个抓到的东西 —— 加它的那次提交忘了同步清单，从全新
-# 克隆跑回归时当场报出来。守卫在它作者身上先生效了一次。
+# 下面三个都是被这份守卫抓出来的 —— 加它们的那几次提交都忘了同步清单，且都是
+# 从【全新克隆】跑回归时才报出来（本机 git diff 比的是工作区，提交前的那一刻
+# 恰好看不出差异）。守卫在它作者身上先后生效了三次。
 A	.github/workflows/ci.yml
+A	CHANGELOG.md
+A	CONTRIBUTING.md
 A	src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs
 A	src/Luban.Core/Utils/B1Parser.cs
 A	src/Luban.Schema.Builtin/SelfContainedSchemaCollector.cs

@@ -61,14 +61,23 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # ---- actual change surface (excluding our own esyluban/ subtree) -------------
-$raw    = & git -C $repoRoot diff --name-status $base -- . ':(exclude)esyluban'
+#
+# Two diffs, unioned. Plain `git diff` compares the WORKING TREE, which misses a
+# file that is staged or already committed but not yet in the manifest -- and
+# that is precisely how this guard caught its author three times running: green
+# locally, red the moment someone cloned the repo. Adding the HEAD diff makes the
+# local run answer the same question a fresh clone does.
 $actual = New-Object System.Collections.Generic.HashSet[string]
-foreach ($line in $raw) {
-    if ([string]::IsNullOrWhiteSpace($line)) { continue }
-    # First letter only: renames come through as R100 and friends.
-    $cols   = $line -split "`t"
-    $status = $cols[0].Substring(0, 1)
-    [void]$actual.Add("$status`t$($cols[-1])")
+foreach ($gitArgs in @(
+        @('diff', '--name-status', $base, '--', '.', ':(exclude)esyluban'),
+        @('diff', '--name-status', '--cached', $base, '--', '.', ':(exclude)esyluban'))) {
+    foreach ($line in (& git -C $repoRoot @gitArgs)) {
+        if ([string]::IsNullOrWhiteSpace($line)) { continue }
+        # First letter only: renames come through as R100 and friends.
+        $cols   = $line -split "`t"
+        $status = $cols[0].Substring(0, 1)
+        [void]$actual.Add("$status`t$($cols[-1])")
+    }
 }
 
 # ---- compare ----------------------------------------------------------------
