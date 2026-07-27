@@ -1,0 +1,88 @@
+name: CI
+
+# Why this exists
+#
+# Four independent reviews of this repository converged on one sentence: every
+# quality guarantee here assumed "the author's machine, and the author
+# remembering". The regression could only be run by hand, on Windows, by someone
+# who already knew how. So "21 assertions, all green" was a claim a stranger had
+# to take on faith.
+#
+# It was also wrong in a way nobody could have noticed locally: the SHA256
+# baselines were stored with git newline normalization on, so they only matched
+# on a machine with core.autocrlf=true. Anyone else cloning this repo would have
+# seen 405 baseline files fail at once. A checkout on a runner is exactly the
+# kind of foreign machine that catches this.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows - build, unit tests, full regression
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The upstream-boundary guard diffs against the pinned base commit,
+          # which is an ancestor several dozen commits back. A shallow checkout
+          # would not contain it, and the guard fails loudly rather than
+          # silently passing -- but there is no reason to make it do that.
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build runtime
+        run: esyluban\scripts\build.bat
+        shell: cmd
+
+      - name: Unit tests
+        run: esyluban\scripts\test\run_unit_tests.bat
+        shell: cmd
+
+      # The regression is the real gate: baselines, negatives, the right-click
+      # chain, the release example, and the guards that keep this repo honest.
+      # Its exit code is already meaningful -- it is derived from a running
+      # failure count, not from whatever the last command happened to return.
+      - name: Full regression
+        run: esyluban\scripts\test\run_full_tests_example.bat
+        shell: cmd
+
+      # Comparison reports make a baseline failure diagnosable from the PR page
+      # instead of requiring a local reproduction.
+      - name: Upload comparison reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compare-reports
+          path: |
+            esyluban/examples/dev/TestOutputs/compare_report*.json
+            esyluban/examples/dev/TestOutputs/*.log
+          if-no-files-found: ignore
+
+  linux:
+    name: Linux - core library builds and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # This job exists to make a boundary visible rather than to serve Linux
+      # users. EsyLuban's tooling is Windows-only on purpose -- the right-click
+      # menu is the whole point, and it lives in the Windows registry. But the
+      # part that actually parses spreadsheets is ordinary .NET, and saying so
+      # is worth more than claiming it.
+      - name: Build core
+        run: dotnet build src/Luban/Luban.csproj -c Release
+
+      - name: Unit tests
+        run: dotnet test src/Luban.Tests/Luban.Tests.csproj -c Release
