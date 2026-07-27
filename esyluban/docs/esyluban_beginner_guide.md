@@ -821,10 +821,16 @@ gen.bat -t client -d json -o your.TbFoo -x cleanUpOutputDir=0
   - **推荐**：`local`  
   - **不推荐**：`null`（生产会导致无数据输出）  
 
-- `outputSaver.{target}.cleanUpOutputDir`  
-  - **作用**：导出前清理旧文件  
-  - **推荐**：保持默认（true）  
-  - **不推荐**：关闭导致旧文件残留  
+- `outputSaver.{dataTarget}.cleanUpOutputDir` / `outputSaver.{codeTarget}.cleanUpOutputDir`  
+  - **作用**：导出前清理输出目录里不属于本次产物的文件  
+  - **前缀是 dataTarget / codeTarget，不是 target**（见 `LocalFileSaver.BeforeSave`，
+    它取的是 `manifest.TargetName`，而那装的是 `json` / `cs-simple-json` 这类名字）  
+  - **推荐**：不要写它。默认就是 true，写出来只会带来下面这个风险  
+  - ⚠ **写了会压过命令行**：Luban 先查带命名空间的键，找不到才回落全局键。
+    因此 conf 里写 `outputSaver.json.cleanUpOutputDir=1`，会让命令行的
+    `-x cleanUpOutputDir=0` **失效** —— 右键局部导表会重新变成"删光其他所有表"。
+    右键脚本为此同时传了两层的关闭键，但你自己在命令行覆盖时要注意这个优先级。  
+  - 关于清理本身的危险与安全闸，见 B2.3.1  
 
 #### B3.3 数据导出与后处理
 

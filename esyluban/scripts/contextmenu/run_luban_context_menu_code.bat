@@ -156,7 +156,7 @@ for %%t in (%TARGET_NAMES%) do (
     rem cleanUpOutputDir=0 is mandatory here -- see the note in the data script.
     rem Without it, generating code for one table deletes the generated code of
     rem every other table in outputCodeDir.
-    "!LUBAN_EXE!" --conf "!CONF_FILE!" -t %%t -c %%c -x cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
+    "!LUBAN_EXE!" --conf "!CONF_FILE!" -t %%t -c %%c -x cleanUpOutputDir=0 -x outputSaver.%%c.cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
     if errorlevel 1 (
       echo Code generation failed for target %%t code target %%c
     )

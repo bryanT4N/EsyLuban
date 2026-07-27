@@ -167,7 +167,7 @@ for %%t in (%DATA_TARGETS%) do (
   rem which destroys the whole point of exporting a selected subset.
   rem Full exports via gen.bat keep the cleanup, where it correctly removes
   rem leftovers from tables that no longer exist.
-  "!LUBAN_EXE!" --conf "!CONF_FILE!" -t %%t -d !DATA_FORMAT! !OUT_ARG! -x cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
+  "!LUBAN_EXE!" --conf "!CONF_FILE!" -t %%t -d !DATA_FORMAT! !OUT_ARG! -x cleanUpOutputDir=0 -x outputSaver.!DATA_FORMAT!.cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
   if errorlevel 1 (
     echo Export failed for target %%t
   ) else (
