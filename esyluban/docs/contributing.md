@@ -74,14 +74,15 @@ set /a CHECKS+=1
 ### 怎么刷新基线
 
 ```bat
-esyluban\scripts\test\refresh_coverage_baseline.bat
+esyluban\scripts\test\refresh_baselines.bat [coverage | xml | code | l10n | all]
 ```
 
-它用 `robocopy /MIR` 镜像同步，**刷错就永久覆盖**，之后的回归从此失去参照。
-只在确认输出变化符合预期时才刷。
+先跑一次回归让产物齐全，再刷新。它用 `robocopy /MIR` 镜像同步，**刷错就永久
+覆盖**，之后的回归从此失去参照 —— 只在确认输出变化符合预期时才刷，刷完看一眼
+`git diff --stat esyluban/baselines` 再提交。
 
-`core/` 没有刷新脚本，这是有意的 —— 它是历史证据，不可再生。
-xml / code_cs / json_l10n 三套目前需要手工同步，这是已知缺口。
+传 `core` 会被拒绝，这是有意的：它是上游在未迁移语料上的输出，一旦覆盖就再也
+拿不回来。
 
 ## 改动会被哪些守卫检查
 

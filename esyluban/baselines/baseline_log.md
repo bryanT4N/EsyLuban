@@ -27,3 +27,7 @@
 （如 "/apple" -> "苹果"），也就是说整条 l10n 链路一直处于零覆盖。
 
 - baselines/json_l10n/  examples/dev 全量导出，convertTextKeyToValue=1
+- 2026-07-27T01:28:21 refresh coverage from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\json_nol10n
+- 2026-07-27T01:28:21 refresh xml from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\xml
+- 2026-07-27T01:28:22 refresh code_cs from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\code_cs
+- 2026-07-27T01:28:22 refresh json_l10n from c:\Users\BryanT\Documents\WORK_PROJECTS\APP_PROJECTS\EsyLuban\esyluban\scripts\test\..\..\examples\dev\TestOutputs\json

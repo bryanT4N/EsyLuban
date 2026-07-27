@@ -27,16 +27,21 @@
 **其余四套是当前输出的快照，可以刷新。**
 
 ```
-esyluban\scripts\test\refresh_coverage_baseline.bat
+esyluban\scripts\test\refresh_baselines.bat [coverage | xml | code | l10n | all]
 ```
 
-它以 `examples/dev/TestOutputs/json_nol10n` 为源做镜像同步（`robocopy /MIR`，
-会删除源中已不存在的文件），并在 `baseline_log.md` 追加一条记录。
+不带参数等同于 `all`。刷新前先跑一次回归，产物才是齐的。它以
+`examples/dev/TestOutputs/` 下对应的导出为源做镜像同步（`robocopy /MIR`，会删除
+源中已不存在的文件），并在 `baseline_log.md` 追加记录。
 
-> **注意**：目前只有 `coverage/` 有刷新脚本。改动了 xml / 代码模板 / l10n 时，
-> 另外三套需要手工同步 —— 这是已知缺口。
+两道保护：
+
+- **拒绝刷新 `core/`** —— 传 `core` 会被明确拒绝并说明理由，不是静默跳过。
+- **拒绝以空目录覆盖** —— `robocopy /MIR` 在源为空时会清空目标**并返回成功**。
+  一次「导出失败但脚本继续跑」就足以毁掉整套基线且毫无痕迹，所以刷新前先数文件。
 
 **仅在确认输出变化符合预期时才刷新。** 基线一旦刷错，后续回归就永久失去了参照。
+刷完看一眼 `git diff --stat esyluban/baselines` 再提交。
 
 ## 为什么它们被标记为二进制
 
