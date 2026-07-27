@@ -19,3 +19,11 @@
 - baselines/code_cs/  examples/dev 全量生成 -c cs-simple-json
 
 两者均已验证为确定性输出（连续两次生成逐字节一致），可安全用作基线。
+
+## 2026-07-26 新增 l10n 基线
+
+本地化转换（text key -> 实际文案）此前跑了但从不比对：回归导出两份 json，
+只拿 no-l10n 那份比基线，with-l10n 那份写完就没人看。实测两份有 8 个文件不同
+（如 "/apple" -> "苹果"），也就是说整条 l10n 链路一直处于零覆盖。
+
+- baselines/json_l10n/  examples/dev 全量导出，convertTextKeyToValue=1

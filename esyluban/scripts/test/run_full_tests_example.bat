@@ -40,6 +40,8 @@ set OUTPUT_DIR_XML=%EXAMPLE_ROOT%\TestOutputs\xml
 set OUTPUT_DIR_CODE=%EXAMPLE_ROOT%\TestOutputs\code_cs
 set BASELINE_DIR_XML=%ESY_ROOT%\baselines\xml
 set BASELINE_DIR_CODE=%ESY_ROOT%\baselines\code_cs
+set BASELINE_DIR_L10N=%ESY_ROOT%\baselines\json_l10n
+set COMPARE_REPORT_L10N=%EXAMPLE_ROOT%\TestOutputs\compare_report_l10n.json
 set COMPARE_REPORT_XML=%EXAMPLE_ROOT%\TestOutputs\compare_report_xml.json
 set COMPARE_REPORT_CODE=%EXAMPLE_ROOT%\TestOutputs\compare_report_code.json
 set COMPARE_PS1=%~dp0compare_baseline.ps1
@@ -235,6 +237,16 @@ if errorlevel 1 set /a FAILED+=1
 powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
   -BaselineDir "!BASELINE_DIR_CODE!" -OutputDir "!OUTPUT_DIR_CODE!" ^
   -ReportPath "!COMPARE_REPORT_CODE!" -Label "code baseline"
+if errorlevel 1 set /a FAILED+=1
+
+rem The with-l10n export ran on every regression but was never compared --
+rem only the no-l10n copy went to a baseline. Text-key substitution therefore
+rem had zero coverage: if it silently stopped converting, nothing noticed.
+rem The two outputs differ in 8 files (e.g. "/apple" -> "苹果"), so this
+rem baseline is what keeps that path honest.
+powershell -NoProfile -ExecutionPolicy Bypass -File "!COMPARE_PS1!" ^
+  -BaselineDir "!BASELINE_DIR_L10N!" -OutputDir "!OUTPUT_DIR!" ^
+  -ReportPath "!COMPARE_REPORT_L10N!" -Label "l10n baseline"
 if errorlevel 1 set /a FAILED+=1
 
 rem Owned files silently swallowed by .gitignore are invisible until someone
