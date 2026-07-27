@@ -61,7 +61,7 @@ if not exist "!LUBAN_EXE!" (
 rem Wipe outputs first. Luban only touches the output directory at save time,
 rem so a failure during schema/load leaves the previous run's files in place --
 rem the baseline would then match yesterday's output and report success.
-for %%D in ("!OUTPUT_DIR!" "!OUTPUT_DIR_NO_L10N!" "!NEGATIVE_OUTPUT_DIR!" "!OUTPUT_DIR_XML!" "!OUTPUT_DIR_CODE!") do (
+for %%D in ("!OUTPUT_DIR!" "!OUTPUT_DIR_NO_L10N!" "!NEGATIVE_OUTPUT_DIR!" "!OUTPUT_DIR_XML!" "!OUTPUT_DIR_CODE!" "!DEADX_OUT!") do (
   if exist "%%~D" rmdir /s /q "%%~D"
 )
 
@@ -141,6 +141,7 @@ set VALIDATOR_FAILED=0
 set VALIDATOR_TOTAL=0
 set RC_FAILED=0
 set DEADX_LOG=%EXAMPLE_ROOT%\TestOutputs\dead_xargs.log
+set DEADX_OUT=%EXAMPLE_ROOT%\TestOutputs\dead_xargs_out
 
 call :CountErr "matrix.TbPathFail"       1 "negatives: path validator"
 call :CountErr "matrix.TbValidatorsFail" 4 "negatives: regex/default/range/set"
@@ -277,9 +278,15 @@ rem in complete silence, which is exactly how ten dead lines survived in this
 rem repo's own release example for months. Luban now warns; assert both
 rem directions, because a warning that never fires and one that always fires
 rem are equally useless.
+rem Exports to its own directory on purpose. It used to reuse OUTPUT_DIR_NO_L10N,
+rem which is exactly what the core and coverage baselines are compared against --
+rem so those two baselines were silently verifying THIS probe's output rather than
+rem the clean gen.bat export above. The parameters happened to be equivalent, so
+rem nothing broke; changing one line here would have moved the goalposts of the
+rem two most important baselines without a word of warning.
 "!LUBAN_EXE!" --conf "!CONF_FILE!" -t all -d json ^
-  -x outputDataDir="!OUTPUT_DIR_NO_L10N!" ^
-  -x client.outputDataDir="!OUTPUT_DIR_NO_L10N!" > "!DEADX_LOG!" 2>&1
+  -x outputDataDir="!DEADX_OUT!" ^
+  -x client.outputDataDir="!DEADX_OUT!" > "!DEADX_LOG!" 2>&1
 findstr /c:"[dead xargs]" "!DEADX_LOG!" >nul
 if errorlevel 1 (
   echo [FAIL] dead-xargs warning did not fire for a table-target-prefixed key

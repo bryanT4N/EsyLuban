@@ -1,0 +1,24 @@
+# ─────────────────────────────────────────────────────────────
+# EsyLuban 子树的属性规则
+#
+# 本文件是【新增文件】，与 esyluban/.gitignore 同理：需要新规则时新增
+# 分层文件，而不是修改上游根目录的 .gitattributes。
+# ─────────────────────────────────────────────────────────────
+
+# 回归基线按定义是【字节资产】—— 回归拿它们与本次导出逐文件比 SHA256。
+# 上游根 .gitattributes 的 `* text=auto` 会对它们做换行规范化：入库存 LF，
+# 检出时按本机 core.autocrlf 决定给 LF 还是 CRLF。而 Luban 在 Windows 上
+# 生成的是 CRLF。
+#
+# 于是基线能否通过，取决于【克隆者本机的 git 配置】：
+#   core.autocrlf=true   检出得 CRLF，与产物一致 -> 全绿（作者的机器）
+#   core.autocrlf=false  检出得 LF，与产物不一致 -> 405 个文件全红
+# 而失败信息只打印文件名，完全不指向这个真因。
+#
+# -text 关闭规范化：入库什么字节，检出就是什么字节。这与跨平台无关，
+# 即使永远只在 Windows 上跑也必须如此 —— 基线的意义就是逐字节可复现。
+baselines/** -text
+
+# release 示例工程里【已提交的生成物】同样是基线：回归用 gen_all.bat 导到
+# 暂存区，再与这份提交内容比对（见 scripts/test/run_full_tests_example.bat）。
+examples/release/Projects/** -text
