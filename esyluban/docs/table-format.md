@@ -63,6 +63,9 @@
 | `default` | 空单元格时用的值 | `level#default=1` |
 | `format` | 该单元格用哪种解析器 | `pos#format=lite` |
 
+`sep` 挂在字段名上和写进类型里（`(list#sep=;),int`）等效。**推荐写进类型里** ——
+嵌套容器只有那种写法能逐层指定分隔符，见[填复杂结构](filling-structures.md)。
+
 `format` 的取值只有四个，写别的报 `Unsupported data parser type`：
 
 | 值 | 单元格里长什么样（`list,int` / 一个 Vec3 bean） |
