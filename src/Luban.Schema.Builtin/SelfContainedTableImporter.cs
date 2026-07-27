@@ -40,8 +40,13 @@ public class SelfContainedTableImporter : ITableImporter
     /// <summary>
     /// schema 定义表：A1 同样是 ##export，但它们由 bean/enum schema loader 处理，
     /// 不是数据表。
+    ///
+    /// 这组名字既可能是【文件名】（<c>__beans__.xlsx</c>），也可能是数据表文件
+    /// 【内部的 sheet 名】—— 内联定义正是写在数据表旁边的 <c>__beans__</c> sheet 里
+    /// （见 SelfContainedSchemaCollector）。两处都要认，否则内联定义会被当成
+    /// "写坏了的数据表"而报一句无用的告警。
     /// </summary>
-    private static readonly HashSet<string> s_schemaDefinitionFileNames =
+    private static readonly HashSet<string> s_schemaDefinitionNames =
         new(StringComparer.OrdinalIgnoreCase) { "__beans__", "__enums__", "__tables__" };
 
     /// <summary>
@@ -87,7 +92,7 @@ public class SelfContainedTableImporter : ITableImporter
             {
                 continue;
             }
-            if (s_schemaDefinitionFileNames.Contains(Path.GetFileNameWithoutExtension(file)))
+            if (s_schemaDefinitionNames.Contains(Path.GetFileNameWithoutExtension(file)))
             {
                 continue;
             }
@@ -121,6 +126,16 @@ public class SelfContainedTableImporter : ITableImporter
             do
             {
                 string sheetName = reader.Name;
+
+                // 内联 schema sheet（数据表文件里的 __beans__ / __enums__）不是数据表，
+                // 由 SelfContainedSchemaCollector 负责。它的 A1 同样是 ##export、B1 同样
+                // 为空，若不在这里跳过，下面那句"有 ##export 但 B1 没有表元数据"的告警
+                // 就会对每个用了内联定义的文件各响一次 —— 而那恰恰是推荐写法。
+                if (s_schemaDefinitionNames.Contains(sheetName))
+                {
+                    continue;
+                }
+
                 if (!reader.Read() || reader.FieldCount == 0)
                 {
                     continue;

@@ -249,6 +249,28 @@ rem to debug it by hand, but nothing exercised it, so "documented" was the only
 rem evidence it still worked. It does; this keeps it that way.
 call :RightClickDirect item
 
+rem Inline schema sheets (a __beans__ / __enums__ sheet living next to the data
+rem in the same workbook) are the recommended way to declare a nested bean. They
+rem carry ##export in A1 and nothing in B1, exactly like a table someone forgot
+rem to fill in -- so the table importer used to warn once per such file. The
+rem warning was pure noise on the recommended layout, which is the fastest way
+rem to teach people to ignore warnings. Assert it stays quiet, while the same
+rem warning still fires for the files it is actually meant for (l10n text tables,
+rem XML-defined tables, continuation shards).
+findstr /c:"__beans__" /c:"__enums__" "!MAIN_LOG!" | findstr /c:"no table metadata in B1" >nul
+if errorlevel 1 (
+  findstr /c:"no table metadata in B1" "!MAIN_LOG!" >nul
+  if errorlevel 1 (
+    echo [FAIL] inline-schema check: the B1 warning never fires at all now
+    set /a FAILED+=1
+  ) else (
+    echo [OK]   inline-schema sheets silent, B1 warning still fires where it should
+  )
+) else (
+  echo [FAIL] inline-schema __beans__/__enums__ sheets still warn about missing B1
+  set /a FAILED+=1
+)
+
 rem A xargs key prefixed with a TABLE target name never takes effect -- the
 rem namespace comes from dataTarget/codeTarget. Luban used to accept such keys
 rem in complete silence, which is exactly how ten dead lines survived in this
