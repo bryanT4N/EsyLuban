@@ -824,6 +824,80 @@ gen.bat -t client -d json -o your.TbFoo -x cleanUpOutputDir=0
 | test | t | 仅测试或内部数据 |
 | all | c/s/e | 全量导出（生产常用） |
 
+### B2.5 ⚠ 「target」是三个不同的东西（读 B3 之前务必先看这节）
+
+Luban 里有三样东西都叫 target，名字相同、管的事毫不相干。绝大多数配置踩坑都
+源于把它们弄混。
+
+| | 名称 | 命令行 | 值举例 | 管什么 | 谁定义的 |
+|---|---|---|---|---|---|
+| ① | **表 target** | `-t` | `client` `server` `all` | 导出**哪些表**（按 group 过滤）、生成代码的命名空间与管理类名 | **你**，在 `luban.conf` 的 `targets` 里 |
+| ② | **dataTarget** | `-d` | `json` `bin` `xml` `lua` … | 数据导成**什么格式**（内置 16 种） | Luban 内置 |
+| ③ | **codeTarget** | `-c` | `cs-simple-json` `cpp-rawptr-bin` … | 代码生成成**什么语言**（内置 27 种） | Luban 内置 |
+
+一条完整命令同时含三者：
+
+```
+gen.bat  -t client    -d json      -c cs-simple-json
+         ↑① 导哪些表  ↑② 数据格式   ↑③ 代码语言
+```
+
+**最本质的区别**：① 是你自己起的名字，②③ 是 Luban 的固定名单。
+`client` 只在你的 `luban.conf` 里存在，`json` 则是 Luban 认得的。
+
+#### B2.5.1 xargs 的前缀只认 ② 和 ③
+
+```
+✅ json.outputDataDir=...               dataTarget 前缀，生效
+✅ cs-simple-json.outputCodeDir=...     codeTarget 前缀，生效
+✅ outputSaver.json.cleanUpOutputDir=0  同样是 dataTarget
+❌ client.outputDataDir=...             表 target 前缀，静默失效
+```
+
+写错的那一行**既不报错也不生效**。更麻烦的是它常与"双端同语言但目录不同"的
+需求一起出现：两个 target 实际写进同一个目录，而全量导出默认带清理，先跑那个
+target 的产物会被第二次导出直接删掉，日志却一切正常。
+
+源码依据：`OutputSaverBase.GetOutputDir` 取的是 `manifest.TargetName`，而
+`DefaultPipeline` 填进去的是 `-d` / `-c` 的值：
+
+```csharp
+ProcessDataTarget(name, ...)  → new OutputFileManifest(name, OutputType.Data)  // name 来自 -d
+ProcessCodeTarget(name, ...)  → new OutputFileManifest(name, OutputType.Code)  // name 来自 -c
+```
+
+> **`TargetName` 这个字段名本身就是误导** —— 它装的从来不是 `-t` 的值。
+> 日志里出现 `输出目标 'json'` 时，别去 `targets` 里找 `json`，那里没有。
+
+要按 ① 分离输出，只能给各 target 单独调用一次，用**不带前缀**的
+`-x outputDataDir=...`（右键菜单的 target→目录映射正是这么翻译的）。
+
+#### B2.5.2 每个位置该填哪一种
+
+```jsonc
+luban.conf
+  "targets": [{"name":"client", ...}]              // ① 你定义的表 target
+  "xargs": [
+    "json.outputDataDir=...",                      // ② dataTarget 前缀
+    "cs-simple-json.outputCodeDir=..."             // ③ codeTarget 前缀
+  ]
+  "contextMenu": {
+    "data": {
+      "targets":   ["client","server"],            // ① 复数：表 target 列表
+      "dataTarget": "json"                         // ② 单数：一种数据格式
+    },
+    "code": {
+      "targets":     ["client"],                   // ①
+      "codeTargets": ["cs-simple-json"]            // ③ 复数：可多种语言
+    }
+  }
+```
+
+**记忆钥匙**：`targets`（不带前缀）永远指表 target；带 `data` / `code` 前缀的
+才是格式与语言。
+
+---
+
 ### B3. xargs 参数详解（必须掌握）
 
 #### B3.1 输出目录与文件名
@@ -1125,7 +1199,7 @@ flowchart TD
 可用标签：  
 - `sep`：分隔符  
 - `non_empty`：不可为空  
-- `multi_rows`：多行结构  
+- `multi_rows`：一条记录跨多行（等价写法：字段名前加 `*`），见 B8.6.1  
 - `default`：默认值  
 - `format`：紧凑格式  
 
@@ -1175,8 +1249,10 @@ position#format=lite
   - **推荐**：关键字段  
 
 - `multi_rows`  
-  - **作用**：多行结构  
-  - **推荐**：大型结构列表  
+  - **作用**：让一条父记录跨多行，子元素每行一个（等价写法：字段名前加 `*`）  
+  - **推荐**：子元素是结构、或数量多到无法塞进单个单元格时  
+  - ⚠ **必须合并父标题格覆盖全部子字段列**，否则该字段只被认作单列  
+  - 完整写法与 `__beans__` 配合方式见 **B8.6.1**  
 
 #### B8.5 紧凑格式示例（lite）
 
@@ -1205,6 +1281,103 @@ position#format=lite
 说明：  
 - `rewards` 被拆成两个子字段  
 - 多级标题避免流式格式的歧义  
+- **列范围由合并单元格决定**，详见下一节
+
+#### B8.6.1 多行嵌套：一条记录跨多行（`*字段` / `#multi_rows`）
+
+前面 A4.3 的 list 写法是"一个单元格里塞多个值"（`1;2;3`）。当每个元素本身是
+一个结构、或者数量多到几十个时，那种写法就没法用了 —— 一个 46 帧的动画会变成
+三千字符的天书，策划无从下手。
+
+**多行嵌套**让一条父记录占据多行：父列只在第一行填，子元素每个一行。
+
+##### 语法
+
+标记该字段跨多行，两种写法等价：
+
+```
+*frames                 星号前缀（简写，推荐）
+frames#multi_rows=1     完整写法
+```
+
+##### 完整示例（这份布局已实测可用）
+
+一张动画表，每个动画有若干帧：
+
+```
+        A          B                 C     D          E                    F
+行1  ##export   full_name="game.TbUiAnimation" & read_schema_from_file="true"
+行2  ##var      id                fps   playback   *frames        ←──合并 E2:F2──→
+行3  ##type     string            int   string     list,game.UiFrame
+行4  ##var                                         path                 delay
+行5             inventory_select  10    loop       .../Select01a_01.png  2
+行6                                                .../Select01a_02.png  2
+行7                                                .../Select01a_03.png  2
+行8                                                .../Select01a_04.png  2
+```
+
+导出结果就是真正的嵌套，不需要外键关联：
+
+```json
+[{ "id":"inventory_select", "fps":10, "playback":"loop",
+   "frames":[ {"path":".../Select01a_01.png","delay":2},
+              {"path":".../Select01a_02.png","delay":2}, ... ] }]
+```
+
+四条规则，缺一不可：
+
+| 规则 | 说明 |
+|---|---|
+| **`*` 加在父字段名上** | 写在 `##var` 行，即 `*frames` |
+| **`##type` 写 `list,<bean>`** | 元素类型必须是已定义的 bean |
+| **子字段名写在下一个 `##var` 行** | 与父字段同列起，逐列排开 |
+| **⚠ 合并父标题格，覆盖全部子字段列** | 上例合并 `E2:F2`（两个子字段占两列） |
+
+> **合并单元格不是排版，是语法。** Luban 靠它确定这个 list 字段占几列。
+> 不合并的话，`frames` 只被认作单列，导出时报
+> `bean:'game.UiFrame' 缺失 列:'delay'`。这是本节最容易漏的一步。
+
+##### 元素类型定义在哪：`__beans__` 只需声明子元素
+
+主表结构仍可由 `##var` / `##type` 推导（`read_schema_from_file="true"`），
+**`__beans__` 里只需要声明那个嵌套的元素类型** —— 因为一行标题描述不了嵌套。
+
+同一个 Excel 里加一个名为 `__beans__` 的 sheet：
+
+```
+        A       B              …        J        K       L
+行1  ##export
+行2  ##var   full_name  parent … group  *fields  ←──合并 J2:P2──→
+行3  ##var                             name     alias   type   group comment tags variants
+行4  ##
+行5          game.UiFrame              path             string
+行6                                    delay            int
+```
+
+注意 `__beans__` 自己也用了多行嵌套（`*fields`），是这套语法最好的范例。
+
+它同样有两个易错点：
+
+- **列必须写全**。`full_name` / `parent` / `valueType` / `alias` / `sep` /
+  `comment` / `tags` / `group` / `*fields` 一个都不能少，值可以为空。
+  少写会报 `bean:'__intern__.__BeanInfo__' 缺失 列:'parent'`。
+- **`*fields` 那格要合并**，覆盖全部子列（上例 `J2:P2`）。
+
+##### 什么时候拆表、什么时候用嵌套
+
+| 场景 | 建议 |
+|---|---|
+| 子元素少、且逻辑上从属于父记录（动画的帧、地点的背景图） | **用多行嵌套**，结构更忠实，生成代码里直接是 `List<Frame>` |
+| 子元素本身要被别处引用（`ref` 指向它） | **拆成独立的表**，嵌套结构无法被 ref |
+| 子元素数量极大（上万行） | **拆表**，嵌套会让父表变得难以浏览 |
+
+##### 纵表里的多行嵌套
+
+纵表（`##column`）同样支持，只是合并方向变成纵向：字段名在标题列纵向合并
+N 行，数据填在对应的记录列上。参见 `examples/dev/DataTables/matrix/vertical_merged.xlsx`。
+
+> 这个组合曾长期不可用：`##export` 行造成的坐标偏移在纵表分支上减错了轴，
+> 导致 list 字段静默只剩第一个元素。已于 2026-07 修复并补了 fixture。
 
 #### B8.7 纵表与横表
 
