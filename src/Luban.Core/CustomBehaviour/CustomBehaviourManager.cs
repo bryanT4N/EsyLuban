@@ -52,6 +52,15 @@ public class CustomBehaviourManager
         throw new Exception($"behaviour:{name} type:{typeof(T)} not exists");
     }
 
+    /// <summary>
+    /// [EsyLuban] 某个名字是否注册过对应类别的行为，不构造实例。
+    /// 用于在不实例化的前提下判断一个名字是不是 dataTarget / codeTarget。
+    /// </summary>
+    public bool HasBehaviour<C>(string name) where C : Attribute, ICustomBehaviour
+    {
+        return _behaviourCreators.ContainsKey((typeof(C), name));
+    }
+
     public bool TryCreateBehaviour<T, C>(string name, out T behaviour) where C : Attribute, ICustomBehaviour where T : class
     {
         if (_behaviourCreators.TryGetValue((typeof(C), name), out var bi))

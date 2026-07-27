@@ -597,9 +597,18 @@ runtime\Luban.exe --conf luban.conf -t client --listTables <文件或目录>
 
 > 为什么不能在 `xargs` 里写 `client.outputDataDir`：Luban 的 xargs 命名空间
 > 绑定的是 **dataTarget / codeTarget**（`json`、`cs-simple-json`…），不是
-> `targets.name` 的那个 target。写了既不报错也不生效，只会让人误以为已按
-> target 分好目录。上面这份映射由右键脚本读取后，逐个翻译成
+> `targets.name` 的那个 target。上面这份映射由右键脚本读取后，逐个翻译成
 > `-x outputDataDir=`，走的才是 Luban 真正支持的语义。
+>
+> 万一写错了也不必靠眼睛发现：EsyLuban 会在启动时对这类键给出警告
+>
+> ```
+> WARN|[dead xargs] "client.outputDataDir" 不会生效："client" 是 conf 里 targets
+>      的名字（-t 的那个 target），而 xargs 的命名空间只认 dataTarget…
+> ```
+>
+> 上游对这类键是完全沉默的 —— 既不报错也不生效，所有 target 一起回落到全局
+> 键、彼此覆盖输出。本仓库自己的发布示例就因此躺了十行死配置很久。
 
 **右键之外，整包导出怎么按 target 分目录。** 上面那份映射只服务右键菜单。
 `gen.bat` 一次只导一个 target，要让多个 target 各进各的目录，同样得靠

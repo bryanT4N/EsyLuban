@@ -140,6 +140,7 @@ rem records that are meant to fail. check.bat covers the "must reject" side.
 set VALIDATOR_FAILED=0
 set VALIDATOR_TOTAL=0
 set RC_FAILED=0
+set DEADX_LOG=%EXAMPLE_ROOT%\TestOutputs\dead_xargs.log
 
 call :CountErr "matrix.TbPathFail"       1 "negatives: path validator"
 call :CountErr "matrix.TbValidatorsFail" 4 "negatives: regex/default/range/set"
@@ -247,6 +248,29 @@ rem branch is documented as the way to drive the export from a build script or
 rem to debug it by hand, but nothing exercised it, so "documented" was the only
 rem evidence it still worked. It does; this keeps it that way.
 call :RightClickDirect item
+
+rem A xargs key prefixed with a TABLE target name never takes effect -- the
+rem namespace comes from dataTarget/codeTarget. Luban used to accept such keys
+rem in complete silence, which is exactly how ten dead lines survived in this
+rem repo's own release example for months. Luban now warns; assert both
+rem directions, because a warning that never fires and one that always fires
+rem are equally useless.
+"!LUBAN_EXE!" --conf "!CONF_FILE!" -t all -d json ^
+  -x outputDataDir="!OUTPUT_DIR_NO_L10N!" ^
+  -x client.outputDataDir="!OUTPUT_DIR_NO_L10N!" > "!DEADX_LOG!" 2>&1
+findstr /c:"[dead xargs]" "!DEADX_LOG!" >nul
+if errorlevel 1 (
+  echo [FAIL] dead-xargs warning did not fire for a table-target-prefixed key
+  set /a FAILED+=1
+) else (
+  findstr /c:"[dead xargs]" "!MAIN_LOG!" >nul
+  if errorlevel 1 (
+    echo [OK]   dead-xargs warning: fires on a dead key, silent on a clean conf
+  ) else (
+    echo [FAIL] dead-xargs warning fired on the normal export, which has no dead keys
+    set /a FAILED+=1
+  )
+)
 if !RC_FAILED! gtr 0 (
   echo [FAIL] right-click chain: !RC_FAILED! folder^(s^) failed
   set /a FAILED+=1

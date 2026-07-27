@@ -19,6 +19,9 @@
 // SOFTWARE.
 
 using CommandLine;
+using Luban.CodeTarget;
+using Luban.CustomBehaviour;
+using Luban.DataTarget;
 using Luban.DataLoader;
 using Luban.Pipeline;
 using Luban.Schema;
@@ -156,6 +159,7 @@ internal static class Program
             var launcher = new SimpleLauncher();
             launcher.Start(xargs);
             AddCustomTemplateDirs(opts.CustomTemplateDirs);
+            WarnDeadTargetScopedXargs(xargs, config);
 
             if (listTablesOnly)
             {
@@ -276,6 +280,56 @@ internal static class Program
         return ((Parsed<CommandOptions>)result).Value;
     }
 
+
+    /// <summary>
+    /// [EsyLuban] 对以【表 target】名字开头的 xargs 键发出警告。
+    ///
+    /// xargs 的命名空间取自 dataTarget / codeTarget —— 见
+    /// <see cref="Luban.OutputSaver.OutputSaverBase.GetOutputDir"/>，它把
+    /// manifest.TargetName 当命名空间传进去，而那里面装的是 "json"、
+    /// "cs-simple-json" 这类名字，永远不是 -t 的那个 target。
+    ///
+    /// 于是 "client.outputDataDir=..." 这种写法看着完全合理，却既不报错也不
+    /// 生效：选项从头到尾没人读，所有 target 一起回落到全局键，彼此覆盖输出。
+    /// 本仓库自己的发布示例就这样躺了很久 —— 没有任何信号，只能靠人去比对
+    /// 产物落在哪个目录才能发现。
+    ///
+    /// 只警告【确定无效】的那一类：前缀是 conf 里 targets 的名字，且该名字没
+    /// 被注册成 dataTarget 或 codeTarget。这样不会误伤本次运行碰巧没读到的键
+    /// （比如只导数据时的 outputCodeDir）。
+    /// </summary>
+    private static void WarnDeadTargetScopedXargs(Dictionary<string, string> xargs, LubanConfig config)
+    {
+        if (config.Targets == null)
+        {
+            return;
+        }
+        var tableTargetNames = config.Targets.Select(t => t.Name).ToHashSet();
+        foreach (var key in xargs.Keys)
+        {
+            int dot = key.IndexOf('.');
+            if (dot <= 0)
+            {
+                continue;
+            }
+            string prefix = key.Substring(0, dot);
+            if (!tableTargetNames.Contains(prefix))
+            {
+                continue;
+            }
+            // 同名的 dataTarget/codeTarget 会真正读到它，那就不是死键。
+            if (CustomBehaviourManager.Ins.HasBehaviour<DataTargetAttribute>(prefix)
+                || CustomBehaviourManager.Ins.HasBehaviour<CodeTargetAttribute>(prefix))
+            {
+                continue;
+            }
+            s_logger.Warn(
+                "[dead xargs] {} 不会生效：{} 是 conf 里 targets 的名字（-t 的那个 target），"
+                + "而 xargs 的命名空间只认 dataTarget（json、bin…）与 codeTarget（cs-simple-json…）。"
+                + "要按 target 分目录，请在每次调用时用 -x {}=... 传入。",
+                key, prefix, key.Substring(dot + 1));
+        }
+    }
 
     private static Dictionary<string, string> ParseXargs0(IEnumerable<string> xargs)
     {
