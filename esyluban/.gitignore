@@ -18,6 +18,9 @@ examples/dev/TestOutputs/
 # release 工程的回归导出暂存区。它导到这里、再与 Assets 下【已提交】的
 # 生成物比对 —— 那份提交内容才是基线，所以暂存区本身不进版本控制。
 examples/release/TestOutputs/
+# 硬失败负例（重复主键、mode=one 多行）的运行日志。这些用例本来就要中止，
+# 日志只用于断言「是因为那条错误中止的」，不是资产。
+examples/negatives_hard/TestOutputs/
 
 # 发布包暂存与产物：scripts/release/make_release.bat 组装出来的，
 # 内容全部是 runtime/ 与 templates/ 的副本，没有一份是原始资产。
@@ -50,4 +53,3 @@ __pycache__/
 # 注意：examples/release 下 Unity 工程的生成物（Assets/GenCode、Assets/GenData）
 # 【刻意保留】进版本控制 —— 它们是"发布示例"的展示内容，用于说明生成结果的样子；
 # 且 Unity 要求 .meta 与资源一一对应，忽略后工程会报缺失。
-

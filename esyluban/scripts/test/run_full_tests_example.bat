@@ -47,6 +47,7 @@ set RELEASE_TMP=%RELEASE_ROOT%\TestOutputs\gen_all
 set COMPARE_REPORT_L10N=%EXAMPLE_ROOT%\TestOutputs\compare_report_l10n.json
 set COMPARE_REPORT_XML=%EXAMPLE_ROOT%\TestOutputs\compare_report_xml.json
 set COMPARE_REPORT_CODE=%EXAMPLE_ROOT%\TestOutputs\compare_report_code.json
+set HARD_ROOT=%ESY_ROOT%\examples\negatives_hard
 set COMPARE_PS1=%~dp0compare_baseline.ps1
 
 set FAILED=0
@@ -126,7 +127,7 @@ rem produce is what catches that.
 rem
 rem Counted per source rather than as one total, so a drop tells you WHICH
 rem validator family stopped running. A single number would let one family die
-rem while another gained an error, and still add up to 8.
+rem while another gained an error, and still add up to the same total.
 rem
 rem Note on group filtering: the negatives carry group="t" and the "all" target
 rem binds c/s/e, so their OUTPUT is correctly filtered out (no matrix_tbpathfail
@@ -137,11 +138,33 @@ rem
 rem --validationFailAsError is deliberately NOT used here: the corpus contains
 rem records that are meant to fail. check.bat covers the "must reject" side.
 set VALIDATOR_FAILED=0
+set VALIDATOR_TOTAL=0
 
 call :CountErr "matrix.TbPathFail"       1 "negatives: path validator"
 call :CountErr "matrix.TbValidatorsFail" 4 "negatives: regex/default/range/set"
+call :CountErr "matrix.TbCollectionsFail" 3 "negatives: ref/size/index"
 call :CountErr "test.TbPath"             2 "upstream fixture test/path.xlsx"
 call :CountErr "test.TbDataFromMisc"     1 "text key validator (invalid text id)"
+
+rem Two failure classes that the shared corpus cannot host. The validators
+rem above only LOG and let the run finish; a duplicate primary key or a
+rem mode="one" table with more than one row THROWS and aborts everything, so
+rem a single such record would take the whole regression down with it.
+rem They live in examples/negatives_hard/, one tiny self-contained corpus each,
+rem and are asserted the other way round: the run MUST fail, and it must fail
+rem with the right message rather than for some unrelated reason.
+rem
+rem Duplicate primary key is the single most common mistake a designer makes in
+rem Excel, so "Luban stops loudly" is worth holding in place with a test.
+set HARD_FAILED=0
+call :ExpectFail dup_key  "'hard.TbDupKey'" "hard: duplicate primary key"
+call :ExpectFail mode_one "mode=one,"       "hard: mode=one with 2 rows"
+if !HARD_FAILED! gtr 0 (
+  echo [FAIL] hard-failure negatives: !HARD_FAILED! case^(s^) did not abort as expected
+  set /a FAILED+=1
+) else (
+  echo [OK]   hard-failure negatives: both aborted with the expected message
+)
 
 if !VALIDATOR_FAILED! gtr 0 (
   echo [FAIL] validator check: !VALIDATOR_FAILED! categor^(ies^) off; see !MAIN_LOG!
@@ -149,11 +172,13 @@ if !VALIDATOR_FAILED! gtr 0 (
   echo        more  =^> a new failure appeared
   set /a FAILED+=1
 ) else (
-  echo [OK]   validator check: all 4 error categories as expected
+  echo [OK]   validator check: all !VALIDATOR_TOTAL! error categories as expected
 )
 
-rem Negative cases are isolated by group "t" (see their B1 metadata), which the
-rem "test" target already filters on. Do NOT additionally restrict
+rem This run exports the negatives on purpose, under target "test" (group "t"),
+rem so their output lands somewhere separate from the baselines. Note that the
+rem group only isolates OUTPUT, not validation -- see the note above the
+rem :CountErr calls. Do NOT additionally restrict
 rem tableImporter.scanPath to the negatives folder: schema definitions are loaded
 rem globally, so importing only that folder leaves cross-table refs dangling
 rem (e.g. ai.Blackboard.parent_name ref ai.TbBlackboard) and the run aborts on
@@ -298,6 +323,34 @@ exit /b 0
 
 rem ---- helpers ----------------------------------------------------------
 rem %1 pattern, %2 expected count, %3 human label
+:ExpectFail
+rem %1 conf base name under negatives_hard, %2 required ASCII fragment, %3 label
+rem Passing is a NON-ZERO exit plus that fragment in the log. Checking only the
+rem exit code would let any unrelated crash count as a pass.
+setlocal EnableDelayedExpansion
+set "HCONF=%~1"
+set "FRAG=%~2"
+set "LABEL=%~3"
+set "HLOG=!HARD_ROOT!\TestOutputs\!HCONF!.log"
+if not exist "!HARD_ROOT!\TestOutputs" mkdir "!HARD_ROOT!\TestOutputs"
+pushd "!HARD_ROOT!\Tools\Luban"
+"!LUBAN_EXE!" --conf "!HCONF!.conf" -t all -d json > "!HLOG!" 2>&1
+set "HCODE=!errorlevel!"
+popd
+if "!HCODE!"=="0" (
+  echo        [!LABEL!] expected a non-zero exit, got 0
+  endlocal & set /a HARD_FAILED+=1
+  exit /b 0
+)
+findstr /c:"!FRAG!" "!HLOG!" >nul
+if errorlevel 1 (
+  echo        [!LABEL!] aborted, but without the expected message; see !HLOG!
+  endlocal & set /a HARD_FAILED+=1
+  exit /b 0
+)
+endlocal
+exit /b 0
+
 :CountErr
 setlocal EnableDelayedExpansion
 set "PATTERN=%~1"
@@ -306,8 +359,8 @@ set "LABEL=%~3"
 for /f %%N in ('findstr /c:"!PATTERN!" "!MAIN_LOG!" ^^^| find /c /v ""') do set "GOT=%%N"
 if not "!GOT!"=="!WANT!" (
   echo        [!LABEL!] expected !WANT!, got !GOT!
-  endlocal & set /a VALIDATOR_FAILED+=1
+  endlocal & set /a VALIDATOR_FAILED+=1 & set /a VALIDATOR_TOTAL+=1
   exit /b 0
 )
-endlocal
+endlocal & set /a VALIDATOR_TOTAL+=1
 exit /b 0
