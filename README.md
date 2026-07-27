@@ -21,6 +21,10 @@
 每张表在自己的第一行声明自己，改哪张表就右键哪张表 —— 不必维护集中式的
 `__tables__.xlsx`，也不必让策划开命令行。
 
+<img src="esyluban/docs/images/context-menu.png" alt="在资源管理器里右键一张 xlsx，菜单中出现 Luban Export (Data) 与 Luban Export (Code)" width="560">
+
+装一次即可，之后随项目升级。多个项目可以各装一套，互不干扰。
+
 数据输出与上游逐字节相同，由回归基线保证。对上游代码只新增、不修改，完整改动面
 登记在 [`upstream_boundary.txt`](esyluban/upstream_boundary.txt) 并由回归逐条比对。
 

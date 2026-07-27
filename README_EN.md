@@ -20,6 +20,11 @@ A fork of [Luban](https://github.com/focus-creative-games/luban) that adds
 Each spreadsheet declares itself on its own first row, so there is no central
 `__tables__.xlsx` to maintain and no command line for designers to learn.
 
+<img src="esyluban/docs/images/context-menu.png" alt="Right-clicking an .xlsx in Explorer shows Luban Export (Data) and Luban Export (Code)" width="560">
+
+Installed once, then upgraded with the project. Several projects can each install
+their own suite without clashing.
+
 Data output is byte-identical to upstream, held in place by regression baselines.
 
 ## Quick start

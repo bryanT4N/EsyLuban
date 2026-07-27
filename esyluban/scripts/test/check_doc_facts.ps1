@@ -116,6 +116,20 @@ foreach ($md in $mdFiles) {
             $failed++
         }
     }
+
+    # HTML <img src="..."> too. Markdown image syntax is caught by the pattern
+    # above, but a screenshot needing a width attribute has to be written as raw
+    # HTML -- and a broken image there is exactly as bad, while looking fine in
+    # the source.
+    foreach ($m in [regex]::Matches($text, '<img\s[^>]*src="([^"]+)"')) {
+        $src = $m.Groups[1].Value
+        if ($src -match '^[a-z]+:') { continue }
+        $target = Join-Path $md.DirectoryName $src
+        if (-not (Test-Path -LiteralPath $target)) {
+            Write-Host "[FAIL] doc facts: $($md.Name) shows an image '$src', which does not exist"
+            $failed++
+        }
+    }
 }
 
 # ---- documented paths must exist --------------------------------------------

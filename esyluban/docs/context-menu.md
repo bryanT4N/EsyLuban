@@ -10,6 +10,11 @@
 
 ---
 
+装好之后，在资源管理器里右键一个文件夹或一张表就是这样：
+
+<img src="images/context-menu.png" alt="右键菜单中的 Luban Export (Data) 与 Luban Export (Code)" width="560">
+
+
 ## 装什么、装在哪
 
 **以管理员身份**运行一次：
