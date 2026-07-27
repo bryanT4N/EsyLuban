@@ -101,8 +101,76 @@ foreach ($rel in $docFiles) {
     }
 }
 
+# ---- claims the source can contradict ---------------------------------------
+# These four all shipped as documented fact while the code said otherwise. Each
+# would send a reader down a wrong path, and each is cheap to keep honest.
+$srcCtx = ''
+foreach ($n in @('run_luban_context_menu_data.bat', 'run_luban_context_menu_code.bat')) {
+    $p = Join-Path $esy "scripts\contextmenu\$n"
+    if (Test-Path -LiteralPath $p) { $srcCtx += [System.IO.File]::ReadAllText($p) }
+}
+
+# The right-click chain uses --listTables plus -o. The manual claimed for a long
+# time that it "only overrides tableImporter.scanPath" -- in four places, one of
+# them inside a section headed "must read".
+if ($srcCtx -notmatch 'listTables') {
+    Write-Host "[FAIL] doc facts: right-click scripts no longer use --listTables"
+    Write-Host "         The manual documents that mechanism; one of them is now wrong."
+    $failed++
+}
+if ($srcCtx -match 'scanPath') {
+    Write-Host "[FAIL] doc facts: right-click scripts now set scanPath"
+    Write-Host "         The manual says they deliberately do not; update both."
+    $failed++
+}
+
+# The installer copies the thin forwarders, not the implementation scripts. The
+# manual described the pre-fix behaviour for a long time -- the very bug this
+# project fixed.
+$installer = Join-Path $esy 'scripts\contextmenu\install_luban_context_menu.bat'
+if (Test-Path -LiteralPath $installer) {
+    $inst = [System.IO.File]::ReadAllText($installer)
+    if ($inst -notmatch 'menu_entry_data\.bat') {
+        Write-Host "[FAIL] doc facts: installer no longer deploys menu_entry_*.bat"
+        $failed++
+    }
+    # Three registry roots; the manual once listed only two and readers with a
+    # folder-background right-click found nothing there.
+    foreach ($root in @('Directory\shell', 'Directory\Background\shell', '\*\shell')) {
+        if ($inst -notmatch [regex]::Escape($root)) {
+            Write-Host "[FAIL] doc facts: installer no longer registers $root"
+            $failed++
+        }
+    }
+}
+
+# Every template the manual marks as copy-paste-ready must actually work. The one
+# labelled that way was the only one missing read_schema_from_file, so the first
+# designer to follow the instruction hit 'invalid type' on step one.
+$guideLines = $guide -split "`n"
+for ($i = 0; $i -lt $guideLines.Count; $i++) {
+    if ($guideLines[$i] -match 'full_name=' -and $guideLines[$i] -match '##var') { continue }
+    if ($guideLines[$i] -notmatch '##type') { continue }
+    # Walk back to the nearest full_name= line, stopping at a blank line or a
+    # heading. Without that stop the walk pairs unrelated fragments: a one-line
+    # B1 syntax example and a ##var/##type snippet from the next subsection are
+    # eleven lines apart, and flagging that pair is a false alarm. A guard that
+    # cries wolf trains people to ignore it, which is worse than not having it.
+    for ($j = $i; $j -ge 0 -and $j -gt $i - 12; $j--) {
+        if ($guideLines[$j].Trim() -eq '' -or $guideLines[$j] -match '^\s*#{1,6}\s') { break }
+        if ($guideLines[$j] -match 'full_name=') {
+            if ($guideLines[$j] -notmatch 'read_schema_from_file') {
+                Write-Host "[FAIL] doc facts: manual line $($j+1) declares a table with ##type rows"
+                Write-Host "         but no read_schema_from_file - copying it yields 'invalid type'"
+                $failed++
+            }
+            break
+        }
+    }
+}
+
 if ($failed -eq 0) {
-    Write-Host "[OK]   doc facts: target counts, baseline sets and referenced paths all agree"
+    Write-Host "[OK]   doc facts: target counts, baselines, paths and mechanisms all agree"
     exit 0
 }
 exit 1

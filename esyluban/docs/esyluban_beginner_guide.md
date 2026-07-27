@@ -85,18 +85,21 @@ B1: full_name="item.TbItem" & index="uid" & mode="list" & comment="道具表"
 
 #### A3.3 完整表模板（可直接照抄）
 
-```
-┌────────┬───────────────────────────────────────────────────────────────────────┐
-│ A1     │ ##export                                                              │
-│ B1     │ full_name="item.TbItem"                                               │
-├────────┼────────┬──────────┬────────┬──────────┬──────────┐
-│ ##var  │ id     │ name     │ price  │ quality  │ desc     │
-│ ##type │ int    │ string   │ int    │ int      │ text     │
-├────────┼────────┼──────────┼────────┼──────────┼──────────┤
-│ 1      │ 1001   │ Sword    │ 200    │ 1        │ /item_1001 │
-│ 2      │ 1002   │ Shield   │ 150    │ 2        │ /item_1002 │
-└────────┴────────┴──────────┴────────┴──────────┴──────────┘
-```
+|  | A | B | C | D | E | F |
+|---|---|---|---|---|---|---|
+| **1** | `##export` | `full_name="item.TbItem" & read_schema_from_file="true"` | | | | |
+| **2** | `##var` | `id` | `name` | `price` | `quality` | `desc` |
+| **3** | `##type` | `int` | `string` | `int` | `int` | `text` |
+| **4** | | 1001 | Sword | 200 | 1 | `/item_1001` |
+| **5** | | 1002 | Shield | 150 | 2 | `/item_1002` |
+
+两处容易漏掉、漏了就出错：
+
+- **B1 必须带 `read_schema_from_file="true"`。** 本模板把结构写在 `##var`/`##type`
+  两行里，这个标志就是在说「结构在本表里」。它的默认值是 `false`（表示结构来自
+  schema XML 或 `__beans__`），漏掉会报 `invalid type. module:'item' type:'Item'`。
+- **数据行的 A 列留空。** A 列是**记录 tag**（见 B19），不是行号。填了 `1`、`2`
+  就等于给这两条记录各挂了一个名为 "1"、"2" 的标签。
 
 说明：  
 - `desc` 用 `text` 表示本地化 key。  
@@ -666,7 +669,8 @@ PowerShell 7（`pwsh`）两样都支持，因此这个问题在 pwsh 下复现�
    - **不推荐**：脚本中覆盖这些参数。  
 
 2) **右键菜单只做一件事**  
-   - 只覆盖 `tableImporter.scanPath`，其它参数来自 `luban.conf`。  
+   - 先用 `--listTables <所选路径>` 取得该范围内的表名，再用 `-o` 逐个限定输出；
+     其它参数一律来自 `luban.conf`。  
    - **不推荐**：在右键脚本里拼接输出目录或 L10N 参数。  
 
 3) **相对路径统一基准**  
@@ -1178,7 +1182,7 @@ B1 字段决定表结构与导出行为。以下是必须掌握的链路。
 1) 右键 Excel 或目录  
 2) 向上 5 层定位 `Tools/Luban`  
 3) 调用对应脚本  
-4) 数据入口会覆盖 `tableImporter.scanPath`，代码入口不覆盖  
+4) 数据入口与代码入口都用 `--listTables` + `-o` 限定范围，不改 `scanPath`  
 
 程序员必须保证：  
 - `Tools/Luban` 路径可被向上定位  
@@ -1765,14 +1769,18 @@ l10n.convertTextKeyToValue=1
 ### B16. 右键菜单技术细节（程序员必须知道）
 
 右键菜单全局安装逻辑：  
-- 安装脚本会复制到 `%ProgramData%\EsyLuban\run_luban_context_menu_data.bat` 与 `run_luban_context_menu_code.bat`
-- 注册到：  
-  - `HKLM\Software\Classes\Directory\shell\LubanExport`  
-  - `HKLM\Software\Classes\*\shell\LubanExport`  
+- 安装脚本复制的是**转发器** `menu_entry_data.bat` / `menu_entry_code.bat`，
+  落到 `%ProgramData%\EsyLuban\`（装多套件时是 `%ProgramData%\EsyLuban\<套件名>\`）。
+  转发器里没有任何逻辑，只有目录约定——真正的实现留在项目内，随项目一起升级。
+  详见 B0.5.1。
+- 注册**三个**位置，缺一个就会有某种右键场景失效：  
+  - `HKLM\Software\Classes\Directory\shell\<菜单名>` —— 右键文件夹  
+  - `HKLM\Software\Classes\Directory\Background\shell\<菜单名>` —— 文件夹空白处右键  
+  - `HKLM\Software\Classes\*\shell\<菜单名>` —— 右键单个文件  
 
 运行逻辑：  
 - 向上 5 层定位 `Tools/Luban/luban.conf`  
-- 调用导出，仅覆盖 `tableImporter.scanPath`  
+- 用 `--listTables` 取得所选范围内的表名，再以 `-o` 精确导出它们  
 
 **推荐**：只改 `luban.conf`，不改右键脚本中的路径逻辑。  
 **不推荐**：在右键脚本中堆叠其它参数。  
@@ -2107,5 +2115,5 @@ B1: full_name="demo.TbExample" & read_schema_from_file="true"
 1) 右键菜单是策划唯一入口  
 2) `luban.conf` 是唯一配置入口  
 3) 输出/L10N/校验全部写在 `xargs`  
-4) `tableImporter.scanPath` 只由右键覆盖  
+4) 右键局部导表靠 `--listTables` + `-o`，不修改 `tableImporter.scanPath`  
 5) 禁止脚本覆盖输出目录  
