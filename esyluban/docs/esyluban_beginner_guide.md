@@ -1939,6 +1939,156 @@ JSON 输出是**裸数组**，没有外层包装：
 **推荐**：统一通过 Tables 访问。  
 **不推荐**：绕过生成代码直接解析 JSON。  
 
+---
+
+### B25. codeTarget 与 dataTarget 必须配套（选型前先看这张表）
+
+生成代码里写死了它按什么形状去读数据。**配错了不报错，只在运行时炸**，所以
+选语言之前先确认这一对能不能凑齐。
+
+规律很简单：**codeTarget 名字的后缀，就是它要求的 dataTarget**。
+
+| 语言 | codeTarget | 必须配的 dataTarget |
+|---|---|---|
+| C# | `cs-bin` | `bin` |
+| | `cs-simple-json` / `cs-dotnet-json` / `cs-newtonsoft-json` / `cs-editor-json` | `json` |
+| | `cs-protobuf2` / `cs-protobuf3` | `protobuf2-bin` / `protobuf3-bin` |
+| **C++** | `cpp-rawptr-bin` / `cpp-sharedptr-bin` | **只有 `bin`** |
+| Java | `java-bin` / `java-json` | `bin` / `json` |
+| Go | `go-bin` / `go-json` | `bin` / `json` |
+| Rust | `rust-bin` / `rust-json` | `bin` / `json` |
+| TypeScript | `typescript-bin` / `typescript-json` / `typescript-protobuf` | `bin` / `json` / pb |
+| JavaScript | `javascript-bin` / `javascript-json` | `bin` / `json` |
+| Lua | `lua-bin` / `lua-lua` | `bin` / `lua` |
+| Python | `python-json` | **只有 `json`** |
+| Dart | `dart-json` | 只有 `json` |
+| PHP | `php-json` | 只有 `json` |
+| GDScript | `gdscript-json` | 只有 `json` |
+| 跨语言 schema | `flatbuffers` / `protobuf2` / `protobuf3` | 只生成 .fbs / .proto 定义，不生成加载代码 |
+
+> **C++ 没有 json 版的生成代码。** 用 Luban 的 C++ 生成代码，就等于同时接受
+> `bin` 数据格式、它自己的容器层（`::luban::HashMap` / `Vector` / `ByteBuf`）、
+> 它的内存模型（裸指针 + `LUBAN_FREE`，或 `shared_ptr`），以及一个额外的 C++
+> 运行时（生成的 `schema.h` 里 `#include "CfgBean.h"`，那个文件不在产物里）。
+> 表少、字段简单时，这个承诺往往比自己写个加载器还重。
+
+---
+
+### B26. `json` 与 `json2`：形状好看 vs 类型保真
+
+Luban 有两个 JSON 数据目标，**不是新旧关系，是两种取舍**。
+
+| | `json`（缺省） | `json2` |
+|---|---|---|
+| `map` 字段 | `[[1,"apple"],[2,"banana"]]` | `{"1":"apple","2":"banana"}` |
+| `mode="map"` 的表 | `[{...},{...}]` | `{"cr_badge":{...}}` |
+| `mode="one"` 的表 | `[{...}]`（要先取 `[0]`） | `{...}` |
+| `mode="list"` 的表 | `[{...}]` | 相同 |
+
+#### 为什么缺省是 `json` 而不是更好看的 `json2`
+
+因为 **`json2` 表达不了全部合法 schema**。JSON 的对象键只能是字符串，所以
+`json2` 要把 map 的键转成属性名，而负责这件事的
+`ToJsonPropertyNameVisitor` 对一半类型直接抛异常：
+
+```
+支持：byte short int long enum string
+抛异常：bool float double datetime bean
+```
+
+而 schema 那边（`DefAssembly.CreateMapType`）用的是 `CreateNotContainerType`
+—— **任何非容器类型都能当 map 键**，上面那些全都合法。
+
+实测一份含 `map,datetime,string` 的语料：
+
+```
+-d json    exit=0   成功
+-d json2   exit=1   "Specified method is not supported."
+```
+
+所以选型逻辑很朴素：缺省格式必须能导出所有合法配置。代价是所有人都得忍受
+`[[k,v]]` 这个形状，哪怕自己表里全是 int 键。
+
+#### `json2` 没有任何 codeTarget 配它
+
+所有 `-json` 结尾的模板都按【数组对】读 map：
+
+```csharp
+// cs-simple-json 生成的代码
+if(!__json0.IsArray) { throw new SerializationException(); }
+foreach(JSONNode __e0 in __json0.Children) { _k0 = __e0[0]; _v0 = __e0[1]; }
+```
+
+`cs-dotnet-json` 用 `GetArrayLength()`，`go-json` 用 `_buf[0]`，
+`python-json` / `typescript-json` / `rust-json` 同理。
+
+> **⚠ `json2` + 生成代码 = 定时炸弹。** 没有 map 字段的表，`json2` 也能被生成
+> 代码读进去（对象的 children 恰好可遍历），**直到有人加了第一个 map 字段**才
+> 抛 `SerializationException`。配错的当天不会发现。
+
+#### 那 `json2` 是给谁的
+
+给**手写加载器**的人 —— 不用 Luban 生成代码，只想要一份人能读、好解析的
+JSON。典型场景就是 C++ 项目（C++ 的生成代码只支持 `bin`，用不上 json）。
+
+这种场景下 `json2` 通常更省事：`mode="map"` 的表直接就是 id → 记录的查找表，
+不必自己再建一份索引；`mode="one"` 的表也不用每次先剥掉外层数组。
+
+#### 选择清单
+
+- 用 Luban 生成代码 → **`json`**（或 `bin`），别碰 `json2`
+- 手写加载器，且 map 键都是整数/字符串/枚举 → **`json2`**
+- 手写加载器，但用到了 datetime/bean/float 作 map 键 → 只能 `json`
+- 只关心加载速度与包体 → `bin`（实测同一语料 13 KB vs json 107 KB）
+
+---
+
+### B27. XML 的类型信息比 JSON 还少
+
+XML 里一切都是文本，**没有任何类型标记**。同一份数据，键类型不同，XML 输出
+逐字节相同：
+
+```xml
+<!-- map,int,string -->        <!-- map,string,string -->
+<ele><key>1</key>              <ele><key>1</key>
+  <value>apple</value></ele>     <value>apple</value></ele>
+```
+
+而 JSON 至少能用引号区分：
+
+```json
+map,int,string     [[1,   "apple"]]
+map,string,string  [["1", "apple"]]
+```
+
+三种格式的取舍摊开是这样：
+
+| | 形状是否自然 | 是否保留类型 |
+|---|---|---|
+| `json` | ✗ 数组对 | **✓** |
+| `json2` | ✓ 原生对象 | ✗（键变字符串） |
+| `xml` | ✗ `<ele><key/><value/>` | ✗ |
+
+**XML 付了 `json` 那份难看的代价，却没换到类型保真。** 它摊成
+`<ele><key/><value/></ele>` 不是为了保类型，纯粹是因为 XML 连"键值对"这个
+概念都没有 —— 同理，列表元素被迫叫 `<ele>`，是因为 XML 里每个值都必须待在一个
+具名元素中，而列表元素本来就没有名字。
+
+XML 唯一携带 schema 信息的地方是多态判别符，而它是个属性：
+
+```xml
+<root type="Sequence">
+  <decorators><ele type="UeLoop">...</ele></decorators>
+```
+
+> **这也解释了 Luban 的 XML 为什么不像配置文件。** 它不是给人读写的配置格式，
+> 是同一棵类型化数据树被硬塞进 XML 语法的产物 —— 是「JSON 形状的 XML」。在
+> Luban 的世界里，"配置文件"是那张 Excel，XML/JSON 只是运行时加载用的中间态。
+>
+> 顺带一提：属性式（`<Item id="1" name="x"/>`）好看得多，但 XML 属性只能装
+> 标量，一旦出现嵌套 bean / list / map 就必须退回子元素。要么只支持扁平表，
+> 要么就得维护两套规则。
+
 
 ## C. 附录：策划模板（可复制）
 
