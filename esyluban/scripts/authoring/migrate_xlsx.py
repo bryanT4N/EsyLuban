@@ -17,14 +17,26 @@
      原本 `for ws in wb.worksheets` 与 `for name in filenames` 平级，
      每个目录只跑一次且复用上一次的 wb，首个目录没有 xlsx 便直接 NameError。
 
-【尚未验证，这是它仍被禁用的原因】
+  3. main() 的元数据逻辑已跑通并有测试。
+     349 行起那段（meta_map / build_autoimport_meta / xml_map / export_false）
+     曾因缩进错误从未执行过。现在 test_migrate_xlsx.py 用一份最小的上游格式
+     工程跑完整流程，覆盖四条分支：登记在 __tables__ 里的表、__beans__ 定义
+     文件、__tables__ 自身、以及带合并单元格的表。
+     另在一份三表语料上实跑验证过：60 个非空单元格零丢失，合并区 B1:C1 正确
+     下移到 B2:C2，元数据（含 comment 与 input）完整拼进 B1。
 
-  main() 里 349 行起的元数据驱动逻辑（meta_map / build_autoimport_meta /
-  xml_map / export_false 分支）由于上述缩进错误，**在真实环境中从未执行过**。
-  缩进虽已修好，但这段代码没有任何运行记录，也没有测试覆盖。
+【为什么仍然禁用】
 
-要解禁：删除下方的 SystemExit，先在【工程副本】上跑一次，与原始文件逐单元格
-比对确认无损，再用于正式工程。当前 examples 已是迁移完成状态，不需要再跑它。
+  上面这些证明的是「它在我构造的语料上是对的」，不是「它在你的工程上是对的」。
+  真实上游工程会有多 sheet、CSV、XML 定义、跨目录 input、多套 luban.conf ——
+  这些组合没有一个被验证过。
+
+  而它失败的代价不可逆：它【原地改写】你的 Excel，没有备份、没有 dry-run。
+  一个只在部分情况下正确的原地改写工具，比没有工具更危险。
+
+要用它：删除下方的 SystemExit，**先把整个工程复制一份**，在副本上跑，与原件
+逐单元格比对确认无损，再决定是否用于正式工程。当前 examples 已是迁移完成
+状态，不需要再跑它。
 """
 import csv
 import json
@@ -39,10 +51,12 @@ from openpyxl import load_workbook
 # 拒绝执行优于文档警告：注释救不了直接双击运行的人。
 if __name__ == "__main__":
     sys.stderr.write(
-        "\n[DISABLED] migrate_xlsx.py 暂不可直接运行。\n"
-        "  吞数据与缩进两个缺陷已修复并有测试覆盖（见 test_migrate_xlsx.py），\n"
-        "  但 main() 的元数据驱动逻辑因长期不可达，从未在真实环境验证过。\n"
-        "  解禁前请先在工程副本上试跑并逐单元格比对。详见本文件顶部说明。\n\n")
+        "\n[DISABLED] migrate_xlsx.py 不可直接运行。\n"
+        "  它【原地改写】你的 Excel —— 没有备份，也没有 dry-run。\n"
+        "  已修的缺陷与已覆盖的测试见 test_migrate_xlsx.py（16 项）。\n"
+        "  但多 sheet / CSV / XML 定义 / 多套 conf 这些组合从未验证过。\n"
+        "  要用它：先复制整个工程，在副本上跑，逐单元格比对确认无损。\n"
+        "  详见本文件顶部说明。\n\n")
     raise SystemExit(2)
 
 

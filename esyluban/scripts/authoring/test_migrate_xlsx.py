@@ -122,6 +122,76 @@ with tempfile.TemporaryDirectory() as tmp:
         fired = True
     check("自检闸门：左上角为空时报错", fired)
 
+    # ── main() 的元数据逻辑 ────────────────────────────────────────
+    #
+    # 上面十项测的都是 ensure_export_row，也就是「怎么插这一行」。而这个工具
+    # 被禁用的理由是另一半：main() 里从 __tables__.xlsx 读出元数据、拼成 B1
+    # 的那段，因为一个缩进错误长期不可达，从未在真实环境跑过。
+    #
+    # 这里造一份最小的上游格式工程跑完整流程，覆盖那段逻辑的四条分支：
+    # 登记在 __tables__ 里的表、__beans__ 定义文件、__tables__ 自身、
+    # 以及带合并单元格的表（历史上「插行吞数据」的触发点）。
+    proj = Path(tmp) / "proj"
+    (proj / "DataTables" / "item").mkdir(parents=True)
+
+    wb = openpyxl.Workbook(); ws = wb.active
+    ws.append(["##var", "full_name", "value_type", "index", "mode", "group", "comment", "input"])
+    ws.append(["##type", "string", "string", "string", "string", "string", "string", "string"])
+    ws.append(["##", "", "", "", "", "", "", ""])
+    ws.append(["", "item.TbItem", "item.Item", "id", "", "", "道具表", "item/items.xlsx"])
+    wb.save(proj / "DataTables" / "__tables__.xlsx")
+
+    wb = openpyxl.Workbook(); ws = wb.active
+    ws.append(["##var", "id", "name"])
+    ws.append(["##type", "int", "string"])
+    ws.append(["", 1, "Sword"])
+    ws.merge_cells("B1:C1")
+    wb.save(proj / "DataTables" / "item" / "items.xlsx")
+
+    wb = openpyxl.Workbook(); ws = wb.active
+    ws.append(["##var", "full_name"])
+    ws.append(["", "item.Item"])
+    wb.save(proj / "DataTables" / "__beans__.xlsx")
+
+    (proj / "Tools" / "Luban").mkdir(parents=True)
+    (proj / "Tools" / "Luban" / "luban.conf").write_text(
+        '{"schemaFiles":[{"fileName":"../../DataTables/__tables__.xlsx","type":"table"}],'
+        '"dataDir":"../../DataTables","groups":[],"targets":[],"xargs":[]}',
+        encoding="utf-8")
+
+    import os
+    import subprocess
+    env = dict(os.environ, LUBAN_ROOT=str(proj))
+    src = (Path(__file__).parent / "migrate_xlsx.py").read_text(encoding="utf-8")
+    gate_start = src.index('if __name__ == "__main__":')
+    gate_end = src.index("raise SystemExit(2)") + len("raise SystemExit(2)")
+    runner = Path(tmp) / "run_migrate.py"
+    runner.write_text(src[:gate_start] + src[gate_end + 1:], encoding="utf-8")
+    r = subprocess.run([sys.executable, str(runner)], env=env, cwd=str(proj),
+                       capture_output=True, text=True)
+
+    check("main：完整迁移跑通", r.returncode == 0, r.stderr[-200:])
+
+    items = openpyxl.load_workbook(proj / "DataTables" / "item" / "items.xlsx").active
+    check("main：元数据从 __tables__ 拼进 B1",
+          isinstance(items.cell(1, 2).value, str)
+          and 'full_name="item.TbItem"' in items.cell(1, 2).value
+          and 'comment="道具表"' in items.cell(1, 2).value,
+          repr(items.cell(1, 2).value))
+    check("main：合并区跟着下移", "B2:C2" in [str(m) for m in items.merged_cells.ranges],
+          str([str(m) for m in items.merged_cells.ranges]))
+    check("main：数据行未被吞掉",
+          items.cell(4, 2).value == 1 and items.cell(4, 3).value == "Sword",
+          f"{items.cell(4, 2).value!r} {items.cell(4, 3).value!r}")
+
+    beans = openpyxl.load_workbook(proj / "DataTables" / "__beans__.xlsx").active
+    check("main：__beans__ 被标记为导出", beans.cell(1, 1).value == "##export",
+          repr(beans.cell(1, 1).value))
+
+    tables = openpyxl.load_workbook(proj / "DataTables" / "__tables__.xlsx").active
+    check("main：__tables__ 自身标记为不导出",
+          tables.cell(1, 1).value == "##export=false", repr(tables.cell(1, 1).value))
+
 print()
 if FAILURES:
     print(f"FAILED: {len(FAILURES)} 项 -> {FAILURES}")
