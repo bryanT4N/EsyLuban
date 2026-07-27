@@ -176,6 +176,13 @@
 
 		<bean name="Task">
 			<var name="ignore_restart_self" type="bool" />
+			<!--bean name="TickableTask">
+				<var name="tick_interval" type="float" />
+				<bean name="RandomMove">一个演示用的，随机移动的 Task
+					<var name="total_time" type="float" />
+					<var name="speed" type="float" />
+				</bean>
+			</bean-->
 			
 			<bean name="UeWait">
 				<var name="wait_time" type="float" />

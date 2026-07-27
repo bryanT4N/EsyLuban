@@ -32,7 +32,7 @@
 	
 	<bean name="GlobalConfig">
 
-		
+		<!-- 背包相关 -->
 	    <var name="x1" type="int" comment="背包容量" />
 	    <var name="x2" type="int" />
 	    <var name="x3" type="int" />
