@@ -45,7 +45,6 @@ D	.travis.yml
 # ci.yml 是这份清单第一个抓到的东西 —— 加它的那次提交忘了同步清单，从全新
 # 克隆跑回归时当场报出来。守卫在它作者身上先生效了一次。
 A	.github/workflows/ci.yml
-A	.vscode/settings.json
 A	src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs
 A	src/Luban.Core/Utils/B1Parser.cs
 A	src/Luban.Schema.Builtin/SelfContainedSchemaCollector.cs

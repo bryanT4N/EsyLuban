@@ -149,7 +149,7 @@ rem assertions in the file -- a few failure-only paths (an export returning
 rem non-zero, the negatives corpus missing) contribute nothing when everything
 rem passes, which is the state this number is pinned to. Add or remove a check
 rem and this number must move with it; the run reports INCONCLUSIVE until it does.
-set EXPECTED_CHECKS=15
+set EXPECTED_CHECKS=16
 set DEADX_LOG=%EXAMPLE_ROOT%\TestOutputs\dead_xargs.log
 set DEADX_OUT=%EXAMPLE_ROOT%\TestOutputs\dead_xargs_out
 
@@ -402,6 +402,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0check_upstream_boundar
 if errorlevel 1 set /a FAILED+=1
 set /a CHECKS+=1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0check_tool_copies.ps1"
+if errorlevel 1 set /a FAILED+=1
+set /a CHECKS+=1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0check_doc_facts.ps1"
 if errorlevel 1 set /a FAILED+=1
 set /a CHECKS+=1
 

@@ -26,6 +26,11 @@ examples/negatives_hard/TestOutputs/
 # 内容全部是 runtime/ 与 templates/ 的副本，没有一份是原始资产。
 dist/
 
+# 内部文档：开发期的分析笔记与流水账，留在工作区供自己查阅，不进仓库。
+# 判据很简单 —— 一个公开仓库里不该有名叫 internal 的目录：值得公开就别叫
+# internal，不值得就别提交。
+docs/internal/
+
 # Python 字节码缓存（scripts/authoring/ 下的工具与测试会产生）
 __pycache__/
 *.pyc

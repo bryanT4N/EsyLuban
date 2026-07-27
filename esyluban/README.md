@@ -41,18 +41,29 @@
 
 ### 上游边界
 
-这条分界线是本 fork 的核心约束：**对上游只新增文件，尽量不修改**。验证方式：
+这条分界线是本 fork 的核心约束：**对上游只新增文件，尽量不修改**。
+
+完整改动面登记在 [`upstream_boundary.txt`](upstream_boundary.txt)，它不是说明而是
+**断言**：`scripts/test/check_upstream_boundary.ps1` 每次回归都拿它与实际 diff
+逐条比对，多一个少一个都失败。
+
+> 这份清单曾经只是 README 里的一句话，靠人记得维护 —— 而它失效过：长期写着
+> 「src/ 下有两处修改」，实际是三处。README 就在上一行教读者跑 git diff 验证，
+> 于是读者能当场证否它。一条能被当场证否的承诺，比没有承诺更伤。
+
+你自己验证：
 
 ```bash
-git diff --name-status origin/main -- src
+git diff --name-status upstream/main -- src
 ```
 
-目前 `src/` 下有两处修改（M），其余全是新增（A）：
+目前修改了三个上游文件，其余全是新增：
 
 | 被修改的上游文件 | 改动内容与不得不改的理由 |
 |---|---|
-| `Luban.DataLoader.Builtin/Excel/SheetLoadUtil.cs` | 让 A1 的 `##export` 声明不被当成 meta 行本身——真正的 meta 行（`##var` 等）在它下一行。这是自包含格式的前提，无法从外部扩展点绕开。 |
-| `Luban/Program.cs` | 新增 `--listTables`，输出指定路径下的表全名清单。右键菜单靠它确定"选中范围内有哪些表"，进而只导出这些表。命令行选项无扩展点可注册。 |
+| `Luban.DataLoader.Builtin/Excel/SheetLoadUtil.cs` | 识别 A1 的 `##export` 标记，并把它造成的行偏移一路带到合并单元格与报错坐标。Excel 读取是纯静态方法，没有扩展点可绕。 |
+| `Luban/Program.cs` | 新增 `--listTables`（右键局部导表要先知道选中范围内有哪些表），以及「表 target 前缀的 xargs 键」告警。命令行选项无处注册。 |
+| `Luban.Core/CustomBehaviour/CustomBehaviourManager.cs` | 加一个 `HasBehaviour<C>()` 纯查询方法，供上面那条告警判断某名字是不是已注册的 dataTarget/codeTarget。 |
 
 其余功能全部由**新增文件**经 Luban 的特性注册机制自注册实现：
 
@@ -91,7 +102,7 @@ esyluban\scripts\build.bat --self-contained   -> runtime-sc/   自带运行时, 
 esyluban\scripts\test\run_full_tests_example.bat
 ```
 
-输出落在 `examples/dev/TestOutputs/`，与两份基线逐文件 SHA256 比对，结果写入
+输出落在 `examples/dev/TestOutputs/`，与五套基线逐文件 SHA256 比对，结果写入
 `compare_report.json`（核心一致性）与 `compare_report_coverage.json`（覆盖一致性）。
 
 单元测试：`esyluban\scripts\test\run_unit_tests.bat`
@@ -126,7 +137,7 @@ esyluban/
 │  └─ release/      发布示例工程：干净用例 + Unity 集成演示
 ├─ baselines/
 │  ├─ core/         53 个 json，核心一致性基线
-│  └─ coverage/     56 个 json，覆盖一致性基线
+│  └─ coverage/     覆盖一致性基线（另有 xml / code_cs / json_l10n 三套）
 ├─ scripts/
 │  ├─ build.bat     从 ../src 构建运行时
 │  ├─ test/         回归测试、基线刷新、覆盖矩阵报告

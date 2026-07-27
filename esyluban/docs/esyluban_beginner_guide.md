@@ -874,7 +874,7 @@ Luban 里有三样东西都叫 target，名字相同、管的事毫不相干。�
 |---|---|---|---|---|---|
 | ① | **表 target** | `-t` | `client` `server` `all` | 导出**哪些表**（按 group 过滤）、生成代码的命名空间与管理类名 | **你在 `luban.conf` 的 `targets` 里自己起的名字** |
 | ② | **dataTarget** | `-d` | `json` `bin` `xml` `lua` … | 数据导成**什么格式** | Luban 内置的 16 种，名字固定 |
-| ③ | **codeTarget** | `-c` | `cs-simple-json` `cpp-rawptr-bin` … | 代码生成成**什么语言** | Luban 内置的 27 种，名字固定 |
+| ③ | **codeTarget** | `-c` | `cs-simple-json` `cpp-rawptr-bin` … | 代码生成成**什么语言** | Luban 内置的 29 种，名字固定 |
 
 > 三个概念、`targets` 这个字段名、以及 `-t` / `-d` / `-c` 三个参数，**都是上游
 > Luban 的既有设计**，不是 EsyLuban 添加的。上面那列说的是"**值**从哪来"：

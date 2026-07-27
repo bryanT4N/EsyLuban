@@ -36,15 +36,26 @@ $esy = [System.IO.Path]::GetFullPath($EsyRoot)
 $repo = [System.IO.Path]::GetFullPath((Join-Path $esy '..'))
 
 # Directories whose source files must all be trackable.
+#
+# Adding a corpus or a script directory here is part of adding it: examples\
+# negatives_hard existed for a while without being listed, so the files that
+# prove duplicate keys and mode="one" violations still abort were themselves
+# unguarded -- exactly the gap this check exists to close.
 $scanDirs = @(
     'scripts', 'templates', 'baselines', 'docs',
     'examples\dev\DataTables', 'examples\dev\Tools',
-    'examples\release\DataTables', 'examples\release\Tools'
+    'examples\release\DataTables', 'examples\release\Tools',
+    'examples\negatives_hard'
 )
 $sourceExt = @('.bat', '.ps1', '.py', '.md', '.json', '.conf',
                '.xlsx', '.xlsm', '.csv', '.xml', '.cs', '.sbn', '.txt', '.sh')
 # Genuinely-ignored things: caches and build output, not owned source.
-$skipPattern = '\\__pycache__\\|\\bin\\|\\obj\\|\\TestOutputs\\|~\$'
+#
+# docs\internal is a deliberate exclusion, not a trap. Those are development
+# notes kept in the working tree and out of the repository -- a public project
+# should not carry a directory called "internal": if it is worth publishing it
+# should not be named that, and if it is not, it should not be committed.
+$skipPattern = '\\__pycache__\\|\\bin\\|\\obj\\|\\TestOutputs\\|\\docs\\internal\\|~\$'
 
 $candidates = New-Object System.Collections.Generic.List[string]
 foreach ($d in $scanDirs) {
