@@ -43,9 +43,17 @@ function Count-Attribute([string] $attr) {
     return $names.Count
 }
 
-$guide = Read-Text 'esyluban/docs/esyluban_beginner_guide.md'
-if ($null -eq $guide) {
-    Write-Host "[FAIL] doc facts: cannot find the manual"
+# The target-count claims now live in targets-and-output.md. Read the whole docs
+# directory rather than one file: the split turned a single manual into ten
+# documents, and a check pinned to one filename would quietly stop checking the
+# moment content moved.
+$docsDir = Join-Path $esy 'docs'
+$guide = ''
+foreach ($f in Get-ChildItem -LiteralPath $docsDir -Filter *.md -File) {
+    $guide += [System.IO.File]::ReadAllText($f.FullName) + "`n"
+}
+if ($guide.Trim() -eq '') {
+    Write-Host "[FAIL] doc facts: no documents found under esyluban/docs"
     exit 1
 }
 
@@ -86,8 +94,28 @@ foreach ($set in $actualSets) {
     }
 }
 
+# ---- every relative markdown link must resolve ------------------------------
+# Catches the "moved a file, left the link" class of rot, and the plain typo:
+# this check was written right after a link in the docs index pointed at
+# upstream_boundary.md when the file is a .txt.
+$mdFiles = @(Get-ChildItem -LiteralPath $repoRoot -Filter *.md -File) +
+           @(Get-ChildItem -LiteralPath (Join-Path $esy 'docs') -Filter *.md -File -ErrorAction SilentlyContinue)
+foreach ($md in $mdFiles) {
+    $text = [System.IO.File]::ReadAllText($md.FullName)
+    foreach ($m in [regex]::Matches($text, '\]\(([^)#][^)]*)\)')) {
+        $link = $m.Groups[1].Value
+        if ($link -match '^[a-z]+:') { continue }        # external URL
+        $link = ($link -split '#')[0]
+        if ($link -eq '') { continue }
+        $target = Join-Path $md.DirectoryName $link
+        if (-not (Test-Path -LiteralPath $target)) {
+            Write-Host "[FAIL] doc facts: $($md.Name) links to '$link', which does not exist"
+            $failed++
+        }
+    }
+}
+
 # ---- documented paths must exist --------------------------------------------
-# Catches the "moved a file, left the link" class of rot.
 $docFiles = @('esyluban/README.md', 'esyluban/baselines/README.md', 'esyluban/examples/README.md')
 foreach ($rel in $docFiles) {
     $text = Read-Text $rel

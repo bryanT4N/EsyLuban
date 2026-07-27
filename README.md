@@ -13,8 +13,8 @@
 > - `EsyLuban-<版本>-win-x64-standalone.zip`（约 34 MB）—— **解压即用**，无需安装
 > - `EsyLuban-<版本>-win-x64.zip`（约 2 MB）—— 需要 [.NET 8 运行时](https://dotnet.microsoft.com/download/dotnet/8.0)
 >
-> 完全手册：[esyluban/docs/esyluban_beginner_guide.md](./esyluban/docs/esyluban_beginner_guide.md)
-> （A 章给策划，B 章给程序员；发布包内也附一份）
+> 完整文档：[esyluban/docs/](./esyluban/docs/README.md) —— 按「你是谁、要做什么」分好了，
+> 发布包内也附同一套
 >
 > ### 要改它
 >

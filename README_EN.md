@@ -14,7 +14,7 @@
 > - `EsyLuban-<version>-win-x64-standalone.zip` (~34 MB) — **runs as-is**, nothing to install
 > - `EsyLuban-<version>-win-x64.zip` (~2 MB) — needs the [.NET 8 runtime](https://dotnet.microsoft.com/download/dotnet/8.0)
 >
-> Full manual (Chinese): [esyluban/docs/esyluban_beginner_guide.md](./esyluban/docs/esyluban_beginner_guide.md)
+> Documentation (Chinese): [esyluban/docs/](./esyluban/docs/README.md)
 > (also bundled in the release package)
 >
 > ### To modify it

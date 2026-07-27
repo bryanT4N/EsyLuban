@@ -30,7 +30,7 @@
 └─ Source/你的游戏/     只接收导出产物，不放源表
 ```
 
-包里另附完全手册 `docs/esyluban_beginner_guide.md`（A 章给策划，B 章给程序员）。
+包里另附完整文档 `docs/`，与仓库里是同一套。
 
 ---
 
@@ -146,12 +146,12 @@ esyluban/
 │  └─ authoring/    建表模板、矩阵用例生成（xlsx 迁移工具已禁用，见其文件头）
 ├─ templates/      新建工程用的 luban.conf / gen.bat / check.bat 与示例表
 ├─ docs/
-│  ├─ esyluban_beginner_guide.md   完全手册（A 给策划，B 给程序员）
+│  ├─ README.md                   文档索引：按「你是谁」找入口
 │  └─ internal/    仅供维护者：Luban 参考、源码分析、开发记录、归档
 └─ sandbox/        自包含加载器开发期的手工验证沙盒
 ```
 
-**随项目发布的文档只有三份**：本文件、`docs/esyluban_beginner_guide.md`、
+**随项目发布的文档**：本文件、`docs/` 整个目录、
 以及 `examples/README.md`（数据出处与 MIT 归属，合规必需）。
 发布包内的 `README.md` 由 `scripts/release/RELEASE_README.md` 打包时拷入。
 `docs/internal/` 下的内容面向维护者，判断标准见 `docs/internal/README.md`。
@@ -186,4 +186,4 @@ B1 = full_name="test.TbFoo" & read_schema_from_file="true"
 原 `##var` / `##type` / `##group` / `##comment` 行整体下移一行。
 同一 Excel 内还可用 `__enums__` / `__beans__` 子表定义文件级作用域的枚举与 bean。
 
-详见 `docs/esyluban_beginner_guide.md`。
+详见 `docs/`。

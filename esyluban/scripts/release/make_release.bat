@@ -85,8 +85,37 @@ copy /y "%ESY_ROOT%\templates\check.bat"  "%STAGE%\Tools\Luban\" >nul || goto :F
 copy /y "%ESY_ROOT%\scripts\contextmenu\*.bat" "%STAGE%\Tools\Luban\contextmenu\" >nul || goto :FAIL
 copy /y "%ESY_ROOT%\templates\DataTables\*.xlsx" "%STAGE%\DataTables\" >nul || goto :FAIL
 
-copy /y "%ESY_ROOT%\docs\esyluban_beginner_guide.md" "%STAGE%\docs\" >nul || goto :FAIL
+rem Ship the whole docs directory, not a hand-picked file.
+rem
+rem The package used to carry only the old single-file manual, so the release and
+rem the repository documented the same tool differently -- and RELEASE_README.md
+rem had already drifted from the manual on several points (whether column A of a
+rem data row is filled in, for one). Copying the directory means there is exactly
+rem one set of documents and no second place to forget.
+xcopy /e /i /y /q "%ESY_ROOT%\docs" "%STAGE%\docs" >nul || goto :FAIL
+rem docs\internal is development notes: untracked, and it must not ship either.
+rem xcopy has no exclude-by-name, so remove it after the copy.
+if exist "%STAGE%\docs\internal" rmdir /s /q "%STAGE%\docs\internal"
 copy /y "%SCRIPT_DIR%RELEASE_README.md" "%STAGE%\README.md" >nul || goto :FAIL
+
+rem Assert what the package contains before zipping it.
+rem
+rem The docs directory is copied wholesale, which is what keeps the release and
+rem the repository from documenting the same tool differently -- but a wholesale
+rem copy also picks up whatever else happens to be in there. docs\internal is
+rem development notes: already out of version control, and it must not ship.
+if exist "%STAGE%\docs\internal" (
+  echo [FAIL] docs\internal made it into the package
+  goto :FAIL
+)
+if not exist "%STAGE%\docs\README.md" (
+  echo [FAIL] docs\README.md missing from the package -- readers land nowhere
+  goto :FAIL
+)
+if not exist "%STAGE%\docs\troubleshooting.md" (
+  echo [FAIL] docs\troubleshooting.md missing -- the README links to it
+  goto :FAIL
+)
 
 rem Smoke test: the package must work before it is zipped.
 rem
