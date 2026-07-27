@@ -112,32 +112,39 @@ if errorlevel 1 (
 
 pushd "!LUBAN_DIR!"
 
-rem Assert the validator subsystem is still alive.
+rem Assert the validator subsystem is still alive, by category.
 rem
 rem SHA256 baselines cannot see validators at all: if ref/path/range/set/regex
 rem all degraded to no-ops tomorrow, every output byte would stay identical and
-rem both baselines would pass. Counting the errors this fixture set is KNOWN to
-rem produce catches that -- a drop to 0 means the validators stopped running,
-rem an increase means something new broke.
+rem all four baselines would pass. Counting the errors this corpus is KNOWN to
+rem produce is what catches that.
 rem
-rem --validationFailAsError is deliberately NOT used: the corpus intentionally
-rem contains failing records (negatives/, plus test/path.xlsx which fails
-rem upstream too and whose output is part of the core baseline).
+rem Counted per source rather than as one total, so a drop tells you WHICH
+rem validator family stopped running. A single number would let one family die
+rem while another gained an error, and still add up to 8.
 rem
-rem Expected 8, by category:
-rem   4  negatives/validators_fail.xlsx  regex / not-default / range / set
-rem   1  negatives/path_fail.xlsx        path points at a missing file
-rem   2  test/path.xlsx                  upstream fixture, fails upstream as well
-rem   1  l10n                            text id "   /apple" has no translation
-set EXPECTED_ERRORS=8
-for /f %%N in ('findstr /c:"|ERROR|" "!MAIN_LOG!" ^| find /c /v ""') do set ACTUAL_ERRORS=%%N
-if not "!ACTUAL_ERRORS!"=="!EXPECTED_ERRORS!" (
-  echo [FAIL] validator check: expected !EXPECTED_ERRORS! known errors, got !ACTUAL_ERRORS!
-  echo        fewer  =^> validators may have stopped running
-  echo        more   =^> a new failure appeared; see !MAIN_LOG!
+rem Note on group filtering: the negatives carry group="t" and the "all" target
+rem binds c/s/e, so their OUTPUT is correctly filtered out (no matrix_tbpathfail
+rem in the baselines). But validation runs BEFORE that filtering, so they still
+rem report here. That is expected -- it is also what keeps these validators
+rem under observation on every run.
+rem
+rem --validationFailAsError is deliberately NOT used here: the corpus contains
+rem records that are meant to fail. check.bat covers the "must reject" side.
+set VALIDATOR_FAILED=0
+
+call :CountErr "matrix.TbPathFail"       1 "negatives: path validator"
+call :CountErr "matrix.TbValidatorsFail" 4 "negatives: regex/default/range/set"
+call :CountErr "test.TbPath"             2 "upstream fixture test/path.xlsx"
+call :CountErr "test.TbDataFromMisc"     1 "text key validator (invalid text id)"
+
+if !VALIDATOR_FAILED! gtr 0 (
+  echo [FAIL] validator check: !VALIDATOR_FAILED! categor^(ies^) off; see !MAIN_LOG!
+  echo        fewer =^> that validator family stopped running
+  echo        more  =^> a new failure appeared
   set /a FAILED+=1
 ) else (
-  echo [OK]   validator check: !ACTUAL_ERRORS! known errors, as expected
+  echo [OK]   validator check: all 4 error categories as expected
 )
 
 rem Negative cases are isolated by group "t" (see their B1 metadata), which the
@@ -245,4 +252,20 @@ if !FAILED! gtr 0 (
 echo ==========================================
 echo   REGRESSION PASSED
 echo ==========================================
+exit /b 0
+
+rem ---- helpers ----------------------------------------------------------
+rem %1 pattern, %2 expected count, %3 human label
+:CountErr
+setlocal EnableDelayedExpansion
+set "PATTERN=%~1"
+set "WANT=%~2"
+set "LABEL=%~3"
+for /f %%N in ('findstr /c:"!PATTERN!" "!MAIN_LOG!" ^^^| find /c /v ""') do set "GOT=%%N"
+if not "!GOT!"=="!WANT!" (
+  echo        [!LABEL!] expected !WANT!, got !GOT!
+  endlocal & set /a VALIDATOR_FAILED+=1
+  exit /b 0
+)
+endlocal
 exit /b 0

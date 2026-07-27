@@ -829,11 +829,19 @@ gen.bat -t client -d json -o your.TbFoo -x cleanUpOutputDir=0
 Luban 里有三样东西都叫 target，名字相同、管的事毫不相干。绝大多数配置踩坑都
 源于把它们弄混。
 
-| | 名称 | 命令行 | 值举例 | 管什么 | 谁定义的 |
+混淆感的来源很具体：上游的命令行帮助里，`-c` 叫 "code target name"、
+`-d` 叫 "data target name"，而 `-t` 只叫 "target name" —— **只有它没有限定词**，
+看起来像个总称，实际只是三者之一。
+
+| | 名称 | 命令行 | 值举例 | 管什么 | 这些值从哪来 |
 |---|---|---|---|---|---|
-| ① | **表 target** | `-t` | `client` `server` `all` | 导出**哪些表**（按 group 过滤）、生成代码的命名空间与管理类名 | **你**，在 `luban.conf` 的 `targets` 里 |
-| ② | **dataTarget** | `-d` | `json` `bin` `xml` `lua` … | 数据导成**什么格式**（内置 16 种） | Luban 内置 |
-| ③ | **codeTarget** | `-c` | `cs-simple-json` `cpp-rawptr-bin` … | 代码生成成**什么语言**（内置 27 种） | Luban 内置 |
+| ① | **表 target** | `-t` | `client` `server` `all` | 导出**哪些表**（按 group 过滤）、生成代码的命名空间与管理类名 | **你在 `luban.conf` 的 `targets` 里自己起的名字** |
+| ② | **dataTarget** | `-d` | `json` `bin` `xml` `lua` … | 数据导成**什么格式** | Luban 内置的 16 种，名字固定 |
+| ③ | **codeTarget** | `-c` | `cs-simple-json` `cpp-rawptr-bin` … | 代码生成成**什么语言** | Luban 内置的 27 种，名字固定 |
+
+> 三个概念、`targets` 这个字段名、以及 `-t` / `-d` / `-c` 三个参数，**都是上游
+> Luban 的既有设计**，不是 EsyLuban 添加的。上面那列说的是"**值**从哪来"：
+> `client` 这个名字是你起的，`json` 这个名字是 Luban 定的。
 
 一条完整命令同时含三者：
 
