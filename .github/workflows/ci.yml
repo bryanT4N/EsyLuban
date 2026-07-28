@@ -42,6 +42,15 @@ jobs:
         run: esyluban\scripts\build.bat
         shell: cmd
 
+      # The migration tool's tests need openpyxl. run_unit_tests.bat skips them
+      # when it is missing rather than failing, so CI would still be green
+      # without this step -- but skipping is the wrong outcome here: that tool
+      # rewrites spreadsheets in place with no backup, and CI is exactly where
+      # its tests should run.
+      - name: Install migration test deps
+        run: python -m pip install --disable-pip-version-check openpyxl
+        shell: cmd
+
       - name: Unit tests
         run: esyluban\scripts\test\run_unit_tests.bat
         shell: cmd

@@ -37,14 +37,26 @@ rem migrate_xlsx.py rewrites spreadsheets in place -- no backup, no dry run. Its
 rem tests were sitting in the tree with nothing running them, which for a tool
 rem that destructive is the wrong thing to leave to someone remembering.
 rem
-rem Python is optional: without it these are skipped rather than failing the run,
-rem since the tool itself is disabled and on nobody's critical path.
-where python >nul 2>&1
+rem These are optional: without the toolchain they are skipped rather than
+rem failing the run, since the tool itself is disabled and on nobody's critical
+rem path.
+rem
+rem Probe for what is ACTUALLY required (openpyxl), not for a proxy. The first
+rem cut checked `where python` and skipped on that -- which held on a machine
+rem with no Python at all, and broke on GitHub's Windows runner, where Python is
+rem present but openpyxl is not. CI then failed here every run, and because this
+rem step gates the one after it, the full regression never executed at all.
+rem Both python invocations go through `call`. Without it, a `python` that
+rem resolves to a .bat shim -- which is how pyenv-win and several conda wrappers
+rem provide it -- would transfer control and never come back, silently ending
+rem this script mid-run. `call` is correct for a real .exe too.
+call python -c "import openpyxl" >nul 2>&1
 if errorlevel 1 (
-  echo [SKIP] migration tests: python not on PATH
+  echo [SKIP] migration tests: python with openpyxl not available
+  echo        install with: pip install openpyxl
 ) else (
   echo [TEST] migrate_xlsx
-  python "%MIGRATE_TESTS%"
+  call python "%MIGRATE_TESTS%"
   if errorlevel 1 (
     echo [ERROR] Migration tests failed.
     exit /b 1
