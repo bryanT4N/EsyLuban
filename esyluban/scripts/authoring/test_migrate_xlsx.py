@@ -17,6 +17,15 @@ from pathlib import Path
 
 import openpyxl
 
+# Test names below are Chinese, and Windows hands Python whatever the console
+# code page happens to be -- cp936 here, cp1252 on GitHub's runner, where every
+# one of these prints raised UnicodeEncodeError and the suite died before its
+# first assertion. Pin the stream instead of relying on the environment: it has
+# to hold for a contributor's console too, not just for CI.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 sys.path.insert(0, str(Path(__file__).parent))
 from migrate_xlsx import ensure_export_row, assert_no_swallowed_values  # noqa: E402
 
@@ -167,8 +176,12 @@ with tempfile.TemporaryDirectory() as tmp:
     gate_end = src.index("raise SystemExit(2)") + len("raise SystemExit(2)")
     runner = Path(tmp) / "run_migrate.py"
     runner.write_text(src[:gate_start] + src[gate_end + 1:], encoding="utf-8")
+    # encoding 要显式给：text=True 默认按 locale 解码子进程输出，而这个子进程
+    # 打印中文。r.stderr 会被塞进下面那条断言的失败信息里 —— 解码炸掉的话，
+    # 报错会指向解码而不是指向真正失败的那一项。
     r = subprocess.run([sys.executable, str(runner)], env=env, cwd=str(proj),
-                       capture_output=True, text=True)
+                       capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
 
     check("main：完整迁移跑通", r.returncode == 0, r.stderr[-200:])
 

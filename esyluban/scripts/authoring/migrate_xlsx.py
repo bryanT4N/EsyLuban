@@ -48,6 +48,14 @@ import xml.etree.ElementTree as ET
 
 from openpyxl import load_workbook
 
+# 必须在下面那道闸门之前：闸门的警告文本是中文，而 Windows 给 Python 的编码是
+# 当前控制台代码页（本机 cp936，GitHub runner 是 cp1252）。编不出来时抛的是
+# UnicodeEncodeError —— 一道本该说清「为什么不让你跑」的闸门，反而以看不懂的
+# 报错收场。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 # 拒绝执行优于文档警告：注释救不了直接双击运行的人。
 if __name__ == "__main__":
     sys.stderr.write(
