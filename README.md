@@ -2,7 +2,7 @@
 
 # EsyLuban
 
-**面向策划的游戏配置表导出工具**
+**策划友好的游戏配置表导出工具**
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg?style=flat-square)](#平台)
