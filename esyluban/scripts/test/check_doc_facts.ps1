@@ -331,8 +331,12 @@ if (-not (Test-Path -LiteralPath $zhPath) -or -not (Test-Path -LiteralPath $enPa
     # Interface names need a lowercase third letter so INFO or IOException stay text.
     $placeholder = '<[^>]*>|\w+=\.\.\.|\.\.\.|a\+b(?:\+c)?|\bI[A-Z][a-z]\w*|\b(?:xxx|x|y|X|Y|N)\b'
     function Test-Fragment([string] $fragment, [string] $message) {
+        # A quote that is nothing but placeholders leaves no literal to compare,
+        # and would otherwise match every message.
+        $runs = @([regex]::Split($fragment, $placeholder) | Where-Object { $_ })
+        if ($runs.Count -eq 0) { return $false }
         $at = 0
-        foreach ($run in @([regex]::Split($fragment, $placeholder) | Where-Object { $_ })) {
+        foreach ($run in $runs) {
             $i = $message.IndexOf($run, $at, [System.StringComparison]::Ordinal)
             if ($i -lt 0) { return $false }
             $at = $i + $run.Length
