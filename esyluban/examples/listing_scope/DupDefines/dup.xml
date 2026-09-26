@@ -1,0 +1,4 @@
+<module name="scope">
+  <!-- a second TbLegacy with no variant: the copy-paste mistake the listing must still report -->
+  <table name="TbLegacy" value="Legacy" input="legacy/legacy.xlsx" readSchemaFromFile="1"/>
+</module>

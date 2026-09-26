@@ -21,6 +21,8 @@ examples/release/TestOutputs/
 # 硬失败负例（重复主键、mode=one 多行）的运行日志。这些用例本来就要中止，
 # 日志只用于断言「是因为那条错误中止的」，不是资产。
 examples/negatives_hard/TestOutputs/
+# 右键列表范围测例的 --listTables 输出，只用于断言。
+examples/listing_scope/TestOutputs/
 
 # 发布包暂存与产物：scripts/release/make_release.bat 组装出来的，
 # 内容全部是 runtime/ 与 templates/ 的副本，没有一份是原始资产。

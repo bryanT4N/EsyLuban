@@ -54,6 +54,7 @@ set COMPARE_REPORT_L10N=%EXAMPLE_ROOT%\TestOutputs\compare_report_l10n.json
 set COMPARE_REPORT_XML=%EXAMPLE_ROOT%\TestOutputs\compare_report_xml.json
 set COMPARE_REPORT_CODE=%EXAMPLE_ROOT%\TestOutputs\compare_report_code.json
 set HARD_ROOT=%ESY_ROOT%\examples\negatives_hard
+set LIST_ROOT=%ESY_ROOT%\examples\listing_scope
 set COMPARE_PS1=%~dp0compare_baseline.ps1
 
 set FAILED=0
@@ -169,7 +170,7 @@ rem assertions in the file -- a few failure-only paths (an export returning
 rem non-zero, the negatives corpus missing) contribute nothing when everything
 rem passes, which is the state this number is pinned to. Add or remove a check
 rem and this number must move with it; the run reports INCONCLUSIVE until it does.
-set EXPECTED_CHECKS=18
+set EXPECTED_CHECKS=19
 set DEADX_LOG=%EXAMPLE_ROOT%\TestOutputs\dead_xargs.log
 set DEADX_OUT=%EXAMPLE_ROOT%\TestOutputs\dead_xargs_out
 
@@ -380,6 +381,48 @@ if !RC_FAILED! gtr 0 (
   set /a CHECKS+=1
 )
 
+rem --listTables must answer "which tables are in this selection" and nothing
+rem more. It used to resolve table variants on a partial view -- B1 tables from
+rem the selection, XML tables from everywhere -- which broke the workaround the
+rem docs recommend for per-region tables (default version in B1, the others in
+rem XML with variant=). Right-clicking any other folder then aborted with "no
+rem fallback", because the B1 default was outside the selection; with --variant
+rem set, the XML table leaked into every right-click instead. A half-migrated
+rem project had the same leak: its XML / __tables__ tables were exported on
+rem every right-click, whatever was selected.
+rem examples/listing_scope holds that layout: TbItem (B1 default + XML en),
+rem TbOther (B1, own folder), TbLegacy (XML only). Run without --variant, the
+rem case that used to abort.
+set LIST_FAILED=0
+pushd "!LIST_ROOT!\Tools\Luban"
+call :ExpectListing "../../DataTables/other"         "scope.TbOther"
+call :ExpectListing "../../DataTables/items.xlsx"    "scope.TbItem"
+call :ExpectListing "../../DataTables/items_en.xlsx" "scope.TbItem"
+call :ExpectListing "../../DataTables/legacy"        "scope.TbLegacy"
+rem Skipping variant resolution must not also skip the duplicate checks that
+rem come with it: dup.conf adds a second TbLegacy with no variant. Caught only
+rem at export, it would fail once per target under a hint about groups.
+set "LDUP=!LIST_ROOT!\TestOutputs\listing_dup.log"
+"!LUBAN_EXE!" --conf dup.conf -t all --listTables "../../DataTables/other" --errorFormat json > "!LDUP!" 2>&1
+if errorlevel 1 (
+  findstr /c:"error.def.table.variant_fallback_duplicate" "!LDUP!" >nul
+  if errorlevel 1 (
+    echo        [listing duplicate] aborted, but not for the duplicate; see !LDUP!
+    set /a LIST_FAILED+=1
+  )
+) else (
+  echo        [listing duplicate] a second TbLegacy without variant was not reported
+  set /a LIST_FAILED+=1
+)
+popd
+if !LIST_FAILED! gtr 0 (
+  echo [FAIL] listing scope: !LIST_FAILED! case^(s^) wrong
+  set /a FAILED+=1
+) else (
+  echo [OK]   listing scope: each selection lists only its own tables; duplicates still stop it
+  set /a CHECKS+=1
+)
+
 rem examples/release is the project users are told to copy: a Unity project,
 rem its own luban.conf, and three targets each wanting its own directory.
 rem Nothing exported it, so it rotted -- the checked-in generated code was
@@ -571,6 +614,31 @@ findstr /c:"!FRAG!" "!HLOG!" >nul
 if errorlevel 1 (
   echo        [!LABEL!] aborted, but without the expected message; see !HLOG!
   endlocal & set /a HARD_FAILED+=1
+  exit /b 0
+)
+endlocal
+exit /b 0
+
+:ExpectListing
+rem %1 selection relative to the corpus's Tools\Luban, %2 the one table it must
+rem list. Exit 0 and exactly that line on stdout (logs go to stderr).
+setlocal EnableDelayedExpansion
+set "SEL=%~1"
+set "WANT=%~2"
+if not exist "!LIST_ROOT!\TestOutputs" mkdir "!LIST_ROOT!\TestOutputs"
+set "LOUT=!LIST_ROOT!\TestOutputs\listing.txt"
+set "LERR=!LIST_ROOT!\TestOutputs\listing_err.log"
+"!LUBAN_EXE!" --conf luban.conf -t all --listTables "!SEL!" > "!LOUT!" 2> "!LERR!"
+if errorlevel 1 (
+  echo        [listing !SEL!] aborted, expected !WANT!; see !LERR!
+  endlocal & set /a LIST_FAILED+=1
+  exit /b 0
+)
+set "GOT="
+for /f "usebackq delims=" %%L in ("!LOUT!") do set "GOT=!GOT! %%L"
+if not "!GOT!"==" !WANT!" (
+  echo        [listing !SEL!] expected !WANT!, got!GOT!
+  endlocal & set /a LIST_FAILED+=1
   exit /b 0
 )
 endlocal

@@ -145,4 +145,5 @@ B1 表目前不能声明表变体，B1 里写了 `variant` 会直接报错。多
 导出时加 `--variant TbItem=en` 只切这一张表；`--variant default=en` 则把所有带变体的表
 一起切到 en。不加就用 B1 那份，并给一句告警。右键
 菜单不会自动带这个参数，要用的话在 `luban.conf` 的 `contextMenu` 里配
-`extraArgs`，见[右键菜单](context-menu.md)。
+`extraArgs`，见[右键菜单](context-menu.md)。右键 B1 那份所在的文件，或者 en 那份的
+数据文件 `items_en.xlsx`，导出的都是 `TbItem`，用哪一份看 `extraArgs` 里的 `--variant`。

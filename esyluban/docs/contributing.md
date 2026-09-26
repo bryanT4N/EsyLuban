@@ -48,7 +48,9 @@ esyluban\scripts\test\check_gitignore_traps.bat     :: 已含在全回归里，�
   两张 B1 表同名），单独放在
   `examples/negatives_hard/`，断言方向相反 —— 必须失败，且必须因为那条错误失败。
 - **使用者入口** —— 回归走 `gen.bat` 和右键菜单，不直接调 `Luban.exe`。曾经有
-  一次冒烟测试绕过 `gen.bat`，于是 `gen.bat` 自己根本跑不起来却一路绿灯。
+  一次冒烟测试绕过 `gen.bat`，于是 `gen.bat` 自己根本跑不起来却一路绿灯。右键第一步
+  「列出选中的表」另有一套小语料 `examples/listing_scope/`：B1 默认版加 XML 变体、
+  只在 XML 里定义的老表，断言每个选中范围只列出自己的表。
 - **守卫** —— 见下一节。
 
 ### 怎么新增一条断言

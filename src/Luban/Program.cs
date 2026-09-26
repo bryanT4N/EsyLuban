@@ -248,20 +248,28 @@ internal static class Program
     /// <summary>
     /// [EsyLuban] 输出所选路径下的表全名，每行一个，然后结束。
     ///
-    /// 只做 schema 收集，不编译、不校验、不生成 —— 因此即便所选范围之外存在
-    /// 跨表引用也不会中止（真正导出时仍是全量加载 schema，再以 -o 精确指定输出表）。
+    /// 只收集表名，不编译、不校验、不生成，也不解析表变体 —— 因此即便所选范围之外存在
+    /// 跨表引用、或同名表的其它几份定义也不会中止（真正导出时仍是全量加载 schema，
+    /// 按 --variant 选定义，再以 -o 精确指定输出表）。
     /// 表名写到 stdout，日志走 stderr，便于调用方直接按行读取。
     /// </summary>
     private static void ListTables(CommandOptions opts, LubanConfig config)
     {
         var collector = SchemaManager.Ins.CreateSchemaCollector(opts.SchemaCollector);
-        // 与真正导出用同一份 --variant：否则只有带标签变体、没有 fallback 的表会让
-        // 列表直接中止，列出来的也可能和随后导出的不是同一张定义
-        collector.SetVariants(ParseVariants(opts.Variants));
-        collector.Load(config);
-        foreach (var table in collector.CreateRawAssembly().Tables)
+        IEnumerable<string> names;
+        if (collector is Luban.Schema.Builtin.SelfContainedSchemaCollector selfContained)
         {
-            Console.WriteLine(TypeUtil.MakeFullName(table.Namespace, table.Name));
+            names = selfContained.ListTableNamesInScope(config);
+        }
+        else
+        {
+            collector.SetVariants(ParseVariants(opts.Variants));
+            collector.Load(config);
+            names = collector.CreateRawAssembly().Tables.Select(t => TypeUtil.MakeFullName(t.Namespace, t.Name));
+        }
+        foreach (string name in names)
+        {
+            Console.WriteLine(name);
         }
     }
 

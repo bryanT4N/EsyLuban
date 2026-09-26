@@ -1,0 +1,4 @@
+<module name="scope">
+  <table name="TbItem" value="Item" input="items_en.xlsx" readSchemaFromFile="1" variant="en"/>
+  <table name="TbLegacy" value="Legacy" input="legacy/legacy.xlsx" readSchemaFromFile="1"/>
+</module>

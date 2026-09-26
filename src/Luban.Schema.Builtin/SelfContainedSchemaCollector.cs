@@ -3,6 +3,7 @@
 
 using ExcelDataReader;
 using Luban.Diagnostics;
+using Luban.RawDefs;
 using Luban.Utils;
 
 namespace Luban.Schema.Builtin;
@@ -37,6 +38,76 @@ public class SelfContainedSchemaCollector : DefaultSchemaCollector
     {
         base.Load(config);
         LoadInlineDefinitions();
+    }
+
+    /// <summary>
+    /// 右键「列出选中的表」：选中范围里有哪些表名。
+    ///
+    /// 不走 Load，因为 Load 会解析表变体，而那要看同名表的全部定义。选中范围里往往只有
+    /// 其中一份：默认那份在 B1、其余几份在 XML 时，右键别的目录，范围里只剩 XML 那几份，
+    /// 解析就报「没有 fallback」而中止。这里只收集表名，选哪一份交给随后的导出，它加载
+    /// 全量 schema，带着同一个 --variant。重复定义照旧当场报。
+    ///
+    /// B1 表按 B1 所在的 sheet 算，由导入器按 tableImporter.scanPath 扫出。XML 和
+    /// __tables__.xlsx 里定义的表按 input 是否和选中范围重叠算，否则它们会混进每一次右键。
+    /// </summary>
+    public List<string> ListTableNamesInScope(LubanConfig config)
+    {
+        // 和 DefaultSchemaCollector.Load 的前两步相同，少了变体解析和读表头
+        foreach (var importFile in config.Imports)
+        {
+            string ext = FileUtil.GetExtensionWithoutDot(importFile.FileName);
+            if (string.IsNullOrEmpty(ext))
+            {
+                throw new LubanException("error.schema.file_no_extension", importFile.FileName);
+            }
+            SchemaManager.Ins.CreateSchemaLoader(ext, importFile.Type, this).Load(importFile.FileName);
+        }
+        var defined = Tables.ToList();
+        var imported = new List<RawTable>();
+        string importerName = EnvManager.Current.GetOptionOrDefault("tableImporter", "name", false, "default");
+        if (!string.IsNullOrWhiteSpace(importerName) && importerName != "none")
+        {
+            imported = SchemaManager.Ins.CreateTableImporter(importerName).LoadImportTables();
+        }
+        CheckDuplicateDefinitions(defined.Concat(imported).ToList());
+
+        string scope = Path.GetFullPath(SelfContainedTableImporter.GetScanRoot());
+        string dataDir = GenerationContext.GlobalConf.InputDataDir;
+        return defined
+            .Where(t => t.InputFiles.Any(input =>
+                Overlaps(Path.GetFullPath(Path.Combine(dataDir, FileUtil.SplitFileAndSheetName(FileUtil.Standardize(input)).Item1)), scope)))
+            .Concat(imported)
+            .Select(t => TypeUtil.MakeFullName(t.Namespace, t.Name))
+            .Distinct()
+            .ToList();
+    }
+
+    /// <summary>
+    /// 两份定义都没写 variant、同一个变体写了两份：这类错不管选哪一份都导不出来，
+    /// 列表就该当场报，不能拖到导出那一步，在每个 target 上各报一遍。
+    ///
+    /// 借上游的解析器来查，免得抄一份它的规则：给每张带变体的表指定一个它自己声明过的
+    /// 变体，选择这一步就不会因为看不全同名表而失败，而重复检查在选择之前就做完了。
+    /// </summary>
+    private static void CheckDuplicateDefinitions(List<RawTable> tables)
+    {
+        var selectable = tables
+            .Where(t => t.Variants.Count > 0)
+            .GroupBy(t => TypeUtil.MakeFullName(t.Namespace, t.Name))
+            .ToDictionary(g => g.Key, g => g.First().Variants[0]);
+        TableVariantResolver.Resolve(tables, selectable);
+    }
+
+    // input 可以是目录：选中目录里的一个文件，同样算选中了这张表
+    private static bool Overlaps(string a, string b) => IsUnder(a, b) || IsUnder(b, a);
+
+    private static bool IsUnder(string path, string root)
+    {
+        path = FileUtil.Standardize(path).TrimEnd('/');
+        root = FileUtil.Standardize(root).TrimEnd('/');
+        return path.Equals(root, StringComparison.OrdinalIgnoreCase)
+               || path.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
