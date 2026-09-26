@@ -151,7 +151,7 @@ Luban 直接中止。所以这条链路的形状是固定的：**全量加载 sc
 | `data.outputDataDir` | target → 输出目录的映射，见下 | 全部落到 `xargs` 里的全局 `outputDataDir` |
 | `code.targets` | 代码菜单要导的 target | `client` |
 | `code.codeTargets` | 代码语言，即 `-c`，与 `targets` 做笛卡尔积 | `cs-simple-json` |
-| `extraArgs` | 追加给命令行的参数，如 `--variant`、`--includeTag`、`-x key=val` | 空 |
+| `extraArgs` | 追加给命令行的参数，如 `--variant`、`--includeTag`、`-x key=val`。列出选中的表和导出两步都会带上，两步看到的变体一致 | 空 |
 
 相对路径一律以 `Tools/Luban/` 为基准 —— 脚本正是在那个目录里调用 Luban 的。
 

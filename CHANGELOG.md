@@ -42,12 +42,16 @@ Luban 代码基线 —— 两者不是一回事，同一个上游基线下可以
 **两张 sheet 写了同一个 `full_name`，报错会列出每一处。** 以前报的是
 `table:'x' duplicated`，不说是哪两张。
 
+**右键菜单的 `extraArgs` 也会传给「列出选中的表」这一步。** 以前只传给导出，配了
+`--variant` 的话，两步看到的可能不是同一份表定义。
+
 **生成代码多了注释。** B1 写了 `comment`、又从数据表读结构的表，生成的记录类
 现在带上这段注释，IDE 悬停时能看到。
 
 ### 上游新增、可以按需使用的
 
-- `--errorFormat json`：报错以 JSON 写到 stderr，带稳定的错误码，适合 CI 解析。
+- `--errorFormat json`：报错以 JSON 写到 stderr，上游的报错带稳定的错误码，适合 CI 解析。
+  EsyLuban 自己的几条报错（B1 解析、variant、同名表）暂时只有文字，没有错误码。
 - `schema-json`：新的 codeTarget，导出一份工程结构描述，列出每张表、结构和枚举
   定义在哪个文件的哪张 sheet，给 AI 工具或自研工具读。
 

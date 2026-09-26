@@ -41,7 +41,7 @@
 | `字段切割应该用 'sep'，而不是 'seq'` | 拼写错误，`sep` 不是 `seq` |
 | `excel 标题头不再使用 '&' 作为分隔符` | 从旧版 Luban 迁过来的表。现在 `##` 行的标签用 `,` 分隔 |
 | `behaviour:x 类型:ITableImporter 不存在` | `tableImporter.name` 写了个不存在的名字。有意义的取值只有缺省的 `default` 和 `none` |
-| `sheet 'x' 的 B1 写了 variant，自包含表暂不支持表变体` | 表变体（同名表的几份定义，导出时用 `--variant` 选一份）B1 表还不支持。多语言文本改用文本表；要按地区换整张表，默认那份留在 B1，其余几份用 XML 或 `__tables__.xlsx` 定义同名表。见[本地化](localization.md) |
+| `x 的 B1 写了 variant，自包含表暂不支持表变体` | 表变体（同名表的几份定义，导出时用 `--variant` 选一份）B1 表还不支持。多语言文本改用文本表；要按地区换整张表，默认那份留在 B1，其余几份用 XML 或 `__tables__.xlsx` 定义同名表。见[本地化](localization.md) |
 | `表 x 被定义了 N 次` | 两张 sheet 的 B1 写了同一个 `full_name`，多半是复制 sheet 后忘了改。报错会列出每一处的 sheet 和文件 |
 
 ## 没报错，但结果不对

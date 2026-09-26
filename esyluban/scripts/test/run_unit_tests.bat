@@ -2,13 +2,13 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 rem ---------------------------------------------------------------
-rem Run EsyLuban unit tests.
+rem Run the unit tests.
 rem
-rem Luban.Tests is intentionally NOT added to the upstream Luban.sln:
-rem the project targets that solution file, and keeping our test project
-rem out of it avoids one more upstream file to reconcile on every rebase.
-rem dotnet test accepts a project path directly, so a solution entry is
-rem not needed.
+rem Since Luban 5.1, src/Luban.Tests is upstream's own test project (unit
+rem and integration tests, already listed in Luban.sln). EsyLuban only adds
+rem B1ParserTests.cs to it, so this runs upstream's suite and ours together:
+rem upstream's tests load the plugins in-process, EsyLuban's Priority=100
+rem overrides included.
 rem
 rem NOTE: keep this file ASCII-only. cmd parses .bat using the system
 rem ANSI code page, so UTF-8 non-ASCII comments break execution.
@@ -24,7 +24,7 @@ if not exist "%TEST_PROJ%" (
   exit /b 1
 )
 
-echo [TEST] B1Parser
+echo [TEST] Luban.Tests ^(upstream suite + B1Parser^)
 dotnet test "%TEST_PROJ%" --nologo
 if errorlevel 1 (
   echo [ERROR] Unit tests failed.

@@ -221,6 +221,7 @@ public class SelfContainedTableImporter : ITableImporter
     private static RawTable ParseSheetMetadata(string sheetName, string b1Content, string fileName)
     {
         var metadata = B1Parser.Parse(b1Content);
+        var source = SchemaSource.Create(fileName, sheetName);
 
         // 表变体（Luban 5.1 起）是「同名表的几份定义，导出时选一份」，自包含表暂不支持：
         // B1 写不出「同名的另一份」，右键菜单也没有地方让策划选变体。B1Parser 不限制
@@ -228,7 +229,9 @@ public class SelfContainedTableImporter : ITableImporter
         // 的报错。variants 是字段变体的写法，写进 B1 多半也是想做这件事。
         if (metadata.ContainsKey("variant") || metadata.ContainsKey("variants"))
         {
-            throw new Exception($"sheet '{sheetName}' 的 B1 写了 variant，自包含表暂不支持表变体。"
+            // 位置写进消息本身：--errorFormat json 只报最内层异常，外层那句
+            // 「Failed to import ... from: 文件」到不了 JSON 里
+            throw new Exception($"{source.Display} 的 B1 写了 variant，自包含表暂不支持表变体。"
                 + "多语言文本请用文本表（见 docs/localization.md）；要按地区换整张表，"
                 + "就把默认那份留在 B1，其余几份用 __tables__.xlsx 或 XML 定义同名表。");
         }
@@ -287,7 +290,7 @@ public class SelfContainedTableImporter : ITableImporter
             OutputFile = GetOptional(metadata, "output", ""),
             // 表级报错（index 字段不存在、value_type 找不到等）靠它指出是哪个文件的哪张
             // sheet；--errorFormat json 与 schema-json 也从这里取位置。
-            Source = SchemaSource.Create(fileName, sheetName),
+            Source = source,
         };
     }
 

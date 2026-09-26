@@ -277,25 +277,38 @@ if (Test-Path -LiteralPath $devConf) {
 # under src/ (EsyLuban's own messages and upstream's untranslated ones), or one
 # line of a shipped .bat. Searching the whole tree for each run separately would
 # let a short run such as "not found" pass on some unrelated string.
+#
+# Only text the tool can actually print counts: src/Luban.Tests holds expected
+# strings, and a .bat comment line is never echoed. A missing catalog is a
+# failure, not a skip -- an upstream sync that moves the file would otherwise
+# switch this check off without a word, which is the very drift it guards.
 $catalogPath = Join-Path $repoRoot 'src\Luban.Core\Resources\messages_zh.json'
 $trouble     = Read-Text 'esyluban/docs/troubleshooting.md'
-if ((Test-Path -LiteralPath $catalogPath) -and $null -ne $trouble) {
+if (-not (Test-Path -LiteralPath $catalogPath)) {
+    Write-Host "[FAIL] doc facts: src/Luban.Core/Resources/messages_zh.json is gone, so the quoted-error check cannot run"
+    $failed++
+} elseif ($null -ne $trouble) {
     $messages = New-Object System.Collections.Generic.List[string]
     $catalog  = [System.IO.File]::ReadAllText($catalogPath) | ConvertFrom-Json
     foreach ($p in $catalog.PSObject.Properties) { $messages.Add([string]$p.Value) }
     foreach ($f in Get-ChildItem -LiteralPath (Join-Path $repoRoot 'src') -Recurse -Filter *.cs -File) {
+        if ($f.FullName -match '[\\/]Luban\.Tests[\\/]') { continue }
         $text = [System.IO.File]::ReadAllText($f.FullName)
         foreach ($m in [regex]::Matches($text, '"(?:[^"\\\r\n]|\\.)*"')) { $messages.Add($m.Value) }
     }
     foreach ($dir in @('templates', 'scripts\contextmenu')) {
         foreach ($f in Get-ChildItem -LiteralPath (Join-Path $esy $dir) -Filter *.bat -File) {
-            foreach ($line in [System.IO.File]::ReadAllLines($f.FullName)) { $messages.Add($line) }
+            foreach ($line in [System.IO.File]::ReadAllLines($f.FullName)) {
+                if ($line -match '^\s*(rem\b|::)') { continue }
+                $messages.Add($line)
+            }
         }
     }
 
     # Non-capturing groups only: .NET's Regex.Split copies captured text into
     # the result, which would turn every x and N back into a required run.
-    $placeholder = '<[^>]*>|\w+=\.\.\.|\.\.\.|a\+b(?:\+c)?|\bI[A-Z]\w+|\b(?:xxx|x|y|X|Y|N)\b'
+    # Interface names need a lowercase third letter so INFO or IOException stay text.
+    $placeholder = '<[^>]*>|\w+=\.\.\.|\.\.\.|a\+b(?:\+c)?|\bI[A-Z][a-z]\w*|\b(?:xxx|x|y|X|Y|N)\b'
     $escapedTick = [string][char]1
     $lineNo = 0
     foreach ($line in ($trouble -split "`n")) {
