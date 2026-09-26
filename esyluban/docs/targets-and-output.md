@@ -18,7 +18,7 @@ Luban 里有三样东西都叫 target，名字相同、管的事毫不相干。�
 |---|---|---|---|---|---|
 | ① | **表 target** | `-t` | `client` `server` `all` | 导出**哪些表**（按 group 过滤）、生成代码的命名空间与管理类名 | 你在 `luban.conf` 的 `targets` 里**自己起的名字** |
 | ② | **dataTarget** | `-d` | `json` `bin` `xml` `lua` … | 数据导成**什么格式** | Luban 内置的 16 种，名字固定 |
-| ③ | **codeTarget** | `-c` | `cs-simple-json` `cpp-rawptr-bin` … | 代码生成成**什么语言** | Luban 内置的 29 种，名字固定 |
+| ③ | **codeTarget** | `-c` | `cs-simple-json` `cpp-rawptr-bin` … | 代码生成成**什么语言** | Luban 内置的 30 种，名字固定 |
 
 一条完整命令同时含三者：
 
@@ -193,8 +193,9 @@ EsyLuban 用「本次产物数」与「将删除数」的关系识别这些异�
 | PHP | `php-json` | 只有 `json` |
 | GDScript | `gdscript-json` | 只有 `json` |
 | 跨语言 schema | `flatbuffers` / `protobuf2` / `protobuf3` | 只生成 `.fbs` / `.proto` 定义，不生成加载代码 |
+| 工程结构描述 | `schema-json` | 不配 dataTarget。产出一份 JSON，列出全部表、结构和枚举，以及它们各自定义在哪个文件的哪张 sheet，给 AI 工具或自研工具读 |
 
-一共 29 个 codeTarget。dataTarget 有 16 个，除上表出现的以外还有 `bin-offset`、`bson`、`msgpack`、`yaml`、`xml`、`json2`、`json-convert`、`text-list`、`flatbuffers-json`、`protobuf2-json`、`protobuf3-json` —— 这些没有对应的生成代码，是给手写加载器用的。
+一共 30 个 codeTarget。dataTarget 有 16 个，除上表出现的以外还有 `bin-offset`、`bson`、`msgpack`、`yaml`、`xml`、`json2`、`json-convert`、`text-list`、`flatbuffers-json`、`protobuf2-json`、`protobuf3-json` —— 这些没有对应的生成代码，是给手写加载器用的。
 
 ### C++ 没有 json 版的生成代码
 

@@ -147,7 +147,7 @@ rem code, so a failed listing was indistinguishable from an empty one. That is
 rem how "your B1 has a syntax error" and "there are no tables here" ended up
 rem printing the same message -- to the one audience that cannot debug it.
 set "LIST_TMP=%TEMP%\luban_tables_%RANDOM%%RANDOM%.txt"
-"!LUBAN_EXE!" --conf "!CONF_FILE!" --locale zh -t !LIST_TARGET! --listTables "!SCAN_PATH!" > "!LIST_TMP!"
+"!LUBAN_EXE!" --conf "!CONF_FILE!" --locale zh -t !LIST_TARGET! --listTables "!SCAN_PATH!" !EXTRA_ARGS! > "!LIST_TMP!"
 set "LIST_ERR=!errorlevel!"
 if not "!LIST_ERR!"=="0" (
   del /q "!LIST_TMP!" 2>nul

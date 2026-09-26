@@ -224,9 +224,10 @@ tableImporter 默认扫 `dataDir` 全目录，自动跳过：
 | `-x` | `--xargs` | 运行参数，`-x key=val`，可多次 |
 | `-f` | `--forceLoadTableDatas` | 没有 dataTarget 时也加载数据。纯校验用 |
 | `-i` / `-e` | `--includeTag` / `--excludeTag` | 按记录 tag 过滤 |
-| | `--variant` | 字段变体，如 `--variant Item.name=en` |
+| | `--variant` | 选变体。字段变体如 `--variant Item.name=en`；也用来选 XML 或 `__tables__.xlsx` 里定义的表变体，见[本地化](localization.md) |
 | | `--timeZone` | datetime 的时区 |
-| | `--validationFailAsError` | 有校验失败就以退出码 1 结束 |
+| | `--strict` | 有校验失败就以退出码 1 结束。Luban 5 之前叫 `--validationFailAsError`，旧名字现在是未知参数，会让整次运行直接失败 |
+| | `--locale` | 报错与告警的语言，`zh` 或 `en`。不写时跟随 Windows 界面语言；`gen.bat`、`check.bat` 和右键菜单都固定传 `zh` |
 | | `--customTemplateDir` | 自定义模板目录 |
 | `-w` | `--watchDir` | 盯住一个目录，文件一变就重新导出。**开发期挂在后台很省事** —— 策划存盘即可在游戏里看到，不必每次去点右键 |
 | | `--listTables` | 列出指定路径下的表全名后退出，不编译不校验 |
@@ -255,7 +256,7 @@ conf 的 `xargs` 与命令行 `-x` 合并成同一张表，**同名键**由命�
 | **解析 / 结构错误** | 主键重复、类型转不过去、schema 找不到 | 抛异常，**整次导出中止**，退出码 1，一个文件都不产出 |
 | **校验器失败** | `ref` 指向不存在的记录、`path` 找不到文件、`regex` 不匹配 | 记 ERROR 日志，**导出照常完成**，退出码 **0** |
 
-也就是说，**校验失败默认不会让 CI 变红**。要它变红，加 `--validationFailAsError` —— 有任何校验器失败就以退出码 1 结束。
+也就是说，**校验失败默认不会让 CI 变红**。要它变红，加 `--strict`，有任何校验器失败就以退出码 1 结束。
 
 无论哪种，日志都会写出具体是哪张表、哪一行、哪个字段、来自哪个文件。查具体报错对应什么原因，见[出错了怎么办](troubleshooting.md)。
 

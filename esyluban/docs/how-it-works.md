@@ -77,7 +77,7 @@ luban.conf + 命令行参数
 `default`，被更高 Priority 压过之后**没有第二个名字能选回它** ——
 `tableImporter.name` 只有两个取值有意义：缺省的 `default`（拿到 EsyLuban 的），
 以及 `none`（不导入任何表）；写别的名字会明确报
-`behaviour:xxx type:ITableImporter not exists`。
+`behaviour:xxx 类型:ITableImporter 不存在`。
 
 这是有意的取舍。自包含定义覆盖了 `#xxx` 的全部场景，还多支持三样它不支持的：
 多数据源合表、按 sheet 分别导出、`one` / `list` 模式。两套发现方式并存，只会让

@@ -6,7 +6,7 @@
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg?style=flat-square)](#platform)
-[![based on](https://img.shields.io/badge/based%20on-Luban%204.10.2-informational.svg?style=flat-square)](https://github.com/focus-creative-games/luban)
+[![based on](https://img.shields.io/badge/based%20on-Luban%205.1.0-informational.svg?style=flat-square)](https://github.com/focus-creative-games/luban)
 
 [中文](README.md)
 

@@ -33,7 +33,7 @@
 几条准确的规则：
 
 - **行标签用 `#` 分隔、可以叠加。** `##var#column` 与 `##column#var` 等价，
-  顺序无所谓。用 `&` 分隔会报 `excel标题头不再使用'&'作为分割符，请改为'#'`。
+  顺序无所谓。用 `&` 分隔会报 `excel 标题头不再使用 '&' 作为分隔符，请改为 '#'`。
 - **`##export` 的下一行必须是能被识别的 meta 行。** 那一行只接受
   `var` / `+` / `type` / `comment` / `column` / `vertical` 这几个标签，
   其它的报 `非法单元薄 meta 属性定义`。`##group`、`##desc` 要放在它后面。
@@ -87,7 +87,7 @@
 整个单元格先按 `&` 拆开。`&` 之前是类型串（所有 `#` 标签、校验器都写在这里），
 `&` 之后只接受三个属性：`group=`、`comment=`、`tags=`。
 把 `index` / `ref` / `path` / `range` / `sep` / `regex` 写成 `&ref=...`
-会得到一句明确的报错：`属于type的属性，必须用#分割，尝试 '<类型>#ref=...'`。
+会得到一句明确的报错：`属于 type 的属性，必须用 # 分割，尝试 '<类型>#ref=...'`。
 
 **`&` 后面的值不要加引号。** 这里和 B1 正好相反 —— B1 写 `full_name="item.TbItem"`
 必须带引号，这里带了引号就错：
@@ -103,7 +103,7 @@
 
 | 分组名写错在哪 | 会怎样 |
 |---|---|
-| 表上（B1 的 `group=`）、bean / enum 上 | **导出中止**，明确报 `group:xxx not found` |
+| 表上（B1 的 `group=`）、bean / enum 上 | **导出中止**，明确报 `group:xxx 未找到` |
 | **字段上**（`##group` 行 或 `&group=`） | **完全静默** —— 退出码 0，日志零提及，这个字段从每个 target 里消失 |
 
 所以表名写错了你立刻知道，字段的分组写错了要等到程序发现少了个成员。
@@ -203,7 +203,7 @@ map 更严格一点：键值分隔用的是第一个顶层 `,` 或 `;`，没有�
 所以键或值的标签里含逗号时必须加括号 —— `(map#sep=,),int#ref=A,int#ref=B`。
 
 `group` 和 `seq` 是类型串里的保留词，写了分别报
-`group为保留属性,只能用于table或var定义` 与 `字段切割应该用'sep'，而不是'seq'`。
+`group 为保留属性，只能用于 table 或 var 定义` 与 `字段切割应该用 'sep'，而不是 'seq'`。
 
 ---
 
@@ -242,8 +242,8 @@ Luban 要知道父字段占几列。两种表达方式。
 `列:'[b' 后第一个有效列必须为匹配 'b]'`。
 
 **列范围没标出来就是单列。** 忘了合并的症状是
-`bean:'X' 缺失 列:'某个子字段'` —— 因为父字段只被认作一列，后面的子字段无处安放。
-同名字段出现两次但不构成范围，则报 `列:'X' 重复`。
+`bean:'X' 缺失列:'某个子字段'` —— 因为父字段只被认作一列，后面的子字段无处安放。
+同名字段出现两次但不构成范围，则报 `列:X 重复`。
 
 ### 一条记录跨多行
 
@@ -316,14 +316,14 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 | 校验器 | 写法 | 适用类型 | 值不合格时 |
 |---|---|---|---|
 | `not-default` | `int!` 或 `#not-default` | 任意类型 | `是一个默认值` |
-| `range` | `int#range=[1,100]`、`int#(range=(1, 10])`、`float#(range=[1.1, 2.2])` | byte / short / int / long / float / double | `不在范围:X内` |
-| `size` | `(array#size=2),int`、`(list#(size=[1, 3])),int`、`(set#(size=[1,])),int` | array / list / set / map | `size:N,但要求为 X` |
-| `set` | `string#(set=AA,BB)`、`list,int#set=1,2,3` | byte / short / int / long / enum / string | `值不在set:X中` |
+| `range` | `int#range=[1,100]`、`int#(range=(1, 10])`、`float#(range=[1.1, 2.2])` | byte / short / int / long / float / double | `不在范围:X 内` |
+| `size` | `(array#size=2),int`、`(list#(size=[1, 3])),int`、`(set#(size=[1,])),int` | array / list / set / map | `size:N，但要求为 X` |
+| `set` | `string#(set=AA,BB)`、`list,int#set=1,2,3` | byte / short / int / long / enum / string | `值不在 set:X 中` |
 | `regex` | `string#(regex=^[A-Z]{3}$)` | string | `不符合正则表达式：'X'` |
 | `path` | `string#(path=unity)` | string | `找不到对应文件` |
-| `ref` | `int#ref=item.TbItem` | 与被引用的键类型一致 | `在引用表:'X' 中不存在` |
+| `ref` | `int#ref=item.TbItem` | 与被引用的键类型一致 | `在引用表:X 中不存在` |
 | `index` | `(list#index=id),Foo` | array / list / set，元素须是 bean | `index:X value:Y 重复` |
-| `text` | 类型直接写 `text` | string | `不是一个有效的文本key` |
+| `text` | 类型直接写 `text` | string | `不是一个有效的文本 key` |
 
 以下都是各校验器独有、写的时候会绊一下的细节。
 
@@ -381,7 +381,7 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 
 | 字段 | 真实影响 |
 |---|---|
-| `full_name` | 表的唯一身份。决定默认输出文件名、生成代码里的访问名。**表名在整个工程内唯一**，不同模块下同名也不行 |
+| `full_name` | 表的唯一身份。决定默认输出文件名、生成代码里的访问名。**表名在整个工程内唯一**，不同模块下同名也不行。两张 sheet 写了同一个 `full_name` 会报错，并列出每一处 |
 | `value_type` | 记录的结构类型。缺省由表名推导（`TbItem` → `Item`）；`read_schema_from_file="true"` 且没写命名空间时，自动补上表所在的命名空间 |
 | `index` | 见下 |
 | `mode` | `map` / `list` / `one`，其它值报 `Invalid mode: X. Expected: map, list, or one` |
@@ -389,8 +389,9 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 | `input` | 数据从哪来。缺省是本 sheet 自己，见[数据源](data-sources.md) |
 | `output` | 覆盖默认输出文件名，见下面「`output` 这一格能写什么」 |
 | `group` | 逗号或分号分隔。留空时，是否导出取决于当前 target 的 group 里有没有被标记为默认的组 |
-| `comment` | 注释，进生成代码 |
+| `comment` | 注释，进生成代码。`read_schema_from_file="true"` 时也会成为记录类的注释 |
 | `tags` | `#` 分隔的自定义键值对，如 `tags="priority=high#category=core"` |
+| `variant` | 不支持。表变体目前只能在 XML 或 `__tables__.xlsx` 里声明，B1 里写了会直接报错，见[本地化](localization.md) |
 
 **`index` 的语义随 `mode` 变，这一点很容易踩：**
 
@@ -518,7 +519,7 @@ full_name="matrix.TbMatrixList" & output="matrix/nested/TbMatrixList"
 
 **填写**：数据表里除了 `name` 列，再加 `name@zh`、`name@en` 列。
 基准列必须排在变体列**前面** —— 变体列是挂到已声明的同名字段上的，
-找不到基准字段会报 `field:X not found for variant field:'name@en'`。
+找不到基准字段会报 `字段:X 未找到，variant 字段:'name@en' 不存在!`。
 
 **选择**：导出时用命令行参数指定。变体键是**bean 全名 + 字段名**：
 

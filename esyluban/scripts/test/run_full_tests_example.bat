@@ -156,7 +156,7 @@ rem in the baselines). But validation runs BEFORE that filtering, so they still
 rem report here. That is expected -- it is also what keeps these validators
 rem under observation on every run.
 rem
-rem --validationFailAsError is deliberately NOT used here: the corpus contains
+rem --strict is deliberately NOT used here: the corpus contains
 rem records that are meant to fail. check.bat covers the "must reject" side.
 set VALIDATOR_FAILED=0
 set VALIDATOR_TOTAL=0

@@ -27,7 +27,7 @@ esyluban\scripts\build.bat
 三条命令，CI 里跑的也是这三条：
 
 ```bat
-esyluban\scripts\test\run_unit_tests.bat            :: B1 元数据解析的单元测试
+esyluban\scripts\test\run_unit_tests.bat            :: 上游的单元与集成测试，外加 B1 元数据解析
 esyluban\scripts\test\run_full_tests_example.bat    :: 全回归，约 30 秒
 esyluban\scripts\test\check_gitignore_traps.bat     :: 已含在全回归里，也可单跑
 ```
@@ -44,7 +44,8 @@ esyluban\scripts\test\check_gitignore_traps.bat     :: 已含在全回归里，�
   在未迁移语料上的输出，用来证明「换了定义方式，结果一字未变」，它不可再生。
 - **负例** —— 语料里有故意写坏的记录。校验器对 SHA256 完全不可见（它们全部失效
   的话，输出字节一模一样），所以按来源分类计数：哪一族校验器不工作了，一眼看出。
-  另有两类会中止整个导出的硬失败（重复主键、`mode="one"` 多行），单独放在
+  另有几类会中止整个导出的硬失败（重复主键、`mode="one"` 多行、B1 写 `variant`、
+  两张 B1 表同名），单独放在
   `examples/negatives_hard/`，断言方向相反 —— 必须失败，且必须因为那条错误失败。
 - **使用者入口** —— 回归走 `gen.bat` 和右键菜单，不直接调 `Luban.exe`。曾经有
   一次冒烟测试绕过 `gen.bat`，于是 `gen.bat` 自己根本跑不起来却一路绿灯。

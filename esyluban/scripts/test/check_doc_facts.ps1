@@ -259,6 +259,71 @@ if (Test-Path -LiteralPath $devConf) {
     }
 }
 
+# ---- error text quoted in troubleshooting.md must still be printed ----------
+# Readers search that page with the text on their screen, and it promises every
+# quoted message was copied from the source. Luban 5 moved upstream's messages
+# into a zh/en catalog and reworded many of them -- a space here, a full-width
+# comma there -- and nothing noticed: the page kept quoting text the tool no
+# longer prints.
+#
+# Each quoted fragment is split on the page's placeholder spellings -- x, y, N,
+# xxx, a+b, <...>, key=..., ..., and interface names such as ITableImporter,
+# which the page spells out because readers search for them while the catalog
+# holds a {1} there. Quotes and spaces around a placeholder stay literal: the
+# screen shows 'sep' with a space on each side, and a reader pasting that into
+# Ctrl+F finds nothing if the page wrote it without. The literal runs left over
+# must occur, in order, inside ONE message:
+# a value of the zh catalog (the scripts pin --locale zh), one C# string literal
+# under src/ (EsyLuban's own messages and upstream's untranslated ones), or one
+# line of a shipped .bat. Searching the whole tree for each run separately would
+# let a short run such as "not found" pass on some unrelated string.
+$catalogPath = Join-Path $repoRoot 'src\Luban.Core\Resources\messages_zh.json'
+$trouble     = Read-Text 'esyluban/docs/troubleshooting.md'
+if ((Test-Path -LiteralPath $catalogPath) -and $null -ne $trouble) {
+    $messages = New-Object System.Collections.Generic.List[string]
+    $catalog  = [System.IO.File]::ReadAllText($catalogPath) | ConvertFrom-Json
+    foreach ($p in $catalog.PSObject.Properties) { $messages.Add([string]$p.Value) }
+    foreach ($f in Get-ChildItem -LiteralPath (Join-Path $repoRoot 'src') -Recurse -Filter *.cs -File) {
+        $text = [System.IO.File]::ReadAllText($f.FullName)
+        foreach ($m in [regex]::Matches($text, '"(?:[^"\\\r\n]|\\.)*"')) { $messages.Add($m.Value) }
+    }
+    foreach ($dir in @('templates', 'scripts\contextmenu')) {
+        foreach ($f in Get-ChildItem -LiteralPath (Join-Path $esy $dir) -Filter *.bat -File) {
+            foreach ($line in [System.IO.File]::ReadAllLines($f.FullName)) { $messages.Add($line) }
+        }
+    }
+
+    # Non-capturing groups only: .NET's Regex.Split copies captured text into
+    # the result, which would turn every x and N back into a required run.
+    $placeholder = '<[^>]*>|\w+=\.\.\.|\.\.\.|a\+b(?:\+c)?|\bI[A-Z]\w+|\b(?:xxx|x|y|X|Y|N)\b'
+    $escapedTick = [string][char]1
+    $lineNo = 0
+    foreach ($line in ($trouble -split "`n")) {
+        $lineNo++
+        $cell = [regex]::Match($line, '^\| (`.+?) \| ')
+        if (-not $cell.Success) { continue }
+        foreach ($q in [regex]::Matches($cell.Groups[1].Value.Replace('\`', $escapedTick), '`([^`]+)`')) {
+            $fragment = $q.Groups[1].Value.Replace($escapedTick, '`')
+            $runs = @([regex]::Split($fragment, $placeholder) | Where-Object { $_ -ne '' -and $_ -ne $null })
+            $found = $false
+            foreach ($msg in $messages) {
+                $at = 0
+                $ok = $true
+                foreach ($run in $runs) {
+                    $i = $msg.IndexOf($run, $at, [System.StringComparison]::Ordinal)
+                    if ($i -lt 0) { $ok = $false; break }
+                    $at = $i + $run.Length
+                }
+                if ($ok) { $found = $true; break }
+            }
+            if (-not $found) {
+                Write-Host "[FAIL] doc facts: troubleshooting.md:$lineNo quotes error text that neither the zh catalog, src/ nor the shipped .bat files print"
+                $failed++
+            }
+        }
+    }
+}
+
 if ($failed -eq 0) {
     Write-Host "[OK]   doc facts: target counts, baselines, paths and mechanisms all agree"
     exit 0

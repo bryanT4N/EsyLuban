@@ -82,7 +82,7 @@ l10n.convertTextKeyToValue=1
 `text` 类型的字段会被校验：填了文本表里不存在的 key，导出时会报
 
 ```
-不是一个有效的文本key
+不是一个有效的文本 key
 ```
 
 这条校验只在配置了 `l10n.textFile.path` 时才有意义 —— 没有文本表，Luban 无从
@@ -115,3 +115,23 @@ gen.bat -t client -d json ^
 
 这套做法要配 `convertTextKeyToValue=1`；用 `=0` 的话产物里是 key，本来就与语言
 无关，不需要分目录。
+
+## 表变体：B1 表暂不支持
+
+Luban 5.1 起多了一种按语言或地区出数据的办法，叫表变体。同一个表名可以有几份
+定义，导出时用 `--variant` 选一份，连结构都可以不同。上游的
+[变体文档](https://www.datable.cn/docs/quality/variants)讲了三种办法的分工。
+字段变体管少量数值或短文案，表变体管整张表按地区、渠道换数据，长篇多语言文案
+交给本页这套文本表。它还建议一个项目选定一种为主，别混着用。
+
+B1 表目前不能声明表变体，B1 里写了 `variant` 会直接报错。多语言文本用本页的
+文本表就够了。真要按地区换整张表，就把默认那份留在 B1，其余几份在 XML 里定义
+同名表并标上 `variant`：
+
+```xml
+<table name="TbItem" value="Item" input="items_en.xlsx" readSchemaFromFile="1" variant="en"/>
+```
+
+导出时加 `--variant default=en` 用这一份；不加就用 B1 那份，并给一句告警。右键
+菜单不会自动带这个参数，要用的话在 `luban.conf` 的 `contextMenu` 里配
+`extraArgs`，见[右键菜单](context-menu.md)。

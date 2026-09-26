@@ -77,7 +77,7 @@ git diff --name-status upstream/main -- src
 | `src/Luban.Schema.Builtin/SelfContainedTableImporter.cs` | `[TableImporter(Priority=100)]`，扫描并发现自包含表 |
 | `src/Luban.Schema.Builtin/SelfContainedSchemaCollector.cs` | `[SchemaCollector(Priority=100)]`，加载内联 `__beans__` / `__enums__` |
 | `src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs` | `[OutputSaver("local", Priority=100)]`，给输出目录清理加安全闸 |
-| `src/Luban.Tests/` | B1Parser 单元测试 |
+| `src/Luban.Tests/` | 上游的测试工程，`B1ParserTests.cs` 是我们放进去的 |
 
 `Priority=100` 是关键：Luban 按优先级选取扩展点实现，高优先级的同名实现会覆盖内置的，
 因此无需改动上游的注册代码。

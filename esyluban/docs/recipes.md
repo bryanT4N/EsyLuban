@@ -147,7 +147,7 @@ gen.bat -t all -f
 要让它拦住提交，必须加：
 
 ```bat
-gen.bat -t all -f --validationFailAsError
+gen.bat -t all -f --strict
 ```
 
 这一条很容易漏。CI 里没加它，等于校验白跑。
