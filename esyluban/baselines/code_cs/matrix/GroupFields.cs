@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg.matrix
 {
+/// <summary>
+/// 字段级 group 的三种写法及优先级
+/// </summary>
 public sealed partial class GroupFields : Luban.BeanBase
 {
     public GroupFields(JSONNode _buf) 
