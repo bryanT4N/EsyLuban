@@ -85,13 +85,21 @@ public static class EsyMessages
         "B1 的 {0} 写成了 '{1}'，只能是 true、false、1 或 0。",
         "B1 {0} is '{1}', expected true, false, 1 or 0.");
 
-    public static readonly EsyMessage B1VariantUnsupported = new("esyluban.b1.variant_unsupported",
-        "表 {0} 的 B1 写了 variant，自包含表暂不支持表变体。多语言文本请用文本表（见 docs/localization.md）；要按地区换整张表，就把默认那份留在 B1，其余几份用 __tables__.xlsx 或 XML 定义同名表。",
-        "Table {0}: B1 sets variant, but self-contained tables do not support table variants yet. For translated text use a text table (see docs/localization.md). To swap a whole table per region, keep the default one in B1 and define the others under the same name in __tables__.xlsx or XML.");
+    public static readonly EsyMessage B1VariantsKey = new("esyluban.b1.variants_key",
+        "B1 写的是 variants。表变体写 variant，不带 s；字段变体不在 B1 里写，而是在数据表里加 name@en 这样的列。",
+        "B1 sets variants. A table variant is written variant, without the s; field variants are not declared in B1 but as columns such as name@en in the data sheet.");
 
     public static readonly EsyMessage B1DuplicateFullName = new("esyluban.b1.duplicate_full_name",
-        "表 {0} 被定义了 {1} 次：{2}。每张表的 full_name 必须唯一，复制 sheet 后记得改 B1。",
-        "Table {0} is defined {1} times: {2}. Each table needs its own full_name; after copying a sheet, remember to change B1.");
+        "表 {0} 有 {1} 份都没写 variant：{2}。默认版只能有一份。复制 sheet 后忘了改 full_name 的，改掉；想做成变体的，写上 variant。",
+        "Table {0} has {1} definitions without a variant: {2}. Only one of them can be the default version. If you copied a sheet, change its full_name; if it is meant to be a variant, add variant.");
+
+    public static readonly EsyMessage B1DuplicateVariant = new("esyluban.b1.duplicate_variant",
+        "表 {0} 的变体 {1} 有 {2} 份：{3}。每个变体只能有一份。",
+        "Table {0} has {2} definitions of variant {1}: {3}. Each variant can have only one.");
+
+    public static readonly EsyMessage B1VariantMismatch = new("esyluban.b1.variant_mismatch",
+        "表 {0} 的几份定义 {1} 不一致：{2}（'' 表示没写）。同一张表的默认版和各个变体，output、mode、index 要写成一样的，没写也算一种写法；否则换一个变体，导出的文件名或生成的代码就可能变。",
+        "The definitions of table {0} disagree on {1}: {2} ('' means not written). The default version and every variant of a table must write output, mode and index the same way, and leaving one out counts as a way of writing it; otherwise switching the variant can change the exported file name or the generated code.");
 
     // {0} 是 dataTarget / codeTarget（json、cs-simple-json…），不是 targets 里的那个 target，
     // 所以叫它「输出目标」，免得照着去查错东西。

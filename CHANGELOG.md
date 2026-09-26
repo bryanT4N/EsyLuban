@@ -10,9 +10,21 @@ Luban 代码基线 —— 两者不是一回事，同一个上游基线下可以
 
 ---
 
-## 0.2.1+luban5.1.0
+## 0.3.0+luban5.1.0
 
 升级照常替换整个 `Tools/Luban/`，`luban.conf` 和表格保持不动。
+
+### 新增能力
+
+**B1 表支持表变体。** 同一个 `full_name` 再建一张 sheet，B1 加上 `variant="en"`，就是这张
+表的 en 版；不写 `variant` 的那份是默认版。导出时用 `--variant item.TbItem=en` 选；右键则由
+`luban.conf` 里 `contextMenu` 的 `extraArgs` 决定，点哪个文件都一样。同一张表的几份
+`output`、`mode`、`index` 要写成一样的（没写也算一种写法），否则换一个变体，文件名或
+生成的代码就可能变。每个变体要各跑一次 `check.bat`。写法和注意事项见
+`docs/localization.md`。
+
+0.2.0 里 B1 写 `variant` 会报错，现在不报了；写成 `variants`（字段变体的写法）仍会报错，
+并说明该怎么写。
 
 ### 你会注意到的变化
 

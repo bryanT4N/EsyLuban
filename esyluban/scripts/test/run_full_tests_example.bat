@@ -55,6 +55,7 @@ set COMPARE_REPORT_XML=%EXAMPLE_ROOT%\TestOutputs\compare_report_xml.json
 set COMPARE_REPORT_CODE=%EXAMPLE_ROOT%\TestOutputs\compare_report_code.json
 set HARD_ROOT=%ESY_ROOT%\examples\negatives_hard
 set LIST_ROOT=%ESY_ROOT%\examples\listing_scope
+set VAR_ROOT=%ESY_ROOT%\examples\b1_variants
 set COMPARE_PS1=%~dp0compare_baseline.ps1
 
 set FAILED=0
@@ -170,7 +171,7 @@ rem assertions in the file -- a few failure-only paths (an export returning
 rem non-zero, the negatives corpus missing) contribute nothing when everything
 rem passes, which is the state this number is pinned to. Add or remove a check
 rem and this number must move with it; the run reports INCONCLUSIVE until it does.
-set EXPECTED_CHECKS=19
+set EXPECTED_CHECKS=20
 set DEADX_LOG=%EXAMPLE_ROOT%\TestOutputs\dead_xargs.log
 set DEADX_OUT=%EXAMPLE_ROOT%\TestOutputs\dead_xargs_out
 
@@ -191,24 +192,28 @@ rem
 rem Duplicate primary key is the single most common mistake a designer makes in
 rem Excel, so "Luban stops loudly" is worth holding in place with a test.
 rem
-rem The last two guard EsyLuban's own B1 checks, which exist because of Luban
-rem 5.1's table variants. Without the importer rejecting it, variant= in B1 is
-rem silently ignored and the run exits 0, so that case fails the moment the
-rem check disappears. Two sheets sharing a full_name would otherwise surface as
-rem upstream's "multiple fallback definitions without variant", naming only one
-rem of them; EsyLuban's message names both. Both carry EsyLuban's own codes
-rem (esyluban.*), which also proves those codes reach the JSON report instead
-rem of being swallowed by an outer exception.
+rem The rest guard B1 table variants. b1_variant declares only an en variant and
+rem no default version, so an export without --variant must stop with upstream's
+rem variant_not_set -- which is also the proof that variant= in B1 reaches the
+rem resolver at all: were it ignored, the run would exit 0. The other four are
+rem EsyLuban's own checks, made before the resolver so every place gets named
+rem (upstream names one): two default versions, one variant defined twice, a
+rem variant whose mode differs from the default's, and B1 written with variants
+rem (the field-variant spelling). Matching their esyluban.* codes also proves
+rem those codes reach the JSON report instead of being swallowed.
 set HARD_FAILED=0
-call :ExpectFail dup_key       "error.data.duplicate_key"             "hard: duplicate primary key"
-call :ExpectFail mode_one      "error.data.singleton_count"           "hard: mode=one with 2 rows"
-call :ExpectFail b1_variant    "esyluban.b1.variant_unsupported"      "hard: variant= in B1"
-call :ExpectFail same_name     "esyluban.b1.duplicate_full_name"      "hard: two sheets, one full_name"
+call :ExpectFail dup_key          "error.data.duplicate_key"             "hard: duplicate primary key"
+call :ExpectFail mode_one         "error.data.singleton_count"           "hard: mode=one with 2 rows"
+call :ExpectFail b1_variant       "error.def.table.variant_not_set"      "hard: B1 variant without a default"
+call :ExpectFail same_name        "esyluban.b1.duplicate_full_name"      "hard: two B1 default versions"
+call :ExpectFail variant_dup      "esyluban.b1.duplicate_variant"        "hard: one variant defined twice"
+call :ExpectFail variant_mismatch "esyluban.b1.variant_mismatch"         "hard: variant with another mode"
+call :ExpectFail variants_key     "esyluban.b1.variants_key"             "hard: variants= in B1"
 if !HARD_FAILED! gtr 0 (
   echo [FAIL] hard-failure negatives: !HARD_FAILED! case^(s^) did not abort as expected
   set /a FAILED+=1
 ) else (
-  echo [OK]   hard-failure negatives: all 4 aborted with the expected error
+  echo [OK]   hard-failure negatives: all 7 aborted with the expected error
   set /a CHECKS+=1
 )
 
@@ -395,10 +400,10 @@ rem TbOther (B1, own folder), TbLegacy (XML only). Run without --variant, the
 rem case that used to abort.
 set LIST_FAILED=0
 pushd "!LIST_ROOT!\Tools\Luban"
-call :ExpectListing "../../DataTables/other"         "scope.TbOther"
-call :ExpectListing "../../DataTables/items.xlsx"    "scope.TbItem"
-call :ExpectListing "../../DataTables/items_en.xlsx" "scope.TbItem"
-call :ExpectListing "../../DataTables/legacy"        "scope.TbLegacy"
+call :ExpectListing "../../DataTables/other"         "scope.TbOther"  LIST_FAILED
+call :ExpectListing "../../DataTables/items.xlsx"    "scope.TbItem"   LIST_FAILED
+call :ExpectListing "../../DataTables/items_en.xlsx" "scope.TbItem"   LIST_FAILED
+call :ExpectListing "../../DataTables/legacy"        "scope.TbLegacy" LIST_FAILED
 rem Skipping variant resolution must not also skip the duplicate checks that
 rem come with it: dup.conf adds a second TbLegacy with no variant. Caught only
 rem at export, it would fail once per target under a hint about groups.
@@ -420,6 +425,32 @@ if !LIST_FAILED! gtr 0 (
   set /a FAILED+=1
 ) else (
   echo [OK]   listing scope: each selection lists only its own tables; duplicates still stop it
+  set /a CHECKS+=1
+)
+
+rem B1 table variants. examples/b1_variants: TbItem has a default version
+rem (item/items.xlsx) and an en variant (item/items_en.xlsx), TbOther stands
+rem alone; its luban.conf passes --variant demo.TbItem=en to the right-click.
+rem Without --variant the default data comes out, with it the en data. The
+rem right-click exports the variant the conf names whichever of the two files
+rem was clicked: the variant is a project setting, the click only picks which
+rem tables. The listing names TbItem once, from either file.
+set VAR_FAILED=0
+if exist "!VAR_ROOT!\TestOutputs" rmdir /s /q "!VAR_ROOT!\TestOutputs"
+mkdir "!VAR_ROOT!\TestOutputs"
+pushd "!VAR_ROOT!\Tools\Luban"
+call :ExpectVariantData ""                         "default" "sword"    "sword-en"
+call :ExpectVariantData "--variant demo.TbItem=en" "en"      "sword-en" ""
+call :ExpectListing "../../DataTables/item/items_en.xlsx" "demo.TbItem" VAR_FAILED
+call :ExpectListing "../../DataTables/item"               "demo.TbItem" VAR_FAILED
+popd
+call :ExpectVariantClick "item\items_en.xlsx"
+call :ExpectVariantClick "item\items.xlsx"
+if !VAR_FAILED! gtr 0 (
+  echo [FAIL] B1 table variants: !VAR_FAILED! case^(s^) wrong
+  set /a FAILED+=1
+) else (
+  echo [OK]   B1 table variants: default and en export, right-click follows extraArgs
   set /a CHECKS+=1
 )
 
@@ -620,25 +651,82 @@ endlocal
 exit /b 0
 
 :ExpectListing
-rem %1 selection relative to the corpus's Tools\Luban, %2 the one table it must
-rem list. Exit 0 and exactly that line on stdout (logs go to stderr).
+rem Run from a corpus's Tools\Luban. %1 selection relative to it, %2 the one
+rem table it must list, %3 the counter to bump on failure. Exit 0 and exactly
+rem that line on stdout (logs go to stderr).
 setlocal EnableDelayedExpansion
 set "SEL=%~1"
 set "WANT=%~2"
-if not exist "!LIST_ROOT!\TestOutputs" mkdir "!LIST_ROOT!\TestOutputs"
-set "LOUT=!LIST_ROOT!\TestOutputs\listing.txt"
-set "LERR=!LIST_ROOT!\TestOutputs\listing_err.log"
+set "LDIR=%CD%\..\..\TestOutputs"
+if not exist "!LDIR!" mkdir "!LDIR!"
+set "LOUT=!LDIR!\listing.txt"
+set "LERR=!LDIR!\listing_err.log"
 "!LUBAN_EXE!" --conf luban.conf -t all --listTables "!SEL!" > "!LOUT!" 2> "!LERR!"
 if errorlevel 1 (
   echo        [listing !SEL!] aborted, expected !WANT!; see !LERR!
-  endlocal & set /a LIST_FAILED+=1
+  endlocal & set /a %~3+=1
   exit /b 0
 )
 set "GOT="
 for /f "usebackq delims=" %%L in ("!LOUT!") do set "GOT=!GOT! %%L"
 if not "!GOT!"==" !WANT!" (
   echo        [listing !SEL!] expected !WANT!, got!GOT!
-  endlocal & set /a LIST_FAILED+=1
+  endlocal & set /a %~3+=1
+  exit /b 0
+)
+endlocal
+exit /b 0
+
+:ExpectVariantData
+rem Run from b1_variants\Tools\Luban. %1 extra arguments, %2 output folder name,
+rem %3 text demo_tbitem.json must contain, %4 text it must not (empty to skip).
+setlocal EnableDelayedExpansion
+set "VDIR=!VAR_ROOT!\TestOutputs\%~2"
+"!LUBAN_EXE!" --conf luban.conf -t all -d json -x outputDataDir="!VDIR!" %~1 > "!VDIR!.log" 2>&1
+if errorlevel 1 (
+  echo        [variant %~2] export failed; see !VDIR!.log
+  endlocal & set /a VAR_FAILED+=1
+  exit /b 0
+)
+findstr /c:"%~3" "!VDIR!\demo_tbitem.json" >nul
+if errorlevel 1 (
+  echo        [variant %~2] demo_tbitem.json does not contain %~3
+  endlocal & set /a VAR_FAILED+=1
+  exit /b 0
+)
+if not "%~4"=="" (
+  findstr /c:"%~4" "!VDIR!\demo_tbitem.json" >nul
+  if not errorlevel 1 (
+    echo        [variant %~2] demo_tbitem.json still contains %~4
+    endlocal & set /a VAR_FAILED+=1
+    exit /b 0
+  )
+)
+endlocal
+exit /b 0
+
+:ExpectVariantClick
+rem %1 file under b1_variants\DataTables to right-click, through the same
+rem implementation script users run. The corpus conf passes --variant
+rem demo.TbItem=en in extraArgs, so the en data must come out, and only TbItem.
+setlocal EnableDelayedExpansion
+set "CDIR=!VAR_ROOT!\TestOutputs\contextmenu"
+if exist "!CDIR!" rmdir /s /q "!CDIR!"
+call "%~dp0..\contextmenu\run_luban_context_menu_data.bat" "!VAR_ROOT!\DataTables\%~1" > "!VAR_ROOT!\TestOutputs\click.log" 2>&1
+if errorlevel 1 (
+  echo        [variant right-click %~1] export failed; see !VAR_ROOT!\TestOutputs\click.log
+  endlocal & set /a VAR_FAILED+=1
+  exit /b 0
+)
+findstr /c:"sword-en" "!CDIR!\demo_tbitem.json" >nul
+if errorlevel 1 (
+  echo        [variant right-click %~1] did not export the en variant named in extraArgs
+  endlocal & set /a VAR_FAILED+=1
+  exit /b 0
+)
+if exist "!CDIR!\demo_tbother.json" (
+  echo        [variant right-click %~1] exported TbOther, which is outside the selection
+  endlocal & set /a VAR_FAILED+=1
   exit /b 0
 )
 endlocal

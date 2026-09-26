@@ -126,24 +126,58 @@ gen.bat -t client -d json ^
 这套做法要配 `convertTextKeyToValue=1`；用 `=0` 的话产物里是 key，本来就与语言
 无关，不需要分目录。
 
-## 表变体：B1 表暂不支持
+## 表变体：按地区换整张表
 
-Luban 5.1 起多了一种按语言或地区出数据的办法，叫表变体。同一个表名可以有几份
-定义，导出时用 `--variant` 选一份，连结构都可以不同。上游的
+Luban 5.1 起多了一种按语言或地区出数据的办法，叫表变体。同一张表可以有几份定义，
+导出时用 `--variant` 选一份。上游的
 [变体文档](https://www.datable.cn/docs/quality/variants)讲了三种办法的分工。
 字段变体管少量数值或短文案，表变体管整张表按地区、渠道换数据，长篇多语言文案
 交给本页这套文本表。它还建议一个项目选定一种为主，别混着用。
 
-B1 表目前不能声明表变体，B1 里写了 `variant` 会直接报错。多语言文本用本页的
-文本表就够了。真要按地区换整张表，就把默认那份留在 B1，其余几份在 XML 里定义
-同名表并标上 `variant`：
+**写法。** 再建一张 sheet，B1 写同一个 `full_name`，加上 `variant`：
 
-```xml
-<table name="TbItem" value="Item" input="items_en.xlsx" readSchemaFromFile="1" variant="en"/>
+```
+items.xlsx      A1: ##export   B1: full_name="item.TbItem" & read_schema_from_file="true"
+items_en.xlsx   A1: ##export   B1: full_name="item.TbItem" & read_schema_from_file="true" & variant="en"
 ```
 
-导出时加 `--variant TbItem=en` 只切这一张表；`--variant default=en` 则把所有带变体的表
-一起切到 en。不加就用 B1 那份，并给一句告警。右键
-菜单不会自动带这个参数，要用的话在 `luban.conf` 的 `contextMenu` 里配
-`extraArgs`，见[右键菜单](context-menu.md)。右键 B1 那份所在的文件，或者 en 那份的
-数据文件 `items_en.xlsx`，导出的都是 `TbItem`，用哪一份看 `extraArgs` 里的 `--variant`。
+不写 `variant` 的那份是默认版，最多一份。一份也可以同时给几个变体用：`variant="en,jp"`。
+几份放在同一个文件的不同 sheet 里，或者分开放，都行。
+
+**导出时选。**
+
+```bat
+gen.bat -t client -d json --variant item.TbItem=en
+gen.bat -t client -d json --variant default=en
+```
+
+`--variant 全名=en` 只切这一张表，也可以只写表名 `TbItem=en`；`default=en` 把所有带变体的
+表一起切到 en。不加，或者这张表没有 en 那份，就用默认版，并给一句告警。只有变体、没留
+默认版的表，不加 `--variant` 会直接中止（`error.def.table.variant_not_set`）。
+
+**右键。** 导出哪一份由 `luban.conf` 里 `contextMenu` 的 `extraArgs` 决定，比如
+`["--variant", "item.TbItem=en"]`，见[右键菜单](context-menu.md)。点哪个文件只决定导哪几张表：
+右键 `items.xlsx` 还是 `items_en.xlsx`，导出的都是 `TbItem`，用的都是 `extraArgs` 选的那份。
+没配 `--variant` 就是默认版。
+
+**必须一致的：`output`、`mode`、`index`。** 不一致会报 `esyluban.b1.variant_mismatch`。
+否则换一个变体，导出的文件名或生成的代码就变了，游戏里同一套代码读不了另一个地区的数据。
+比的是写法，没写也算一种写法：一份写了 `index="id"`、另一份没写，也算不一致，哪怕没写的
+那份默认也是 `id`。最省事的做法是复制默认版的 sheet，只在 B1 末尾加上 `& variant="en"`。
+`mode` 例外，没写就是 `map`。
+
+**最好一致的：表头**（`##var`、`##type` 那几行）。EsyLuban 不检查，因为导出时只读选中那份
+的表头。结构不同，生成的代码就跟着变；没被选中的那份表头写坏了，也要等到导它那天才发现。
+所以**每个变体都要单独校验一次**：
+
+```bat
+check.bat -t client
+check.bat -t client --variant item.TbItem=en
+```
+
+**`default=` 也管字段变体。** 字段变体没有默认版可退，某个字段的 `variants` 里没有 en，
+`--variant default=en` 就会中止（`error.def.field.variant_not_in_list`）。同时用了字段变体的
+项目，表变体按表指定，别用 `default=`。
+
+表变体也可以在 XML 或 `__tables__.xlsx` 里声明（`<table ... variant="en"/>`），和 B1 里的几份
+混着用也行。上面那条一致性检查只看 B1 里的几份。

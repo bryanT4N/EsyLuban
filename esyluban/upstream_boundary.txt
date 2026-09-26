@@ -196,4 +196,5 @@ A	src/Luban.Schema.Builtin/SelfContainedTableImporter.cs
 # src/Luban.Tests/ 从 v5.1.0 起是上游自己的测试工程（集成测试 + golden），
 # 我们只往里放自己的测试文件，工程文件沿用上游的，不再各自维护一份。
 A	src/Luban.Tests/B1ParserTests.cs
+A	src/Luban.Tests/B1VariantTests.cs
 A	src/Luban.Tests/EsyMessagesTests.cs

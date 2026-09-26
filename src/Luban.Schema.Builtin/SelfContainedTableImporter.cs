@@ -121,31 +121,66 @@ public class SelfContainedTableImporter : ITableImporter
         {
             tables.AddRange(LoadTablesFromFile(file));
         }
-        EnsureUniqueFullNames(tables);
+        CheckVariants(tables);
 
         s_logger.Info("self-contained table importer: {} table(s) found under {}", tables.Count, scanRoot);
         return tables;
     }
 
     /// <summary>
-    /// 两张 B1 表同名，几乎总是复制 sheet 后忘了改 full_name。
+    /// 同名的几张 B1 表只能是同一张表的几个变体：最多一份不写 variant（默认版），
+    /// 每个变体名只出现一次，output、mode、index 都相同。
     ///
-    /// Luban 5.1 起同名表会先被当成表变体解析，报出的是「存在多个无 variant 的
-    /// fallback 定义」。自包含表本就写不了 variant，这句话对策划毫无意义，而且只
-    /// 指出其中一处。所以在进入变体解析之前拦下，把每一处都点名。
+    /// 前两条上游的变体解析也查，但只点出其中一处，这里在解析之前拦下，每一处都列出来。
+    /// 第三条上游不查，它允许各份完全不同；对策划来说，换个变体运行时就找不到文件、
+    /// 生成的代码跟着变，几乎只有坏处。只看 B1 里的定义，和 XML 之间的交给上游。
+    ///
+    /// 不带 SchemaOrigin：它只装得下一处，而这里每一处都要点名。
     /// </summary>
-    private static void EnsureUniqueFullNames(List<RawTable> tables)
+    public static void CheckVariants(IEnumerable<RawTable> tables)
     {
         foreach (var group in tables.GroupBy(t => TypeUtil.MakeFullName(t.Namespace, t.Name)))
         {
-            if (group.Count() > 1)
+            var definitions = group.ToList();
+            if (definitions.Count == 1)
             {
-                // 不带 SchemaOrigin：它只装得下一处，而这里每一处都要点名
-                throw new EsyLubanException(EsyMessages.B1DuplicateFullName, null,
-                    group.Key, group.Count(), string.Join(", ", group.Select(t => t.Source.Display)));
+                continue;
             }
+
+            var defaults = definitions.Where(t => t.Variants.Count == 0).ToList();
+            if (defaults.Count > 1)
+            {
+                throw new EsyLubanException(EsyMessages.B1DuplicateFullName, null, group.Key, defaults.Count, Places(defaults));
+            }
+            // 一张 sheet 里写了两遍（variant="en,en"）不在这里算：列出来会是同一处两遍，
+            // 上游解析器会报它，并指出是哪张 sheet
+            foreach (var variant in definitions.SelectMany(t => t.Variants.Distinct(), (t, v) => (Table: t, Name: v)).GroupBy(x => x.Name))
+            {
+                if (variant.Count() > 1)
+                {
+                    throw new EsyLubanException(EsyMessages.B1DuplicateVariant, null,
+                        group.Key, variant.Key, variant.Count(), Places(variant.Select(x => x.Table)));
+                }
+            }
+
+            // 比的是写法：output、index 没写时的缺省值要到后面才定（index 取表头第一个字段），
+            // 这里算不出来，所以没写也算一种写法。mode 在解析时已经换成了枚举，没写就是 map。
+            CheckSame(group.Key, definitions, "output", t => t.OutputFile);
+            CheckSame(group.Key, definitions, "mode", t => t.Mode.ToString().ToLowerInvariant());
+            CheckSame(group.Key, definitions, "index", t => t.Index);
         }
     }
+
+    private static void CheckSame(string fullName, List<RawTable> definitions, string key, Func<RawTable, string> value)
+    {
+        if (definitions.Select(value).Distinct().Count() > 1)
+        {
+            throw new EsyLubanException(EsyMessages.B1VariantMismatch, null,
+                fullName, key, string.Join(", ", definitions.Select(t => $"{t.Source.Display}='{value(t)}'")));
+        }
+    }
+
+    private static string Places(IEnumerable<RawTable> tables) => string.Join(", ", tables.Select(t => t.Source.Display));
 
     private static List<RawTable> LoadTablesFromFile(string file)
     {
@@ -230,13 +265,11 @@ public class SelfContainedTableImporter : ITableImporter
         // 要么上游本就有合理缺省。写得越少越好。
         string fullName = metadata["full_name"];
 
-        // 表变体（Luban 5.1 起）是「同名表的几份定义，导出时选一份」，自包含表暂不支持：
-        // B1 写不出「同名的另一份」，右键菜单也没有地方让策划选变体。B1Parser 不限制
-        // 键名，不在这里拦的话 variant= 会被静默忽略，同名的几张表随后撞上一句看不懂
-        // 的报错。variants 是字段变体的写法，写进 B1 多半也是想做这件事。
-        if (metadata.ContainsKey("variant") || metadata.ContainsKey("variants"))
+        // variants 是 XML 和 __beans__ 里字段变体的写法，写进 B1 多半是想要表变体。
+        // B1Parser 不限制键名，不在这里拦的话它会被静默忽略。
+        if (metadata.ContainsKey("variants"))
         {
-            throw new EsyLubanException(EsyMessages.B1VariantUnsupported, source, fullName);
+            throw new EsyLubanException(EsyMessages.B1VariantsKey, source);
         }
 
         string namespaceName = TypeUtil.GetNamespace(fullName);
@@ -287,6 +320,9 @@ public class SelfContainedTableImporter : ITableImporter
             Groups = ParseGroups(GetOptional(metadata, "group", "")),
             Tags = DefUtil.ParseAttrs(GetOptional(metadata, "tags", "")),
             OutputFile = GetOptional(metadata, "output", ""),
+            // 表变体：同一个 full_name 的几张 sheet，各写一个变体名，不写的那份是默认版，
+            // 导出时由 --variant 选。和 XML 的 variant 属性同一套写法和解析。
+            Variants = DefUtil.ParseVariant(GetOptional(metadata, "variant", "")),
             // 表级报错（index 字段不存在、value_type 找不到等）靠它指出是哪个文件的哪张
             // sheet；--errorFormat json 与 schema-json 也从这里取位置。
             Source = source,

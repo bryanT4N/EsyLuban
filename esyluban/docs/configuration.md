@@ -224,7 +224,7 @@ tableImporter 默认扫 `dataDir` 全目录，自动跳过：
 | `-x` | `--xargs` | 运行参数，`-x key=val`，可多次 |
 | `-f` | `--forceLoadTableDatas` | 没有 dataTarget 时也加载数据。纯校验用 |
 | `-i` / `-e` | `--includeTag` / `--excludeTag` | 按记录 tag 过滤 |
-| | `--variant` | 选变体。字段变体如 `--variant Item.name=en`；也用来选 XML 或 `__tables__.xlsx` 里定义的表变体，见[本地化](localization.md) |
+| | `--variant` | 选变体。表变体如 `--variant TbItem=en`（B1、XML、`__tables__.xlsx` 里声明的都算），字段变体如 `--variant Item.name=en`；`default=en` 两种都管，见[本地化](localization.md) |
 | | `--timeZone` | datetime 的时区 |
 | | `--strict` | 有校验失败就以退出码 1 结束。Luban 5 之前叫 `--validationFailAsError`，旧名字现在是未知参数，会让整次运行直接失败 |
 | | `--locale` | 报错与告警的语言，`zh` 或 `en`。不写时跟随 Windows 界面语言。`gen.bat`、`check.bat` 会原样传给 Luban，右键菜单写进 `contextMenu` 的 `extraArgs` |
