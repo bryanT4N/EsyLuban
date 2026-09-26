@@ -79,8 +79,21 @@ l10n.convertTextKeyToValue=1
 
 ## 校验
 
-`text` 类型的字段会被校验。填了文本表里不存在的 key，导出时会报
-`error.validator.text.invalid_key`，中英文原文见[排错](troubleshooting.md)。
+`text` 字段填了文本表里不存在的 key，会怎样取决于 `convertTextKeyToValue`：
+
+| `convertTextKeyToValue` | 报什么 | 算不算校验失败 | 产物里 |
+|---|---|---|---|
+| `0` | `error.validator.text.invalid_key` | 算，`--strict` 与 `check.bat` 以退出码 1 结束 | key 原样 |
+| `1` | `error.l10n.missing_text` | **不算**，只记一条 ERROR，退出码仍是 0 | **写错的 key 原样进产物** |
+
+按本页的做法分语言出包用的是 `1`，所以 key 写错时导出照样成功，`check.bat` 也拦不住。
+要在提交前拦下，就让 `check.bat` 临时换成 `0` 再跑一次：
+
+```bat
+check.bat -t client -x l10n.convertTextKeyToValue=0
+```
+
+中英文原文见[排错](troubleshooting.md)。
 
 这条校验只在配置了 `l10n.textFile.path` 时才有意义 —— 没有文本表，Luban 无从
 判断 key 是否存在。也就是说，**不配 l10n 就等于关掉了这项校验**，表里的 key

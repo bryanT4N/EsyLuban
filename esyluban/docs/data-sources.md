@@ -119,6 +119,19 @@ input="*levels@stage/stages.json"
 > 一致。**除非你有既存资产要对接，否则不建议引入** —— 团队里多一种数据格式，
 > 就多一份要教给新人的规矩。
 
+### 字段里常有逗号、分号：可以放进 tsv
+
+Luban 5.1 起支持 tsv（tab 分隔）做数据源。它和 xlsx 一样有 `##`、`##type` 这些行，只是
+用 tab 分列，字段里的逗号、分号不会被切开。表定义仍然写在一张 xlsx 的 B1 里，用 `input`
+指过去：
+
+```
+full_name="item.TbItem" & read_schema_from_file="true" & input="item/items.tsv"
+```
+
+这张 xlsx 只需要 A1、B1 两格。tsv 自己不能带 `##export` 和 B1，EsyLuban 只从 Excel
+文件里找表。
+
 ### json 里的多态类型写 `__type__`
 
 同一个数组里混着不同子类型时，用 `__type__` 指明是哪个：

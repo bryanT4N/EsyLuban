@@ -36,6 +36,7 @@
 | `size:N，但要求为`<br>`size:N, but required` | `error.validator.size.mismatch` | `size` 校验器。报错里会写出要求的个数 |
 | `是一个默认值`<br>`is a default value` | `error.validator.not_default` | `not-default` 校验器，这个字段不许留默认值 |
 | `不是一个有效的文本 key`<br>`is not a valid text key` | `error.validator.text.invalid_key` | `text` 字段填的 key 在本地化表里不存在 |
+| `找不到文本 id:x 对应的目标语言文本`<br>`can't find target language text of text id:x` | `error.l10n.missing_text` | 同样是 key 不存在，但出在 `convertTextKeyToValue=1` 时。这条**不算校验失败**，写错的 key 会原样进产物，`check.bat` 也拦不住。见下面「产物里是 key，不是文案」 |
 | bool 字段报错 |  | 只接受 `true`/`false`/`0`/`1`。`Yes`、`是`、`√` 都不行 |
 | 枚举字段报错 |  | 填了不存在的枚举名。注意枚举名区分大小写 |
 | `ref 引用的表:'x' 没有导出`<br>`ref table:'x' is not exported` | `error.validator.ref.not_exported` | 被引用的表不在当前 target 的 group 里。右键菜单常见这个 —— 见下面「右键菜单」一节 |
@@ -79,6 +80,14 @@ gen.bat -t all -f --strict                 exit=1
 
 排查手法：拿同一张表分别导 `-t client` 和 `-t all`，比较字段列表。
 `-t all` 里也没有的字段，就是分组名写错了。
+
+### 产物里是 key，不是文案
+
+`text` 字段的 key 在文本表里不存在，而导出用的是 `convertTextKeyToValue=1`（分语言出包的
+常用做法）。这时只记一条 `error.l10n.missing_text`，**不算校验失败**，`--strict` 和 `check.bat`
+都拦不住，写错的 key 原样进了产物。提交前用 `check.bat -t client -x l10n.convertTextKeyToValue=0`
+再查一遍，缺的 key 会以 `error.validator.text.invalid_key` 报出来，退出码变成 1。
+见[本地化](localization.md)。
 
 ### 生成的代码里类型不是我映射的那个
 
