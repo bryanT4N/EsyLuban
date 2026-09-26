@@ -189,14 +189,26 @@ rem with the right error rather than for some unrelated reason.
 rem
 rem Duplicate primary key is the single most common mistake a designer makes in
 rem Excel, so "Luban stops loudly" is worth holding in place with a test.
+rem
+rem The last two guard EsyLuban's own B1 checks, which exist because of Luban
+rem 5.1's table variants. Without the importer rejecting it, variant= in B1 is
+rem silently ignored and the run exits 0, so that case fails the moment the
+rem check disappears. Two sheets sharing a full_name would otherwise surface as
+rem upstream's "multiple fallback definitions without variant", naming only one
+rem of them; EsyLuban's message names both and is the only one saying full_name.
+rem These two are plain exceptions with no message key, so they are matched on
+rem an ASCII word that only EsyLuban's message carries -- one that appears
+rem neither in the corpus folder names nor in the INFO lines that print them.
 set HARD_FAILED=0
-call :ExpectFail dup_key  "error.data.duplicate_key"   "hard: duplicate primary key"
-call :ExpectFail mode_one "error.data.singleton_count" "hard: mode=one with 2 rows"
+call :ExpectFail dup_key       "error.data.duplicate_key"   "hard: duplicate primary key"
+call :ExpectFail mode_one      "error.data.singleton_count" "hard: mode=one with 2 rows"
+call :ExpectFail b1_variant    "__tables__.xlsx"            "hard: variant= in B1"
+call :ExpectFail same_name     "full_name"                  "hard: two sheets, one full_name"
 if !HARD_FAILED! gtr 0 (
   echo [FAIL] hard-failure negatives: !HARD_FAILED! case^(s^) did not abort as expected
   set /a FAILED+=1
 ) else (
-  echo [OK]   hard-failure negatives: both aborted with the expected error code
+  echo [OK]   hard-failure negatives: all 4 aborted with the expected error
   set /a CHECKS+=1
 )
 
@@ -532,7 +544,8 @@ endlocal & set /a RC_TOTAL+=%RC_N%
 exit /b 0
 
 :ExpectFail
-rem %1 conf base name under negatives_hard, %2 required error code, %3 label
+rem %1 conf base name under negatives_hard, %2 required error code (for
+rem EsyLuban's own checks, an ASCII word of its message), %3 label
 rem Passing is a NON-ZERO exit plus that error code in the log. Checking only the
 rem exit code would let any unrelated crash count as a pass.
 rem

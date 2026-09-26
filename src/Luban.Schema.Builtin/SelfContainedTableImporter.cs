@@ -120,9 +120,29 @@ public class SelfContainedTableImporter : ITableImporter
         {
             tables.AddRange(LoadTablesFromFile(file));
         }
+        EnsureUniqueFullNames(tables);
 
         s_logger.Info("self-contained table importer: {} table(s) found under {}", tables.Count, scanRoot);
         return tables;
+    }
+
+    /// <summary>
+    /// 两张 B1 表同名，几乎总是复制 sheet 后忘了改 full_name。
+    ///
+    /// Luban 5.1 起同名表会先被当成表变体解析，报出的是「存在多个无 variant 的
+    /// fallback 定义」。自包含表本就写不了 variant，这句话对策划毫无意义，而且只
+    /// 指出其中一处。所以在进入变体解析之前拦下，把每一处都点名。
+    /// </summary>
+    private static void EnsureUniqueFullNames(List<RawTable> tables)
+    {
+        foreach (var group in tables.GroupBy(t => TypeUtil.MakeFullName(t.Namespace, t.Name)))
+        {
+            if (group.Count() > 1)
+            {
+                throw new Exception($"表 {group.Key} 被定义了 {group.Count()} 次：{string.Join("、", group.Select(t => t.Source.Display))}。"
+                    + "每张表的 full_name 必须唯一，复制 sheet 后记得改 B1。");
+            }
+        }
     }
 
     private static List<RawTable> LoadTablesFromFile(string file)
@@ -202,6 +222,17 @@ public class SelfContainedTableImporter : ITableImporter
     {
         var metadata = B1Parser.Parse(b1Content);
 
+        // 表变体（Luban 5.1 起）是「同名表的几份定义，导出时选一份」，自包含表暂不支持：
+        // B1 写不出「同名的另一份」，右键菜单也没有地方让策划选变体。B1Parser 不限制
+        // 键名，不在这里拦的话 variant= 会被静默忽略，同名的几张表随后撞上一句看不懂
+        // 的报错。variants 是字段变体的写法，写进 B1 多半也是想做这件事。
+        if (metadata.ContainsKey("variant") || metadata.ContainsKey("variants"))
+        {
+            throw new Exception($"sheet '{sheetName}' 的 B1 写了 variant，自包含表暂不支持表变体。"
+                + "多语言文本请用文本表（见 docs/localization.md）；要按地区换整张表，"
+                + "就把默认那份留在 B1，其余几份用 __tables__.xlsx 或 XML 定义同名表。");
+        }
+
         // full_name 是 B1 里唯一必填项 —— 其余字段要么能从它推导，
         // 要么上游本就有合理缺省。写得越少越好。
         string fullName = metadata["full_name"];
@@ -254,6 +285,9 @@ public class SelfContainedTableImporter : ITableImporter
             Groups = ParseGroups(GetOptional(metadata, "group", "")),
             Tags = DefUtil.ParseAttrs(GetOptional(metadata, "tags", "")),
             OutputFile = GetOptional(metadata, "output", ""),
+            // 表级报错（index 字段不存在、value_type 找不到等）靠它指出是哪个文件的哪张
+            // sheet；--errorFormat json 与 schema-json 也从这里取位置。
+            Source = SchemaSource.Create(fileName, sheetName),
         };
     }
 
