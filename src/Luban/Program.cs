@@ -395,11 +395,7 @@ internal static class Program
             {
                 continue;
             }
-            s_logger.Warn(
-                "[dead xargs] {} 不会生效：{} 是 conf 里 targets 的名字（-t 的那个 target），"
-                + "而 xargs 的命名空间只认 dataTarget（json、bin…）与 codeTarget（cs-simple-json…）。"
-                + "要按 target 分目录，请在每次调用时用 -x {}=... 传入。",
-                key, prefix, key.Substring(dot + 1));
+            s_logger.Warn(EsyMessages.DeadXargs.Format(key, prefix, key.Substring(dot + 1)));
         }
     }
 

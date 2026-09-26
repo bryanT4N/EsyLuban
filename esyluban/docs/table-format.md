@@ -384,7 +384,7 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 | `full_name` | 表的唯一身份。决定默认输出文件名、生成代码里的访问名。**表名在整个工程内唯一**，不同模块下同名也不行。两张 sheet 写了同一个 `full_name` 会报错，并列出每一处 |
 | `value_type` | 记录的结构类型。缺省由表名推导（`TbItem` → `Item`）；`read_schema_from_file="true"` 且没写命名空间时，自动补上表所在的命名空间 |
 | `index` | 见下 |
-| `mode` | `map` / `list` / `one`，其它值报 `Invalid mode: X. Expected: map, list, or one` |
+| `mode` | `map` / `list` / `one`，写别的会报错（`esyluban.b1.bad_mode`） |
 | `read_schema_from_file` | `true` 表示结构来自本表的 `##var`/`##type` 行。缺省 `false` |
 | `input` | 数据从哪来。缺省是本 sheet 自己，见[数据源](data-sources.md) |
 | `output` | 覆盖默认输出文件名，见下面「`output` 这一格能写什么」 |

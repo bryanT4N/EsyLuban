@@ -2,6 +2,8 @@
 // Licensed under MIT License
 
 using System.Text;
+using Luban.Diagnostics;
+using Luban.Schema;
 
 namespace Luban.Utils;
 
@@ -15,19 +17,20 @@ public static class B1Parser
     /// 解析 B1 元数据字符串
     /// </summary>
     /// <param name="b1Content">B1 单元格内容</param>
+    /// <param name="source">B1 所在的 sheet，写进报错，指出是哪个文件的哪张 sheet</param>
     /// <returns>字段名到值的映射</returns>
-    /// <exception cref="Exception">格式错误时抛出异常</exception>
-    public static Dictionary<string, string> Parse(string b1Content)
+    /// <exception cref="EsyLubanException">格式错误时抛出异常</exception>
+    public static Dictionary<string, string> Parse(string b1Content, SchemaSource source = null)
     {
         if (string.IsNullOrWhiteSpace(b1Content))
         {
-            throw new Exception("B1 content is empty");
+            throw new EsyLubanException(EsyMessages.B1Empty, source);
         }
 
         var result = new Dictionary<string, string>();
 
         // 按 " & " 分割字段（注意两端的空格）
-        var fields = SplitByDelimiterWithQuotes(b1Content, " & ");
+        var fields = SplitByDelimiterWithQuotes(b1Content, " & ", source);
 
         foreach (var field in fields)
         {
@@ -37,7 +40,7 @@ public static class B1Parser
             int equalsIndex = FindUnquotedEquals(field);
             if (equalsIndex < 0)
             {
-                throw new Exception($"Invalid field format (missing '='): {field}");
+                throw new EsyLubanException(EsyMessages.B1MissingEquals, source, field.Trim());
             }
 
             // 提取键和值
@@ -46,7 +49,7 @@ public static class B1Parser
 
             if (string.IsNullOrWhiteSpace(key))
             {
-                throw new Exception($"Empty key in field: {field}");
+                throw new EsyLubanException(EsyMessages.B1EmptyKey, source, field.Trim());
             }
 
             // 去除值两端的引号并处理转义
@@ -56,7 +59,7 @@ public static class B1Parser
         }
 
         // 验证必填字段
-        ValidateRequiredFields(result);
+        ValidateRequiredFields(result, source);
 
         return result;
     }
@@ -64,7 +67,7 @@ public static class B1Parser
     /// <summary>
     /// 按分隔符分割字符串，忽略引号内的分隔符
     /// </summary>
-    private static string[] SplitByDelimiterWithQuotes(string content, string delimiter)
+    private static string[] SplitByDelimiterWithQuotes(string content, string delimiter, SchemaSource source)
     {
         var result = new List<string>();
         var buffer = new StringBuilder();
@@ -117,7 +120,7 @@ public static class B1Parser
 
         if (inQuote)
         {
-            throw new Exception("Unmatched quote in B1 content");
+            throw new EsyLubanException(EsyMessages.B1UnmatchedQuote, source);
         }
 
         return result.ToArray();
@@ -209,14 +212,14 @@ public static class B1Parser
     /// <summary>
     /// 验证必填字段
     /// </summary>
-    private static void ValidateRequiredFields(Dictionary<string, string> fields)
+    private static void ValidateRequiredFields(Dictionary<string, string> fields, SchemaSource source)
     {
         // full_name 是 B1 唯一必填项：它是这张表的身份，无从推导。
         // 其余字段一律可省 —— value_type 由表名推导（TbItem -> Item），
         // output / index / input 等则各有缺省语义，不应强迫每张表重复书写。
         if (!fields.ContainsKey("full_name") || string.IsNullOrWhiteSpace(fields["full_name"]))
         {
-            throw new Exception("Missing required field: full_name");
+            throw new EsyLubanException(EsyMessages.B1MissingFullName, source);
         }
     }
 }

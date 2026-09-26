@@ -264,17 +264,23 @@ if (Test-Path -LiteralPath $devConf) {
 # docs name an error by its message key -- error.data.duplicate_key -- which is
 # the same in every language. Two checks keep that honest.
 #
-# 1. Every key the docs quote must exist in both catalogs. A key that upstream
+# EsyLuban's own messages have codes too (esyluban.b1.bad_mode ...). They live
+# in src/Luban.Core/Diagnostics/EsyMessages.cs as new("code", "zh", "en")
+# entries rather than in upstream's catalogs, and are read into the same lookup,
+# so everything below treats the two kinds of code alike.
+#
+# 1. Every key the docs quote must exist in both languages. A key that upstream
 #    renamed or dropped is a dead reference nobody would notice.
 #
 # 2. troubleshooting.md is where readers search with the text on their screen,
 #    so its rows list the message in both languages next to the key. For a row
 #    with a key, the zh fragment must match that key's zh message and the en
 #    fragment its en message. For a row without one, the text must be something
-#    only EsyLuban prints: a C# literal under src/ (minus src/Luban.Tests, which
-#    holds expectations) or a non-comment line of a shipped .bat. Upstream's
-#    catalog is deliberately NOT a candidate there -- a catalog message quoted
-#    without its key would be a quote in one language only.
+#    only EsyLuban prints and that has no code: a C# literal under src/ (minus
+#    src/Luban.Tests, which holds expectations, and EsyMessages.cs) or a
+#    non-comment line of a shipped .bat. Neither catalog is a candidate there --
+#    a coded message quoted without its code would be a quote in one language
+#    only.
 #
 # A fragment is split on the page's placeholder spellings -- x, y, N, xxx, a+b,
 # <...>, key=..., ..., and interface names such as ITableImporter, which the page
@@ -296,7 +302,28 @@ if (-not (Test-Path -LiteralPath $zhPath) -or -not (Test-Path -LiteralPath $enPa
     foreach ($p in ([System.IO.File]::ReadAllText($zhPath) | ConvertFrom-Json).PSObject.Properties) { $zh[$p.Name] = [string]$p.Value }
     foreach ($p in ([System.IO.File]::ReadAllText($enPath) | ConvertFrom-Json).PSObject.Properties) { $en[$p.Name] = [string]$p.Value }
 
-    $codePattern = '`((?:error|warn)\.[a-z0-9_]+(?:\.[a-z0-9_]+)+)`'
+    # Every "esyluban. in the file must come out of the pattern; an entry written
+    # some other way (concatenated, interpolated) would silently drop out of
+    # every check below.
+    $esyMessages = Read-Text 'src/Luban.Core/Diagnostics/EsyMessages.cs'
+    if ($null -eq $esyMessages) {
+        Write-Host "[FAIL] doc facts: src/Luban.Core/Diagnostics/EsyMessages.cs is gone, so EsyLuban's own codes cannot be checked"
+        $failed++
+    } else {
+        $literal = '"((?:[^"\\\r\n]|\\.)*)"'
+        $entries = [regex]::Matches($esyMessages, "new\(""(esyluban\.[a-z0-9_.]+)"",\s*$literal,\s*$literal\)")
+        $declared = [regex]::Matches($esyMessages, '"esyluban\.').Count
+        if ($entries.Count -ne $declared) {
+            Write-Host "[FAIL] doc facts: EsyMessages.cs declares $declared codes, but only $($entries.Count) are in the new(""code"", ""zh"", ""en"") form this check reads"
+            $failed++
+        }
+        foreach ($e in $entries) {
+            $zh[$e.Groups[1].Value] = $e.Groups[2].Value -replace '\\(["\\])', '$1'
+            $en[$e.Groups[1].Value] = $e.Groups[3].Value -replace '\\(["\\])', '$1'
+        }
+    }
+
+    $codePattern = '`((?:error|warn|esyluban)\.[a-z0-9_]+(?:\.[a-z0-9_]+)+)`'
     foreach ($f in Get-ChildItem -LiteralPath $docsDir -Filter *.md -File) {
         $i = 0
         foreach ($line in [System.IO.File]::ReadAllLines($f.FullName)) {
@@ -304,7 +331,7 @@ if (-not (Test-Path -LiteralPath $zhPath) -or -not (Test-Path -LiteralPath $enPa
             foreach ($m in [regex]::Matches($line, $codePattern)) {
                 $key = $m.Groups[1].Value
                 if (-not $zh.ContainsKey($key) -or -not $en.ContainsKey($key)) {
-                    Write-Host "[FAIL] doc facts: $($f.Name):$i names error code $key, which is not in both message catalogs"
+                    Write-Host "[FAIL] doc facts: $($f.Name):$i names error code $key, which neither the message catalogs nor EsyMessages.cs define in both languages"
                     $failed++
                 }
             }
@@ -314,6 +341,7 @@ if (-not (Test-Path -LiteralPath $zhPath) -or -not (Test-Path -LiteralPath $enPa
     $esyOnly = New-Object System.Collections.Generic.List[string]
     foreach ($f in Get-ChildItem -LiteralPath (Join-Path $repoRoot 'src') -Recurse -Filter *.cs -File) {
         if ($f.FullName -match '[\\/]Luban\.Tests[\\/]') { continue }
+        if ($f.Name -eq 'EsyMessages.cs') { continue }
         $text = [System.IO.File]::ReadAllText($f.FullName)
         foreach ($m in [regex]::Matches($text, '"(?:[^"\\\r\n]|\\.)*"')) { $esyOnly.Add($m.Value) }
     }
@@ -367,7 +395,7 @@ if (-not (Test-Path -LiteralPath $zhPath) -or -not (Test-Path -LiteralPath $enPa
         } else {
             foreach ($fragment in $fragments) {
                 if (-not @($esyOnly | Where-Object { Test-Fragment $fragment $_ }).Count) {
-                    Write-Host "[FAIL] doc facts: troubleshooting.md:$lineNo quotes text without an error code that neither src/ nor the shipped .bat files print"
+                    Write-Host "[FAIL] doc facts: troubleshooting.md:$lineNo quotes text without an error code, and it is not uncoded text from src/ or a shipped .bat (a message that has a code must be listed with it)"
                     $failed++
                 }
             }

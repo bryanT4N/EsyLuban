@@ -1,6 +1,7 @@
 // Copyright 2025 EZLuban
 // Licensed under MIT License
 
+using Luban.Diagnostics;
 using Luban.Utils;
 using Xunit;
 
@@ -113,8 +114,8 @@ public class B1ParserTests
         // 缺少 full_name
         string b1 = "value_type=\"Item\"";
 
-        var exception = Assert.Throws<Exception>(() => B1Parser.Parse(b1));
-        Assert.Contains("full_name", exception.Message);
+        var exception = Assert.Throws<EsyLubanException>(() => B1Parser.Parse(b1));
+        Assert.Equal("esyluban.b1.missing_full_name", exception.MessageKey);
     }
 
     [Fact]
@@ -136,8 +137,8 @@ public class B1ParserTests
         // 缺少 = 号
         string b1 = "full_name\"TbItem\" & value_type=\"Item\"";
 
-        var exception = Assert.Throws<Exception>(() => B1Parser.Parse(b1));
-        Assert.Contains("missing '='", exception.Message);
+        var exception = Assert.Throws<EsyLubanException>(() => B1Parser.Parse(b1));
+        Assert.Equal("esyluban.b1.missing_equals", exception.MessageKey);
     }
 
     [Fact]
@@ -146,8 +147,8 @@ public class B1ParserTests
         // 引号未闭合
         string b1 = "full_name=\"TbItem & value_type=\"Item\"";
 
-        var exception = Assert.Throws<Exception>(() => B1Parser.Parse(b1));
-        Assert.Contains("quote", exception.Message);
+        var exception = Assert.Throws<EsyLubanException>(() => B1Parser.Parse(b1));
+        Assert.Equal("esyluban.b1.unmatched_quote", exception.MessageKey);
     }
 
     [Fact]
@@ -156,8 +157,8 @@ public class B1ParserTests
         // 空内容
         string b1 = "";
 
-        var exception = Assert.Throws<Exception>(() => B1Parser.Parse(b1));
-        Assert.Contains("empty", exception.Message);
+        var exception = Assert.Throws<EsyLubanException>(() => B1Parser.Parse(b1));
+        Assert.Equal("esyluban.b1.empty", exception.MessageKey);
     }
 
     [Fact]
@@ -166,8 +167,8 @@ public class B1ParserTests
         // 仅空白
         string b1 = "   ";
 
-        var exception = Assert.Throws<Exception>(() => B1Parser.Parse(b1));
-        Assert.Contains("empty", exception.Message);
+        var exception = Assert.Throws<EsyLubanException>(() => B1Parser.Parse(b1));
+        Assert.Equal("esyluban.b1.empty", exception.MessageKey);
     }
 
     #endregion

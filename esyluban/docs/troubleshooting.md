@@ -12,8 +12,8 @@
 
 | 现象 | 原因与处置 |
 |---|---|
-| 整张表没产物，**也没报错** | A1 写错了。只有恰好是 `##export` 才导出，`##Export` 这类大小写变体也接受，但 `##exportt`、`#export` 不行。日志里会有一条 WARN 点出这张 sheet |
-| 表没产物，A1 确实是 `##export` | B1 空着。B1 至少要有 `full_name="模块.表名"` |
+| 整张表没产物，**也没报错** | A1 写错了。只有恰好是 `##export` 才导出，`##Export` 这类大小写变体也接受，但 `##exportt`、`#export` 不行。日志里会有一条 `[bad A1]` 告警点出这张 sheet |
+| 表没产物，A1 确实是 `##export` | B1 空着，日志里会有一条 `[empty B1]` 告警。B1 至少要有 `full_name="模块.表名"` |
 | 表改了，产物没变 | 改的表不在右键选中的范围内；或 A1 被写成了 `##export=false` |
 | `No exportable tables found under: ...` | 右键的范围里没有带 `##export` 的表 |
 | 某个目录下的表全部被忽略 | 目录名以 `_`、`.` 或 `~` 开头。这是 Luban 的规则：这类路径段一律跳过。改名即可 |
@@ -48,8 +48,15 @@
 | `字段切割应该用 'sep'，而不是 'seq'`<br>`field splitting should use 'sep', not 'seq'` | `error.schema.seq_typo` | 拼写错误，`sep` 不是 `seq` |
 | `excel 标题头不再使用 '&' 作为分隔符`<br>`excel title no longer uses '&' as separator` | `error.excel.ampersand_separator` | 从旧版 Luban 迁过来的表。现在 `##` 行的标签用 `,` 分隔 |
 | `behaviour:x 类型:ITableImporter 不存在`<br>`behaviour:x type:ITableImporter not exists` | `error.behaviour.not_exists` | `tableImporter.name` 写了个不存在的名字。有意义的取值只有缺省的 `default` 和 `none` |
-| `x 的 B1 写了 variant，自包含表暂不支持表变体` | 无，EsyLuban 自己的报错，只有中文 | 表变体（同名表的几份定义，导出时用 `--variant` 选一份）B1 表还不支持。多语言文本改用文本表；要按地区换整张表，默认那份留在 B1，其余几份用 XML 或 `__tables__.xlsx` 定义同名表。见[本地化](localization.md) |
-| `表 x 被定义了 N 次` | 无，EsyLuban 自己的报错，只有中文 | 两张 sheet 的 B1 写了同一个 `full_name`，多半是复制 sheet 后忘了改。报错会列出每一处的 sheet 和文件 |
+| `B1 缺少 full_name`<br>`B1 is missing full_name` | `esyluban.b1.missing_full_name` | B1 至少要写 `full_name="模块.表名"`，其余各项都能省 |
+| `B1 的 mode 写成了 'x'`<br>`B1 mode is 'x'` | `esyluban.b1.bad_mode` | `mode` 只能是 `map`、`list`、`one` |
+| `B1 的 x 写成了 'y'`<br>`B1 x is 'y'` | `esyluban.b1.bad_bool` | `read_schema_from_file` 只接受 `true`、`false`、`1`、`0` |
+| `B1 里的双引号没有配对`<br>`B1 has an unmatched double quote` | `esyluban.b1.unmatched_quote` | 多半是输入法打出了中文引号“”。B1 里的引号一律用英文的 `"` |
+| `B1 里的 'x' 缺少 =`<br>`B1 item 'x' has no '='` | `esyluban.b1.missing_equals` | 每一项都写成 `key="value"`，项与项之间用 ` & ` 隔开，`&` 两边各一个空格 |
+| `表 x 的 B1 写了 variant，自包含表暂不支持表变体`<br>`Table x: B1 sets variant, but self-contained tables do not support table variants yet` | `esyluban.b1.variant_unsupported` | 表变体（同名表的几份定义，导出时用 `--variant` 选一份）B1 表还不支持。多语言文本改用文本表；要按地区换整张表，默认那份留在 B1，其余几份用 XML 或 `__tables__.xlsx` 定义同名表。见[本地化](localization.md) |
+| `表 x 被定义了 N 次`<br>`Table x is defined N times` | `esyluban.b1.duplicate_full_name` | 两张 sheet 的 B1 写了同一个 `full_name`，多半是复制 sheet 后忘了改。报错会列出每一处的 sheet 和文件 |
+| `导入表失败`<br>`Failed to import tables` | `esyluban.import.failed` | 有个 Excel 文件读不出来。报错下面的 `file:` 是哪个文件，再下一条是原因，常见的是文件损坏、设了打开密码，或者根本不是 Excel、只是扩展名叫 `.xlsx` |
+| `tableImporter.scanPath 指向的路径不存在`<br>`tableImporter.scanPath points to a path that does not exist` | `esyluban.import.scan_path_not_found` | `-x tableImporter.scanPath=` 给的路径不对。相对路径按运行 Luban 时的当前目录算 |
 
 ## 没报错，但结果不对
 

@@ -3,6 +3,7 @@
 
 using ExcelDataReader;
 using Luban.Defs;
+using Luban.Diagnostics;
 using Luban.RawDefs;
 using Luban.Utils;
 
@@ -90,7 +91,7 @@ public class SelfContainedTableImporter : ITableImporter
         }
         else
         {
-            throw new Exception($"tableImporter.scanPath not found: {scanRoot}");
+            throw new EsyLubanException(EsyMessages.ScanPathNotFound, null, scanRoot);
         }
 
         foreach (string file in files)
@@ -139,8 +140,9 @@ public class SelfContainedTableImporter : ITableImporter
         {
             if (group.Count() > 1)
             {
-                throw new Exception($"表 {group.Key} 被定义了 {group.Count()} 次：{string.Join("、", group.Select(t => t.Source.Display))}。"
-                    + "每张表的 full_name 必须唯一，复制 sheet 后记得改 B1。");
+                // 不带 SchemaOrigin：它只装得下一处，而这里每一处都要点名
+                throw new EsyLubanException(EsyMessages.B1DuplicateFullName, null,
+                    group.Key, group.Count(), string.Join(", ", group.Select(t => t.Source.Display)));
             }
         }
     }
@@ -180,8 +182,9 @@ public class SelfContainedTableImporter : ITableImporter
                 // 无声消失 —— 没有报错、没有告警，导出照常成功，只是少了一张表。
                 // 对"看着像想写 export 却不合法"的写法给一句告警，是因为这类 A1
                 // 几乎不可能是有意为之；而 ##var 这类正常的非自包含表仍静默跳过。
+                // ##export=true 也在告警之列：它不导出，而写它的人多半以为会导出。
                 string a1Lower = a1.ToLowerInvariant();
-                if (a1Lower.StartsWith("##export="))
+                if (a1Lower == "##export=false")
                 {
                     continue;
                 }
@@ -189,9 +192,7 @@ public class SelfContainedTableImporter : ITableImporter
                 {
                     if (a1Lower.StartsWith("##") && a1Lower.Contains("export"))
                     {
-                        s_logger.Warn("sheet '{}'@{} 的 A1 是 '{}'，不是有效的 ##export 标记，该表未被导出。"
-                                      + " 有效写法只有 ##export 与 ##export=false。",
-                            sheetName, file, a1);
+                        s_logger.Warn(EsyMessages.BadExportMarker.Format(sheetName, file, a1));
                     }
                     continue;
                 }
@@ -200,7 +201,7 @@ public class SelfContainedTableImporter : ITableImporter
                 // 由其它机制导出的文件。按既有约定只告警、不中断。
                 if (string.IsNullOrWhiteSpace(b1))
                 {
-                    s_logger.Warn("sheet '{}'@{} has ##export but no table metadata in B1, skipped.", sheetName, file);
+                    s_logger.Warn(EsyMessages.EmptyB1.Format(sheetName, file));
                     continue;
                 }
 
@@ -208,9 +209,11 @@ public class SelfContainedTableImporter : ITableImporter
                 s_logger.Info("Loaded self-contained table from {}@{}", file, sheetName);
             } while (reader.NextResult());
         }
-        catch (Exception ex)
+        // B1 写错这类报错自带文件和 sheet，原样往上抛。再包一层的话，
+        // --errorFormat json 只报外层，里面的错误码就丢了。
+        catch (Exception ex) when (ex is not LubanException)
         {
-            throw new Exception($"Failed to import self-contained tables from: {file}", ex);
+            throw new EsyLubanException(ex, EsyMessages.ImportFailed, SchemaSource.Create(file));
         }
         return result;
     }
@@ -220,8 +223,12 @@ public class SelfContainedTableImporter : ITableImporter
     /// </summary>
     private static RawTable ParseSheetMetadata(string sheetName, string b1Content, string fileName)
     {
-        var metadata = B1Parser.Parse(b1Content);
         var source = SchemaSource.Create(fileName, sheetName);
+        var metadata = B1Parser.Parse(b1Content, source);
+
+        // full_name 是 B1 里唯一必填项 —— 其余字段要么能从它推导，
+        // 要么上游本就有合理缺省。写得越少越好。
+        string fullName = metadata["full_name"];
 
         // 表变体（Luban 5.1 起）是「同名表的几份定义，导出时选一份」，自包含表暂不支持：
         // B1 写不出「同名的另一份」，右键菜单也没有地方让策划选变体。B1Parser 不限制
@@ -229,16 +236,8 @@ public class SelfContainedTableImporter : ITableImporter
         // 的报错。variants 是字段变体的写法，写进 B1 多半也是想做这件事。
         if (metadata.ContainsKey("variant") || metadata.ContainsKey("variants"))
         {
-            // 位置写进消息本身：--errorFormat json 只报最内层异常，外层那句
-            // 「Failed to import ... from: 文件」到不了 JSON 里
-            throw new Exception($"{source.Display} 的 B1 写了 variant，自包含表暂不支持表变体。"
-                + "多语言文本请用文本表（见 docs/localization.md）；要按地区换整张表，"
-                + "就把默认那份留在 B1，其余几份用 __tables__.xlsx 或 XML 定义同名表。");
+            throw new EsyLubanException(EsyMessages.B1VariantUnsupported, source, fullName);
         }
-
-        // full_name 是 B1 里唯一必填项 —— 其余字段要么能从它推导，
-        // 要么上游本就有合理缺省。写得越少越好。
-        string fullName = metadata["full_name"];
 
         string namespaceName = TypeUtil.GetNamespace(fullName);
         string tableName = TypeUtil.GetName(fullName);
@@ -255,12 +254,12 @@ public class SelfContainedTableImporter : ITableImporter
             ? inputValue
             : $"{sheetName}@{GetRelativePathToDataDir(fileName)}";
 
-        TableMode mode = metadata.TryGetValue("mode", out var modeValue) ? ParseMode(modeValue) : TableMode.MAP;
+        TableMode mode = metadata.TryGetValue("mode", out var modeValue) ? ParseMode(modeValue, source) : TableMode.MAP;
 
         // 缺省为 false：表结构通常写在 XML / __beans__ 里，需要"从数据表标题行读结构"
         // 才显式写 true。
         bool readSchemaFromFile = metadata.TryGetValue("read_schema_from_file", out var readValue)
-                                  && ParseBool(readValue);
+                                  && ParseBool("read_schema_from_file", readValue, source);
 
         // 从 Excel 读 schema 时，value_type 若未写命名空间则按表所在命名空间补全
         if (readSchemaFromFile && string.IsNullOrEmpty(TypeUtil.GetNamespace(valueType)))
@@ -328,24 +327,24 @@ public class SelfContainedTableImporter : ITableImporter
         return dict.TryGetValue(key, out var value) ? value : defaultValue;
     }
 
-    private static TableMode ParseMode(string modeStr)
+    private static TableMode ParseMode(string modeStr, SchemaSource source)
     {
         return modeStr.ToLower() switch
         {
             "map" => TableMode.MAP,
             "list" => TableMode.LIST,
             "one" => TableMode.ONE,
-            _ => throw new Exception($"Invalid mode: {modeStr}. Expected: map, list, or one")
+            _ => throw new EsyLubanException(EsyMessages.B1BadMode, source, modeStr)
         };
     }
 
-    private static bool ParseBool(string boolStr)
+    private static bool ParseBool(string key, string boolStr, SchemaSource source)
     {
         return boolStr.ToLower() switch
         {
             "1" or "true" => true,
             "0" or "false" => false,
-            _ => throw new Exception($"Invalid bool value: {boolStr}. Expected: 1, 0, true, or false")
+            _ => throw new EsyLubanException(EsyMessages.B1BadBool, source, key, boolStr)
         };
     }
 

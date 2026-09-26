@@ -1,6 +1,7 @@
 // Copyright 2025 EsyLuban
 // Licensed under MIT License
 
+using Luban.Diagnostics;
 using Luban.Utils;
 
 namespace Luban.OutputSaver;
@@ -69,29 +70,18 @@ public class SafeLocalFileSaver : OutputSaverBase
         // 而不是"这个目录该空了"。
         if (produced == 0)
         {
-            s_logger.Warn("[skip cleanup] {} 本次没有产出任何文件，却要删除 {} 个已有文件，已跳过清理。"
-                          + " 通常是该 target 绑定的 group 全部 default:false，导致一张表都没被导出。"
-                          + " 确需清空请加 -x forceCleanUpOutputDir=1",
-                Describe(targetName), toDelete);
+            s_logger.Warn(EsyMessages.CleanupNoOutput.Format(targetName, toDelete));
             return false;
         }
 
         // 删得比产出的还多，说明这个目录里主要是别人的东西。
         if (toDelete > produced)
         {
-            s_logger.Warn("[skip cleanup] {} 将删除 {} 个文件，多于本次产出的 {} 个，已跳过清理。"
-                          + " 通常是多个 target 或 dataTarget 共用了同一个 outputDataDir，"
-                          + " 或该目录混放了非 Luban 生成的文件。确需清理请加 -x forceCleanUpOutputDir=1",
-                Describe(targetName), toDelete, produced);
+            s_logger.Warn(EsyMessages.CleanupTooMany.Format(targetName, toDelete, produced));
             return false;
         }
         return true;
     }
-
-    // manifest.TargetName 装的是 dataTarget / codeTarget（json、cs-simple-json…），
-    // 不是 targets 里的那个 target。日志里说清楚，免得照着去查错东西。
-    private static string Describe(string targetName)
-        => $"输出目标 '{targetName}'";
 
     private static int CountDoomedFiles(string outputDir, List<string> savedFiles)
     {

@@ -2,6 +2,7 @@
 // Licensed under MIT License
 
 using ExcelDataReader;
+using Luban.Diagnostics;
 using Luban.Utils;
 
 namespace Luban.Schema.Builtin;
@@ -94,9 +95,10 @@ public class SelfContainedSchemaCollector : DefaultSchemaCollector
                 }
             } while (reader.NextResult());
         }
-        catch (Exception ex)
+        // 和 SelfContainedTableImporter 同理：LubanException 自带错误码和位置，别再包一层
+        catch (Exception ex) when (ex is not LubanException)
         {
-            throw new Exception($"Failed to probe inline definition sheets in: {file}", ex);
+            throw new EsyLubanException(ex, EsyMessages.ImportFailed, SchemaSource.Create(file));
         }
 
         // enum 先于 bean：bean 的字段可能引用同文件内定义的枚举
