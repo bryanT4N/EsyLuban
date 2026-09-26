@@ -54,7 +54,7 @@ luban.conf + 命令行参数
 | 表根本没被发现 | SchemaCollector / TableImporter |
 | `invalid type` | DefAssembly（结构没找到） |
 | 某个单元格的值报错 | DataLoader |
-| `不符合正则` / `不在set` / `找不到对应文件` | DataValidator |
+| `error.validator.regex.mismatch` / `error.validator.set.not_in_set` / `error.validator.path.not_found` 这类校验报错 | DataValidator |
 | 产物里是 key 不是文案 | L10N Processor（`convertTextKeyToValue`） |
 | 产物形状不对 | DataTarget |
 | 输出目录里别的文件不见了 | OutputSaver |
@@ -77,7 +77,7 @@ luban.conf + 命令行参数
 `default`，被更高 Priority 压过之后**没有第二个名字能选回它** ——
 `tableImporter.name` 只有两个取值有意义：缺省的 `default`（拿到 EsyLuban 的），
 以及 `none`（不导入任何表）；写别的名字会明确报
-`behaviour:xxx 类型:ITableImporter 不存在`。
+`error.behaviour.not_exists`。
 
 这是有意的取舍。自包含定义覆盖了 `#xxx` 的全部场景，还多支持三样它不支持的：
 多数据源合表、按 sheet 分别导出、`one` / `list` 模式。两套发现方式并存，只会让

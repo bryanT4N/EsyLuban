@@ -147,7 +147,7 @@ rem code, so a failed listing was indistinguishable from an empty one. That is
 rem how "your B1 has a syntax error" and "there are no tables here" ended up
 rem printing the same message -- to the one audience that cannot debug it.
 set "LIST_TMP=%TEMP%\luban_tables_%RANDOM%%RANDOM%.txt"
-"!LUBAN_EXE!" --conf "!CONF_FILE!" --locale zh -t !LIST_TARGET! --listTables "!SCAN_PATH!" !EXTRA_ARGS! > "!LIST_TMP!"
+"!LUBAN_EXE!" --conf "!CONF_FILE!" -t !LIST_TARGET! --listTables "!SCAN_PATH!" !EXTRA_ARGS! > "!LIST_TMP!"
 set "LIST_ERR=!errorlevel!"
 if not "!LIST_ERR!"=="0" (
   del /q "!LIST_TMP!" 2>nul
@@ -182,7 +182,7 @@ for %%t in (%TARGET_NAMES%) do (
     rem cleanUpOutputDir=0 is mandatory here -- see the note in the data script.
     rem Without it, generating code for one table deletes the generated code of
     rem every other table in outputCodeDir.
-    "!LUBAN_EXE!" --conf "!CONF_FILE!" --locale zh -t %%t -c %%c -x cleanUpOutputDir=0 -x outputSaver.%%c.cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
+    "!LUBAN_EXE!" --conf "!CONF_FILE!" -t %%t -c %%c -x cleanUpOutputDir=0 -x outputSaver.%%c.cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
     if errorlevel 1 (
       echo Code generation failed for target %%t code target %%c
       echo   If the log says a referenced table "was not exported", this

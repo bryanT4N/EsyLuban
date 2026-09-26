@@ -259,48 +259,69 @@ if (Test-Path -LiteralPath $devConf) {
     }
 }
 
-# ---- error text quoted in troubleshooting.md must still be printed ----------
-# Readers search that page with the text on their screen, and it promises every
-# quoted message was copied from the source. Luban 5 moved upstream's messages
-# into a zh/en catalog and reworded many of them -- a space here, a full-width
-# comma there -- and nothing noticed: the page kept quoting text the tool no
-# longer prints.
+# ---- error codes and error text quoted in the docs ------------------------
+# Luban 5 prints its messages in the Windows display language, zh or en, so the
+# docs name an error by its message key -- error.data.duplicate_key -- which is
+# the same in every language. Two checks keep that honest.
 #
-# Each quoted fragment is split on the page's placeholder spellings -- x, y, N,
-# xxx, a+b, <...>, key=..., ..., and interface names such as ITableImporter,
-# which the page spells out because readers search for them while the catalog
-# holds a {1} there. Quotes and spaces around a placeholder stay literal: the
-# screen shows 'sep' with a space on each side, and a reader pasting that into
-# Ctrl+F finds nothing if the page wrote it without. The literal runs left over
-# must occur, in order, inside ONE message:
-# a value of the zh catalog (the scripts pin --locale zh), one C# string literal
-# under src/ (EsyLuban's own messages and upstream's untranslated ones), or one
-# line of a shipped .bat. Searching the whole tree for each run separately would
-# let a short run such as "not found" pass on some unrelated string.
+# 1. Every key the docs quote must exist in both catalogs. A key that upstream
+#    renamed or dropped is a dead reference nobody would notice.
 #
-# Only text the tool can actually print counts: src/Luban.Tests holds expected
-# strings, and a .bat comment line is never echoed. A missing catalog is a
-# failure, not a skip -- an upstream sync that moves the file would otherwise
-# switch this check off without a word, which is the very drift it guards.
-$catalogPath = Join-Path $repoRoot 'src\Luban.Core\Resources\messages_zh.json'
-$trouble     = Read-Text 'esyluban/docs/troubleshooting.md'
-if (-not (Test-Path -LiteralPath $catalogPath)) {
-    Write-Host "[FAIL] doc facts: src/Luban.Core/Resources/messages_zh.json is gone, so the quoted-error check cannot run"
+# 2. troubleshooting.md is where readers search with the text on their screen,
+#    so its rows list the message in both languages next to the key. For a row
+#    with a key, the zh fragment must match that key's zh message and the en
+#    fragment its en message. For a row without one, the text must be something
+#    only EsyLuban prints: a C# literal under src/ (minus src/Luban.Tests, which
+#    holds expectations) or a non-comment line of a shipped .bat. Upstream's
+#    catalog is deliberately NOT a candidate there -- a catalog message quoted
+#    without its key would be a quote in one language only.
+#
+# A fragment is split on the page's placeholder spellings -- x, y, N, xxx, a+b,
+# <...>, key=..., ..., and interface names such as ITableImporter, which the page
+# spells out because readers search for them while the catalog holds a {1}
+# there. Quotes and spaces around a placeholder stay literal: the screen shows
+# 'sep' with a space on each side, and a reader pasting that into Ctrl+F finds
+# nothing if the page wrote it without. The literal runs left over must occur,
+# in order, inside ONE message.
+#
+# A missing catalog is a failure, not a skip: an upstream sync that moves the
+# file would otherwise switch these checks off without a word.
+$zhPath = Join-Path $repoRoot 'src\Luban.Core\Resources\messages_zh.json'
+$enPath = Join-Path $repoRoot 'src\Luban.Core\Resources\messages_en.json'
+if (-not (Test-Path -LiteralPath $zhPath) -or -not (Test-Path -LiteralPath $enPath)) {
+    Write-Host "[FAIL] doc facts: src/Luban.Core/Resources/messages_zh.json or messages_en.json is gone, so the error-code checks cannot run"
     $failed++
-} elseif ($null -ne $trouble) {
-    $messages = New-Object System.Collections.Generic.List[string]
-    $catalog  = [System.IO.File]::ReadAllText($catalogPath) | ConvertFrom-Json
-    foreach ($p in $catalog.PSObject.Properties) { $messages.Add([string]$p.Value) }
+} else {
+    $zh = @{}; $en = @{}
+    foreach ($p in ([System.IO.File]::ReadAllText($zhPath) | ConvertFrom-Json).PSObject.Properties) { $zh[$p.Name] = [string]$p.Value }
+    foreach ($p in ([System.IO.File]::ReadAllText($enPath) | ConvertFrom-Json).PSObject.Properties) { $en[$p.Name] = [string]$p.Value }
+
+    $codePattern = '`((?:error|warn)\.[a-z0-9_]+(?:\.[a-z0-9_]+)+)`'
+    foreach ($f in Get-ChildItem -LiteralPath $docsDir -Filter *.md -File) {
+        $i = 0
+        foreach ($line in [System.IO.File]::ReadAllLines($f.FullName)) {
+            $i++
+            foreach ($m in [regex]::Matches($line, $codePattern)) {
+                $key = $m.Groups[1].Value
+                if (-not $zh.ContainsKey($key) -or -not $en.ContainsKey($key)) {
+                    Write-Host "[FAIL] doc facts: $($f.Name):$i names error code $key, which is not in both message catalogs"
+                    $failed++
+                }
+            }
+        }
+    }
+
+    $esyOnly = New-Object System.Collections.Generic.List[string]
     foreach ($f in Get-ChildItem -LiteralPath (Join-Path $repoRoot 'src') -Recurse -Filter *.cs -File) {
         if ($f.FullName -match '[\\/]Luban\.Tests[\\/]') { continue }
         $text = [System.IO.File]::ReadAllText($f.FullName)
-        foreach ($m in [regex]::Matches($text, '"(?:[^"\\\r\n]|\\.)*"')) { $messages.Add($m.Value) }
+        foreach ($m in [regex]::Matches($text, '"(?:[^"\\\r\n]|\\.)*"')) { $esyOnly.Add($m.Value) }
     }
     foreach ($dir in @('templates', 'scripts\contextmenu')) {
         foreach ($f in Get-ChildItem -LiteralPath (Join-Path $esy $dir) -Filter *.bat -File) {
             foreach ($line in [System.IO.File]::ReadAllLines($f.FullName)) {
                 if ($line -match '^\s*(rem\b|::)') { continue }
-                $messages.Add($line)
+                $esyOnly.Add($line)
             }
         }
     }
@@ -309,29 +330,42 @@ if (-not (Test-Path -LiteralPath $catalogPath)) {
     # the result, which would turn every x and N back into a required run.
     # Interface names need a lowercase third letter so INFO or IOException stay text.
     $placeholder = '<[^>]*>|\w+=\.\.\.|\.\.\.|a\+b(?:\+c)?|\bI[A-Z][a-z]\w*|\b(?:xxx|x|y|X|Y|N)\b'
+    function Test-Fragment([string] $fragment, [string] $message) {
+        $at = 0
+        foreach ($run in @([regex]::Split($fragment, $placeholder) | Where-Object { $_ })) {
+            $i = $message.IndexOf($run, $at, [System.StringComparison]::Ordinal)
+            if ($i -lt 0) { return $false }
+            $at = $i + $run.Length
+        }
+        return $true
+    }
+
+    $trouble = Read-Text 'esyluban/docs/troubleshooting.md'
     $escapedTick = [string][char]1
     $lineNo = 0
     foreach ($line in ($trouble -split "`n")) {
         $lineNo++
-        $cell = [regex]::Match($line, '^\| (`.+?) \| ')
-        if (-not $cell.Success) { continue }
-        foreach ($q in [regex]::Matches($cell.Groups[1].Value.Replace('\`', $escapedTick), '`([^`]+)`')) {
-            $fragment = $q.Groups[1].Value.Replace($escapedTick, '`')
-            $runs = @([regex]::Split($fragment, $placeholder) | Where-Object { $_ -ne '' -and $_ -ne $null })
-            $found = $false
-            foreach ($msg in $messages) {
-                $at = 0
-                $ok = $true
-                foreach ($run in $runs) {
-                    $i = $msg.IndexOf($run, $at, [System.StringComparison]::Ordinal)
-                    if ($i -lt 0) { $ok = $false; break }
-                    $at = $i + $run.Length
-                }
-                if ($ok) { $found = $true; break }
-            }
-            if (-not $found) {
-                Write-Host "[FAIL] doc facts: troubleshooting.md:$lineNo quotes error text that neither the zh catalog, src/ nor the shipped .bat files print"
+        $row = [regex]::Match($line, '^\| (`.+?) \| (.*?) \|')
+        if (-not $row.Success) { continue }
+        $fragments = @([regex]::Matches($row.Groups[1].Value.Replace('\`', $escapedTick), '`([^`]+)`') |
+            ForEach-Object { $_.Groups[1].Value.Replace($escapedTick, '`') })
+        $code = [regex]::Match($row.Groups[2].Value.Trim(), "^$codePattern$")
+        if ($code.Success) {
+            $key = $code.Groups[1].Value
+            if (-not $zh.ContainsKey($key) -or -not $en.ContainsKey($key)) { continue }
+            $zhHit = @($fragments | Where-Object { Test-Fragment $_ $zh[$key] }).Count
+            $enHit = @($fragments | Where-Object { Test-Fragment $_ $en[$key] }).Count
+            $stray = @($fragments | Where-Object { -not (Test-Fragment $_ $zh[$key]) -and -not (Test-Fragment $_ $en[$key]) }).Count
+            if ($zhHit -eq 0 -or $enHit -eq 0 -or $stray -gt 0) {
+                Write-Host "[FAIL] doc facts: troubleshooting.md:$lineNo does not quote both the zh and the en text of $key"
                 $failed++
+            }
+        } else {
+            foreach ($fragment in $fragments) {
+                if (-not @($esyOnly | Where-Object { Test-Fragment $fragment $_ }).Count) {
+                    Write-Host "[FAIL] doc facts: troubleshooting.md:$lineNo quotes text without an error code that neither src/ nor the shipped .bat files print"
+                    $failed++
+                }
             }
         }
     }

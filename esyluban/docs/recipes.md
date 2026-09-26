@@ -73,7 +73,7 @@ gen.bat -t server -d json -c cs-dotnet-json ^
 
 ### 一个会让人困惑的报错
 
-某个 target 导出时报 **`ref 引用的表:'X' 没有导出`**，通常是分组配漏了：
+某个 target 导出时报 **`error.validator.ref.not_exported`**（被引用的表没有导出），通常是分组配漏了：
 A 表引用 B 表，但 B 表的分组不在这个 target 里。要么给 B 表加上对应分组，
 要么把这条引用也标成同样的分组。
 

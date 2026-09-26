@@ -79,11 +79,8 @@ l10n.convertTextKeyToValue=1
 
 ## 校验
 
-`text` 类型的字段会被校验：填了文本表里不存在的 key，导出时会报
-
-```
-不是一个有效的文本 key
-```
+`text` 类型的字段会被校验。填了文本表里不存在的 key，导出时会报
+`error.validator.text.invalid_key`，中英文原文见[排错](troubleshooting.md)。
 
 这条校验只在配置了 `l10n.textFile.path` 时才有意义 —— 没有文本表，Luban 无从
 判断 key 是否存在。也就是说，**不配 l10n 就等于关掉了这项校验**，表里的 key

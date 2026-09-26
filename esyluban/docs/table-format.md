@@ -33,15 +33,15 @@
 几条准确的规则：
 
 - **行标签用 `#` 分隔、可以叠加。** `##var#column` 与 `##column#var` 等价，
-  顺序无所谓。用 `&` 分隔会报 `excel 标题头不再使用 '&' 作为分隔符，请改为 '#'`。
+  顺序无所谓。用 `&` 分隔会报 `error.excel.ampersand_separator`。
 - **`##export` 的下一行必须是能被识别的 meta 行。** 那一行只接受
   `var` / `+` / `type` / `comment` / `column` / `vertical` 这几个标签，
   其它的报 `非法单元薄 meta 属性定义`。`##group`、`##desc` 要放在它后面。
 - **顶层标题行是第一个含 `var` / `field` / `+` 的行。** 例外：`##export`
   之后的第一行如果没有任何标签（写作 `##`）或只有 `column`，也算标题行 ——
   示例工程里不少老表就是这么写的。
-- **标签拼错会有一条专门的报错**：`行标签:'##xxx' 包含未知tag:'xxx'，是否有拼写错误?`。
-  拼错的若正好是 `##var`，紧接着还会报 `没有定义任何有效 标题行`。
+- **标签拼错会有一条专门的报错** `warn.excel.unknown_row_tag`，点出拼错的那个标签。
+  拼错的若正好是 `##var`，紧接着还会报 `error.excel.no_title_row`。
 - **注释行的选取顺序**是 `##desc` → `##comment` → `##type` 之后的第一个 `##` 行。
 - **数据中间的空行会被跳过。** 连续 300 行空行会有一条性能告警。
 
@@ -87,7 +87,7 @@
 整个单元格先按 `&` 拆开。`&` 之前是类型串（所有 `#` 标签、校验器都写在这里），
 `&` 之后只接受三个属性：`group=`、`comment=`、`tags=`。
 把 `index` / `ref` / `path` / `range` / `sep` / `regex` 写成 `&ref=...`
-会得到一句明确的报错：`属于 type 的属性，必须用 # 分割，尝试 '<类型>#ref=...'`。
+会得到一句明确的报错 `error.schema.title_type_attr`，报错里直接给出正确的写法。
 
 **`&` 后面的值不要加引号。** 这里和 B1 正好相反 —— B1 写 `full_name="item.TbItem"`
 必须带引号，这里带了引号就错：
@@ -103,7 +103,7 @@
 
 | 分组名写错在哪 | 会怎样 |
 |---|---|
-| 表上（B1 的 `group=`）、bean / enum 上 | **导出中止**，明确报 `group:xxx 未找到` |
+| 表上（B1 的 `group=`）、bean / enum 上 | **导出中止**，明确报 `error.def.type.group_not_found` |
 | **字段上**（`##group` 行 或 `&group=`） | **完全静默** —— 退出码 0，日志零提及，这个字段从每个 target 里消失 |
 
 所以表名写错了你立刻知道，字段的分组写错了要等到程序发现少了个成员。
@@ -203,7 +203,7 @@ map 更严格一点：键值分隔用的是第一个顶层 `,` 或 `;`，没有�
 所以键或值的标签里含逗号时必须加括号 —— `(map#sep=,),int#ref=A,int#ref=B`。
 
 `group` 和 `seq` 是类型串里的保留词，写了分别报
-`group 为保留属性，只能用于 table 或 var 定义` 与 `字段切割应该用 'sep'，而不是 'seq'`。
+`error.schema.group_reserved` 与 `error.schema.seq_typo`。
 
 ---
 
@@ -239,11 +239,11 @@ Luban 要知道父字段占几列。两种表达方式。
 
 方括号的闭合格**自己占一列**（上例 F 列），子字段排在开括号那一列起。
 闭合格里的名字必须与开括号完全一致，否则报
-`列:'[b' 后第一个有效列必须为匹配 'b]'`。
+`error.excel.group_end_mismatch`。
 
-**列范围没标出来就是单列。** 忘了合并的症状是
-`bean:'X' 缺失列:'某个子字段'` —— 因为父字段只被认作一列，后面的子字段无处安放。
-同名字段出现两次但不构成范围，则报 `列:X 重复`。
+**列范围没标出来就是单列。** 忘了合并的症状是报 `error.excel.missing_column`，说某个子字段
+缺列。因为父字段只被认作一列，后面的子字段无处安放。
+同名字段出现两次但不构成范围，则报 `error.excel.duplicate_column`。
 
 ### 一条记录跨多行
 
@@ -315,15 +315,15 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 
 | 校验器 | 写法 | 适用类型 | 值不合格时 |
 |---|---|---|---|
-| `not-default` | `int!` 或 `#not-default` | 任意类型 | `是一个默认值` |
-| `range` | `int#range=[1,100]`、`int#(range=(1, 10])`、`float#(range=[1.1, 2.2])` | byte / short / int / long / float / double | `不在范围:X 内` |
-| `size` | `(array#size=2),int`、`(list#(size=[1, 3])),int`、`(set#(size=[1,])),int` | array / list / set / map | `size:N，但要求为 X` |
-| `set` | `string#(set=AA,BB)`、`list,int#set=1,2,3` | byte / short / int / long / enum / string | `值不在 set:X 中` |
-| `regex` | `string#(regex=^[A-Z]{3}$)` | string | `不符合正则表达式：'X'` |
-| `path` | `string#(path=unity)` | string | `找不到对应文件` |
-| `ref` | `int#ref=item.TbItem` | 与被引用的键类型一致 | `在引用表:X 中不存在` |
-| `index` | `(list#index=id),Foo` | array / list / set，元素须是 bean | `index:X value:Y 重复` |
-| `text` | 类型直接写 `text` | string | `不是一个有效的文本 key` |
+| `not-default` | `int!` 或 `#not-default` | 任意类型 | `error.validator.not_default` |
+| `range` | `int#range=[1,100]`、`int#(range=(1, 10])`、`float#(range=[1.1, 2.2])` | byte / short / int / long / float / double | `error.validator.range.out_of_range` |
+| `size` | `(array#size=2),int`、`(list#(size=[1, 3])),int`、`(set#(size=[1,])),int` | array / list / set / map | `error.validator.size.mismatch` |
+| `set` | `string#(set=AA,BB)`、`list,int#set=1,2,3` | byte / short / int / long / enum / string | `error.validator.set.not_in_set` |
+| `regex` | `string#(regex=^[A-Z]{3}$)` | string | `error.validator.regex.mismatch` |
+| `path` | `string#(path=unity)` | string | `error.validator.path.not_found` |
+| `ref` | `int#ref=item.TbItem` | 与被引用的键类型一致 | `error.validator.ref.not_found` |
+| `index` | `(list#index=id),Foo` | array / list / set，元素须是 bean | `error.validator.index.duplicate` |
+| `text` | 类型直接写 `text` | string | `error.validator.text.invalid_key` |
 
 以下都是各校验器独有、写的时候会绊一下的细节。
 
@@ -362,7 +362,7 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 | 容器元素 | `(list#sep=\|),(int#ref=test.TbTestBeRef)` |
 
 单例表（`mode="one"`）不支持被 `ref`。被引用的表必须在同一次导出的 target
-里真的被导出，否则报 `ref 引用的表:'X' 没有导出`。
+里真的被导出，否则报 `error.validator.ref.not_exported`。
 
 **`index` 只对 array / list 生成额外的索引映射代码**；挂在 `set` 上能通过校验，
 但不产生任何生成代码。
@@ -397,7 +397,7 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 
 | mode | `index` 的解释 |
 |---|---|
-| `map` | **只能是单个字段名。** 留空取值类型的第一个字段。写 `a+b` 会直接报 `index:'a+b' 字段不存在` |
+| `map` | **只能是单个字段名。** 留空取值类型的第一个字段。写 `a+b` 会直接报 `error.def.table.index_not_exist` |
 | `list` | 支持 `a,b,c`（多个各自独立的索引）与 `a+b+c`（一个联合索引）；也可以整个留空 |
 | `one` | 完全忽略 `index`，写了也没有作用 |
 
@@ -519,7 +519,7 @@ full_name="matrix.TbMatrixList" & output="matrix/nested/TbMatrixList"
 
 **填写**：数据表里除了 `name` 列，再加 `name@zh`、`name@en` 列。
 基准列必须排在变体列**前面** —— 变体列是挂到已声明的同名字段上的，
-找不到基准字段会报 `字段:X 未找到，variant 字段:'name@en' 不存在!`。
+找不到基准字段会报 `error.schema.variant_field_not_found`。
 
 **选择**：导出时用命令行参数指定。变体键是**bean 全名 + 字段名**：
 

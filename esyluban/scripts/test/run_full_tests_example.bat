@@ -238,7 +238,6 @@ if exist "!NEGATIVE_DIR!" (
     -t test ^
     -d json ^
     --conf "!CONF_FILE!" ^
-    --locale zh ^
     -x outputDataDir="!NEGATIVE_OUTPUT_DIR!" > "!NEGATIVE_LOG!" 2>&1
   echo [EXAMPLE] negative log saved: !NEGATIVE_LOG!
 ) else (
@@ -356,7 +355,7 @@ rem so those two baselines were silently verifying THIS probe's output rather th
 rem the clean gen.bat export above. The parameters happened to be equivalent, so
 rem nothing broke; changing one line here would have moved the goalposts of the
 rem two most important baselines without a word of warning.
-"!LUBAN_EXE!" --conf "!CONF_FILE!" -t all -d json --locale zh ^
+"!LUBAN_EXE!" --conf "!CONF_FILE!" -t all -d json ^
   -x outputDataDir="!DEADX_OUT!" ^
   -x client.outputDataDir="!DEADX_OUT!" > "!DEADX_LOG!" 2>&1
 findstr /c:"[dead xargs]" "!DEADX_LOG!" >nul
@@ -561,7 +560,7 @@ set "LABEL=%~3"
 set "HLOG=!HARD_ROOT!\TestOutputs\!HCONF!.log"
 if not exist "!HARD_ROOT!\TestOutputs" mkdir "!HARD_ROOT!\TestOutputs"
 pushd "!HARD_ROOT!\Tools\Luban"
-"!LUBAN_EXE!" --conf "!HCONF!.conf" -t all -d json --locale zh --errorFormat json > "!HLOG!" 2>&1
+"!LUBAN_EXE!" --conf "!HCONF!.conf" -t all -d json --errorFormat json > "!HLOG!" 2>&1
 set "HCODE=!errorlevel!"
 popd
 if "!HCODE!"=="0" (

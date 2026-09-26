@@ -20,29 +20,35 @@
 
 ## 报了具体的错
 
-| 报错 | 原因与处置 |
-|---|---|
-| `invalid type. module:'x' type:'Y'` | B1 少了 `read_schema_from_file="true"`。结构写在本表 `##var`/`##type` 行里时必须加它 —— 它的默认值是 `false`，意思是「结构在别处（schema XML 或 `__beans__`）」，于是 Luban 去找一个并不存在的定义 |
-| `主键值:'x' 重复` | 同一张表里两条记录的主键相同。这是**中止级**错误，整次导出都不会产出 |
-| `是单值表 mode=one，但数据个数:N != 1` | 标了 `mode="one"` 的表填了不止一行 |
-| `在引用表:x 中不存在` | `ref` 指向的记录不存在。检查拼写，以及被引用的表是否在同一次导出的范围内 |
-| `找不到对应文件` | `path` 校验器没找到那个资源。路径相对 `pathValidator.rootDir`，检查拼写与大小写 |
-| `不符合正则表达式` | 字段值不满足 `regex` 约束 |
-| `值不在 set` / `size:N，但要求为` / `是一个默认值` | 分别是 `set`、`size`、`not-default` 校验器。报错里会写出期望值 |
-| `不是一个有效的文本 key` | `text` 字段填的 key 在本地化表里不存在 |
-| bool 字段报错 | 只接受 `true`/`false`/`0`/`1`。`Yes`、`是`、`√` 都不行 |
-| 枚举字段报错 | 填了不存在的枚举名。注意枚举名区分大小写 |
-| `ref 引用的表:'x' 没有导出` | 被引用的表不在当前 target 的 group 里。右键菜单常见这个 —— 见下面「右键菜单」一节 |
-| `类型:x group:y 未找到` | **表或类型**上的分组名不在 `luban.conf` 的 `groups` 里。注意报错里的分组名可能是你没写过的 —— 分隔符写错时（`group="c\|s"`，`\|` 不是分隔符）整串会被当成一个名字。分隔符只有 `,` 和 `;` |
-| `target:x group:\`y\` 未定义` | 上一条的另一头：`luban.conf` 里某个 **target 绑定**了一个没声明的分组。检查 `targets[].groups` 与 `groups[].names` 是否对得上 |
-| `index:'a+b' 字段不存在` | `mode="map"` 的表只能有单个索引字段。联合索引 `a+b+c` 只在 `mode="list"` 下有效 |
-| `属于 type 的属性，必须用 # 分割，尝试 '<类型>#ref=...'` | 把 `ref` / `index` / `path` / `range` / `sep` / `regex` 写到了 `&` 后面。`&` 后面只接受 `group=`、`comment=`、`tags=` |
-| `group 为保留属性，只能用于 table 或 var 定义` | 把 `group` 写进了类型串（`#group=`）。报错自带修复提示：在 Excel 里应当写 `&group=xxx`，**且不带引号** |
-| `字段切割应该用 'sep'，而不是 'seq'` | 拼写错误，`sep` 不是 `seq` |
-| `excel 标题头不再使用 '&' 作为分隔符` | 从旧版 Luban 迁过来的表。现在 `##` 行的标签用 `,` 分隔 |
-| `behaviour:x 类型:ITableImporter 不存在` | `tableImporter.name` 写了个不存在的名字。有意义的取值只有缺省的 `default` 和 `none` |
-| `x 的 B1 写了 variant，自包含表暂不支持表变体` | 表变体（同名表的几份定义，导出时用 `--variant` 选一份）B1 表还不支持。多语言文本改用文本表；要按地区换整张表，默认那份留在 B1，其余几份用 XML 或 `__tables__.xlsx` 定义同名表。见[本地化](localization.md) |
-| `表 x 被定义了 N 次` | 两张 sheet 的 B1 写了同一个 `full_name`，多半是复制 sheet 后忘了改。报错会列出每一处的 sheet 和文件 |
+报错语言跟随 Windows 界面语言，所以每条都列了中文和英文原文，照屏幕上的字搜哪种都能找到。
+错误码是不随语言变的写法，其它文档提到报错时写的就是它。中止级的报错加 `--errorFormat json`
+运行，能在输出里看到错误码；校验器的报错只输出文字。
+
+| 报错原文（中文 / English） | 错误码 | 原因与处置 |
+|---|---|---|
+| `invalid type. module:'x' type:'Y'` | 无 | B1 少了 `read_schema_from_file="true"`。结构写在本表 `##var`/`##type` 行里时必须加它 —— 它的默认值是 `false`，意思是「结构在别处（schema XML 或 `__beans__`）」，于是 Luban 去找一个并不存在的定义 |
+| `主键值:'x' 重复`<br>`primary key field:'x' value:'y' is duplicated` | `error.data.duplicate_key` | 同一张表里两条记录的主键相同。这是**中止级**错误，整次导出都不会产出 |
+| `是单值表 mode=one，但数据个数:N != 1`<br>`is a singleton table mode=one, but record count:N != 1` | `error.data.singleton_count` | 标了 `mode="one"` 的表填了不止一行 |
+| `在引用表:x 中不存在`<br>`does not exist in ref table:x` | `error.validator.ref.not_found` | `ref` 指向的记录不存在。检查拼写，以及被引用的表是否在同一次导出的范围内 |
+| `找不到对应文件`<br>`corresponding file not found` | `error.validator.path.not_found` | `path` 校验器没找到那个资源。路径相对 `pathValidator.rootDir`，检查拼写与大小写 |
+| `不符合正则表达式`<br>`does not match regex` | `error.validator.regex.mismatch` | 字段值不满足 `regex` 约束 |
+| `值不在 set`<br>`value is not in set` | `error.validator.set.not_in_set` | `set` 校验器。报错里会写出允许的取值 |
+| `size:N，但要求为`<br>`size:N, but required` | `error.validator.size.mismatch` | `size` 校验器。报错里会写出要求的个数 |
+| `是一个默认值`<br>`is a default value` | `error.validator.not_default` | `not-default` 校验器，这个字段不许留默认值 |
+| `不是一个有效的文本 key`<br>`is not a valid text key` | `error.validator.text.invalid_key` | `text` 字段填的 key 在本地化表里不存在 |
+| bool 字段报错 |  | 只接受 `true`/`false`/`0`/`1`。`Yes`、`是`、`√` 都不行 |
+| 枚举字段报错 |  | 填了不存在的枚举名。注意枚举名区分大小写 |
+| `ref 引用的表:'x' 没有导出`<br>`ref table:'x' is not exported` | `error.validator.ref.not_exported` | 被引用的表不在当前 target 的 group 里。右键菜单常见这个 —— 见下面「右键菜单」一节 |
+| `类型:x group:y 未找到`<br>`type:x group:y not found` | `error.def.type.group_not_found` | **表或类型**上的分组名不在 `luban.conf` 的 `groups` 里。注意报错里的分组名可能是你没写过的 —— 分隔符写错时（`group="c\|s"`，`\|` 不是分隔符）整串会被当成一个名字。分隔符只有 `,` 和 `;` |
+| `target:x group:\`y\` 未定义`<br>`target:x group:\`y\` not defined` | `error.def.target.group_not_defined` | 上一条的另一头：`luban.conf` 里某个 **target 绑定**了一个没声明的分组。检查 `targets[].groups` 与 `groups[].names` 是否对得上 |
+| `index:'a+b' 字段不存在`<br>`index:'a+b' field does not exist` | `error.def.table.index_not_exist` | `mode="map"` 的表只能有单个索引字段。联合索引 `a+b+c` 只在 `mode="list"` 下有效 |
+| `属于 type 的属性，必须用 # 分割，尝试 '<类型>#ref=...'`<br>`belongs to type attributes and must be split with #, try '<type>#ref=...'` | `error.schema.title_type_attr` | 把 `ref` / `index` / `path` / `range` / `sep` / `regex` 写到了 `&` 后面。`&` 后面只接受 `group=`、`comment=`、`tags=` |
+| `group 为保留属性，只能用于 table 或 var 定义`<br>`group is a reserved attribute and can only be used on table or var definitions` | `error.schema.group_reserved` | 把 `group` 写进了类型串（`#group=`）。报错自带修复提示：在 Excel 里应当写 `&group=xxx`，**且不带引号** |
+| `字段切割应该用 'sep'，而不是 'seq'`<br>`field splitting should use 'sep', not 'seq'` | `error.schema.seq_typo` | 拼写错误，`sep` 不是 `seq` |
+| `excel 标题头不再使用 '&' 作为分隔符`<br>`excel title no longer uses '&' as separator` | `error.excel.ampersand_separator` | 从旧版 Luban 迁过来的表。现在 `##` 行的标签用 `,` 分隔 |
+| `behaviour:x 类型:ITableImporter 不存在`<br>`behaviour:x type:ITableImporter not exists` | `error.behaviour.not_exists` | `tableImporter.name` 写了个不存在的名字。有意义的取值只有缺省的 `default` 和 `none` |
+| `x 的 B1 写了 variant，自包含表暂不支持表变体` | 无，EsyLuban 自己的报错，只有中文 | 表变体（同名表的几份定义，导出时用 `--variant` 选一份）B1 表还不支持。多语言文本改用文本表；要按地区换整张表，默认那份留在 B1，其余几份用 XML 或 `__tables__.xlsx` 定义同名表。见[本地化](localization.md) |
+| `表 x 被定义了 N 次` | 无，EsyLuban 自己的报错，只有中文 | 两张 sheet 的 B1 写了同一个 `full_name`，多半是复制 sheet 后忘了改。报错会列出每一处的 sheet 和文件 |
 
 ## 没报错，但结果不对
 
@@ -65,7 +71,7 @@ gen.bat -t all -f --strict                 exit=1
 ### 某个字段在产物里不见了
 
 **字段的分组名写错完全不报错**（表上、bean / enum 上写错则会中止并报
-`group:xxx 未找到`）。退出码 0，日志零提及，这个字段从每个 target 消失。
+`error.def.type.group_not_found`）。退出码 0，日志零提及，这个字段从每个 target 消失。
 
 最常见的具体写法是给类型格里的 `&group=` 加了引号 —— `int&group="c"` 得到的
 组名是带引号的 `"c"`，匹配不上任何 target。规矩与 B1 相反，
@@ -124,7 +130,7 @@ mapper 的属性里，见[常见需求怎么配](recipes.md)。
 | 提示缺少 .NET / 无法启动 | 用的是小包但机器上没有 .NET 8。装运行时，或换 standalone 版（解压即用） |
 | 从源码构建后跑不起来 | 先跑 `esyluban\scripts\build.bat` |
 | `The current directory is invalid` | 路径太深。Windows 大多数路径上限是 260 字符，工程嵌套深一点就会越界 —— 这句报错完全不指向真因。把项目挪到浅一点的位置。`gen.bat` 在路径超过 200 字符时会提前警告 |
-| 报错全是英文 | 直接运行 `Luban.exe` 时，报错语言跟随 Windows 界面语言。`gen.bat`、`check.bat` 和右键菜单都固定用中文，自己写的脚本里加 `--locale zh` 即可 |
+| 报错全是英文 | 报错语言跟随 Windows 界面语言。想看中文就加 `--locale zh`，比如 `gen.bat -t client -d json --locale zh`；右键菜单在 `luban.conf` 的 `contextMenu` 里把 `extraArgs` 设成 `["--locale", "zh"]`。不改也行，上面的速查表中英文原文都有 |
 
 ---
 

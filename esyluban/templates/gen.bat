@@ -75,16 +75,11 @@ if not defined LUBAN_EXE (
 
 pushd "%SCRIPT_DIR%"
 
-rem --locale zh: since Luban 5, errors and warnings follow the Windows display
-rem language unless told otherwise. The docs and the error lookup table in
-rem troubleshooting.md are Chinese, so an English Windows would print messages
-rem nobody can search for there. It goes before ARGS on purpose: when an option
-rem is repeated the last one wins, so passing --locale en still overrides it.
 echo %* | findstr /i /c:"--conf" >nul
 if %errorlevel%==0 (
-  "!LUBAN_EXE!" --locale zh !ARGS!
+  "!LUBAN_EXE!" !ARGS!
 ) else (
-  "!LUBAN_EXE!" --conf "!CONF_FILE!" --locale zh !ARGS!
+  "!LUBAN_EXE!" --conf "!CONF_FILE!" !ARGS!
 )
 set "GEN_ERR=!errorlevel!"
 

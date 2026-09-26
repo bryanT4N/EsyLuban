@@ -139,7 +139,7 @@ rem code, so a failed listing was indistinguishable from an empty one. That is
 rem how "your B1 has a syntax error" and "there are no tables here" ended up
 rem printing the same message -- to the one audience that cannot debug it.
 set "LIST_TMP=%TEMP%\luban_tables_%RANDOM%%RANDOM%.txt"
-"!LUBAN_EXE!" --conf "!CONF_FILE!" --locale zh -t !LIST_TARGET! --listTables "!SCAN_PATH!" !EXTRA_ARGS! > "!LIST_TMP!"
+"!LUBAN_EXE!" --conf "!CONF_FILE!" -t !LIST_TARGET! --listTables "!SCAN_PATH!" !EXTRA_ARGS! > "!LIST_TMP!"
 set "LIST_ERR=!errorlevel!"
 if not "!LIST_ERR!"=="0" (
   del /q "!LIST_TMP!" 2>nul
@@ -194,7 +194,7 @@ for %%t in (%DATA_TARGETS%) do (
   rem which destroys the whole point of exporting a selected subset.
   rem Full exports via gen.bat keep the cleanup, where it correctly removes
   rem leftovers from tables that no longer exist.
-  "!LUBAN_EXE!" --conf "!CONF_FILE!" --locale zh -t %%t -d !DATA_FORMAT! !OUT_ARG! -x cleanUpOutputDir=0 -x outputSaver.!DATA_FORMAT!.cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
+  "!LUBAN_EXE!" --conf "!CONF_FILE!" -t %%t -d !DATA_FORMAT! !OUT_ARG! -x cleanUpOutputDir=0 -x outputSaver.!DATA_FORMAT!.cleanUpOutputDir=0 !OUTPUT_TABLE_ARGS! !EXTRA_ARGS!
   if errorlevel 1 (
     echo Export failed for target %%t
     echo   If the log above says a referenced table "was not exported", this
