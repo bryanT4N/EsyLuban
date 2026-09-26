@@ -111,12 +111,26 @@ rem check.bat must FAIL here, and that is the assertion.
 rem The dev corpus deliberately contains broken records (negatives/, plus
 rem upstream's own test/path.xlsx). If this entry point ever reports success,
 rem it has stopped validating -- which is exactly what it used to do before
-rem --validationFailAsError was added.
+rem the strict flag was added.
+rem
+rem A non-zero exit alone proves nothing. When Luban 5 renamed that flag to
+rem --strict, check.bat kept passing the old name, every run died on "unknown
+rem option" before loading a single table, and this check stayed green. So it
+rem also demands the path validator's complaint about the negatives corpus,
+rem which only a run that actually validated can print.
+set CHECK_LOG=%EXAMPLE_ROOT%\TestOutputs\check_bat.log
 echo [EXAMPLE] check.bat must reject the corpus (it contains deliberate negatives)
-call "!LUBAN_DIR!\check.bat" -t all >nul 2>&1
+call "!LUBAN_DIR!\check.bat" -t all > "!CHECK_LOG!" 2>&1
 if errorlevel 1 (
-  echo [OK]   check.bat correctly rejected the corpus
-  set /a CHECKS+=1
+  findstr /c:"matrix.TbPathFail" "!CHECK_LOG!" >nul
+  if errorlevel 1 (
+    echo [FAIL] check.bat exited non-zero, but not because validation failed
+    echo        see !CHECK_LOG!
+    set /a FAILED+=1
+  ) else (
+    echo [OK]   check.bat correctly rejected the corpus
+    set /a CHECKS+=1
+  )
 ) else (
   echo [FAIL] check.bat reported success on a corpus with known-bad records
   echo        it is no longer validating anything
@@ -171,18 +185,18 @@ rem mode="one" table with more than one row THROWS and aborts everything, so
 rem a single such record would take the whole regression down with it.
 rem They live in examples/negatives_hard/, one tiny self-contained corpus each,
 rem and are asserted the other way round: the run MUST fail, and it must fail
-rem with the right message rather than for some unrelated reason.
+rem with the right error rather than for some unrelated reason.
 rem
 rem Duplicate primary key is the single most common mistake a designer makes in
 rem Excel, so "Luban stops loudly" is worth holding in place with a test.
 set HARD_FAILED=0
-call :ExpectFail dup_key  "'hard.TbDupKey'" "hard: duplicate primary key"
-call :ExpectFail mode_one "mode=one,"       "hard: mode=one with 2 rows"
+call :ExpectFail dup_key  "error.data.duplicate_key"   "hard: duplicate primary key"
+call :ExpectFail mode_one "error.data.singleton_count" "hard: mode=one with 2 rows"
 if !HARD_FAILED! gtr 0 (
   echo [FAIL] hard-failure negatives: !HARD_FAILED! case^(s^) did not abort as expected
   set /a FAILED+=1
 ) else (
-  echo [OK]   hard-failure negatives: both aborted with the expected message
+  echo [OK]   hard-failure negatives: both aborted with the expected error code
   set /a CHECKS+=1
 )
 
@@ -212,6 +226,7 @@ if exist "!NEGATIVE_DIR!" (
     -t test ^
     -d json ^
     --conf "!CONF_FILE!" ^
+    --locale zh ^
     -x outputDataDir="!NEGATIVE_OUTPUT_DIR!" > "!NEGATIVE_LOG!" 2>&1
   echo [EXAMPLE] negative log saved: !NEGATIVE_LOG!
 ) else (
@@ -329,7 +344,7 @@ rem so those two baselines were silently verifying THIS probe's output rather th
 rem the clean gen.bat export above. The parameters happened to be equivalent, so
 rem nothing broke; changing one line here would have moved the goalposts of the
 rem two most important baselines without a word of warning.
-"!LUBAN_EXE!" --conf "!CONF_FILE!" -t all -d json ^
+"!LUBAN_EXE!" --conf "!CONF_FILE!" -t all -d json --locale zh ^
   -x outputDataDir="!DEADX_OUT!" ^
   -x client.outputDataDir="!DEADX_OUT!" > "!DEADX_LOG!" 2>&1
 findstr /c:"[dead xargs]" "!DEADX_LOG!" >nul
@@ -517,9 +532,15 @@ endlocal & set /a RC_TOTAL+=%RC_N%
 exit /b 0
 
 :ExpectFail
-rem %1 conf base name under negatives_hard, %2 required ASCII fragment, %3 label
-rem Passing is a NON-ZERO exit plus that fragment in the log. Checking only the
+rem %1 conf base name under negatives_hard, %2 required error code, %3 label
+rem Passing is a NON-ZERO exit plus that error code in the log. Checking only the
 rem exit code would let any unrelated crash count as a pass.
+rem
+rem Match the code, not the message. Luban 5 localizes messages and reworded
+rem them: the zh singleton message now puts a full-width comma after mode=one,
+rem so the old ASCII fragment "mode=one," failed on a Chinese Windows while an
+rem English runner sailed through. --errorFormat json reports the stable
+rem message key, which is ASCII and the same in every language.
 setlocal EnableDelayedExpansion
 set "HCONF=%~1"
 set "FRAG=%~2"
@@ -527,7 +548,7 @@ set "LABEL=%~3"
 set "HLOG=!HARD_ROOT!\TestOutputs\!HCONF!.log"
 if not exist "!HARD_ROOT!\TestOutputs" mkdir "!HARD_ROOT!\TestOutputs"
 pushd "!HARD_ROOT!\Tools\Luban"
-"!LUBAN_EXE!" --conf "!HCONF!.conf" -t all -d json > "!HLOG!" 2>&1
+"!LUBAN_EXE!" --conf "!HCONF!.conf" -t all -d json --locale zh --errorFormat json > "!HLOG!" 2>&1
 set "HCODE=!errorlevel!"
 popd
 if "!HCODE!"=="0" (
