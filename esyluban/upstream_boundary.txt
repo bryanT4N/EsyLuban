@@ -13,8 +13,11 @@
 # 格式：每行 <状态><TAB><路径>，# 开头为注释。
 # 状态 A=新增  M=修改  D=删除
 
-# ── 基点：本 fork 从这个上游提交分出 ───────────────────────────
-BASE	52184b9ab017d994ed1a42c2c93e22acf28efdde
+# ── 基点：本 fork 当前同步到的上游提交 ─────────────────────────
+#
+# 跟进上游时把这里换成合进来的那个上游提交，下面的清单就是相对它的改动面。
+# 历史：52184b9（v4.10.2 之后一个提交，fork 起点）→ df34215（v5.1.0，2026-09 合入）
+BASE	df34215d2e22035073d1af83d44e3ac0744dc3b3
 
 # ── 修改上游文件（M）：能不改就不改，每一个都要有绕不开的理由 ──
 #
@@ -172,7 +175,9 @@ D	docs/sponsor/zhifubao.JPG
 # 从【全新克隆】跑回归时才报出来（本机 git diff 比的是工作区，提交前的那一刻
 # 恰好看不出差异）。守卫在它作者身上先后生效了四次 —— 最后一次是把
 # CONTRIBUTING.md 搬进 esyluban/ 子树后，它不再属于对上游的改动面。
-A	.github/workflows/ci.yml
+# 上游从 v5.1.0 起自带 .github/workflows/ci.yml，那份原样保留，我们的另起一个
+# 文件名。同名就意味着每次跟进上游都要手工合并一次 CI 配置。
+A	.github/workflows/esyluban.yml
 A	CHANGELOG.md
 # 上游 README 的原文。根 README 被完全重写成 EsyLuban 自己的门面后，把上游那份
 # 原样挪到这里保留 —— fork 的首屏不该由被 fork 者占据，但也不该把它抹掉。
@@ -185,5 +190,6 @@ A	src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs
 A	src/Luban.Core/Utils/B1Parser.cs
 A	src/Luban.Schema.Builtin/SelfContainedSchemaCollector.cs
 A	src/Luban.Schema.Builtin/SelfContainedTableImporter.cs
+# src/Luban.Tests/ 从 v5.1.0 起是上游自己的测试工程（集成测试 + golden），
+# 我们只往里放一个测试文件，工程文件沿用上游的，不再各自维护一份。
 A	src/Luban.Tests/B1ParserTests.cs
-A	src/Luban.Tests/Luban.Tests.csproj
