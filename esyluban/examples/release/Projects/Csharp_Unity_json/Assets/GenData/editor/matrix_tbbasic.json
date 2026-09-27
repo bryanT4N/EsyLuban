@@ -3,7 +3,7 @@
     "id": 1,
     "name": "Alpha",
     "quality": 1,
-    "textKey": "苹果",
+    "textKey": "/apple",
     "res": "Scenes/SampleScene.unity",
     "enabled": true,
     "score": 1.5,

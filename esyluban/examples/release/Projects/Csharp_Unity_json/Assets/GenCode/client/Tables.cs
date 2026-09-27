@@ -23,6 +23,7 @@ public partial class Tables
     public item.TbItem TbItem {get; }
     public l10n.TbL10NDemo TbL10NDemo {get; }
     public l10n.TbPatchDemo TbPatchDemo {get; }
+    public text.TbText TbText {get; }
     public matrix.TbBasic TbBasic {get; }
     public matrix.TbContainers TbContainers {get; }
     public matrix.TbMatrixSingleton TbMatrixSingleton {get; }
@@ -79,6 +80,7 @@ public partial class Tables
         TbItem = new item.TbItem(loader("item_tbitem"));
         TbL10NDemo = new l10n.TbL10NDemo(loader("l10n_tbl10ndemo"));
         TbPatchDemo = new l10n.TbPatchDemo(loader("l10n_tbpatchdemo"));
+        TbText = new text.TbText(loader("text_tbtext"));
         TbBasic = new matrix.TbBasic(loader("matrix_tbbasic"));
         TbContainers = new matrix.TbContainers(loader("matrix_tbcontainers"));
         TbMatrixSingleton = new matrix.TbMatrixSingleton(loader("matrix_tbmatrixsingleton"));
@@ -137,6 +139,7 @@ public partial class Tables
         TbItem.ResolveRef(this);
         TbL10NDemo.ResolveRef(this);
         TbPatchDemo.ResolveRef(this);
+        TbText.ResolveRef(this);
         TbBasic.ResolveRef(this);
         TbContainers.ResolveRef(this);
         TbMatrixSingleton.ResolveRef(this);
