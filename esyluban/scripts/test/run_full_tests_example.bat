@@ -55,7 +55,7 @@ set COMPARE_REPORT_XML=%EXAMPLE_ROOT%\TestOutputs\compare_report_xml.json
 set COMPARE_REPORT_CODE=%EXAMPLE_ROOT%\TestOutputs\compare_report_code.json
 set HARD_ROOT=%ESY_ROOT%\examples\negatives_hard
 set LIST_ROOT=%ESY_ROOT%\examples\listing_scope
-set VAR_ROOT=%ESY_ROOT%\examples\b1_variants
+set LANG_ROOT=%ESY_ROOT%\examples\languages
 set COMPARE_PS1=%~dp0compare_baseline.ps1
 
 set FAILED=0
@@ -171,7 +171,7 @@ rem assertions in the file -- a few failure-only paths (an export returning
 rem non-zero, the negatives corpus missing) contribute nothing when everything
 rem passes, which is the state this number is pinned to. Add or remove a check
 rem and this number must move with it; the run reports INCONCLUSIVE until it does.
-set EXPECTED_CHECKS=20
+set EXPECTED_CHECKS=21
 set DEADX_LOG=%EXAMPLE_ROOT%\TestOutputs\dead_xargs.log
 set DEADX_OUT=%EXAMPLE_ROOT%\TestOutputs\dead_xargs_out
 
@@ -192,28 +192,50 @@ rem
 rem Duplicate primary key is the single most common mistake a designer makes in
 rem Excel, so "Luban stops loudly" is worth holding in place with a test.
 rem
-rem The rest guard B1 table variants. b1_variant declares only an en variant and
-rem no default version, so an export without --variant must stop with upstream's
-rem variant_not_set -- which is also the proof that variant= in B1 reaches the
-rem resolver at all: were it ignored, the run would exit 0. The other four are
-rem EsyLuban's own checks, made before the resolver so every place gets named
-rem (upstream names one): two default versions, one variant defined twice, a
-rem variant whose mode differs from the default's, and B1 written with variants
-rem (the field-variant spelling). Matching their esyluban.* codes also proves
-rem those codes reach the JSON report instead of being swallowed.
+rem same_name holds two B1 tables with one full_name, which EsyLuban reports
+rem with every place named (upstream names one).
+rem
+rem The rest guard multi-language projects: l10n.languages plus variant_<lang>
+rem folders. b1_variant and variants_key write variant= / variants= in B1, which
+rem the folders replaced; ignored silently, the designer would never learn why
+rem the English data does not show. variant_dup repeats a key inside one
+rem language's variant, which upstream's patch merge rejects. Then EsyLuban's
+rem own checks on the layout: a variant whose mode differs from the default's,
+rem a variant table with no default version, a folder for an undeclared
+rem language, a variant_ folder inside another, and a folder for the default
+rem language -- never read, so edits there would vanish without a word.
+rem duplicate_language lists a language twice. forgot_languages has a variant_en
+rem folder but no l10n.languages: a project that never declared languages must
+rem see variant_ folders as ordinary folders (so upgrading changes nothing for
+rem it), which makes the copy collide with the default; the unit tests pin that
+rem this error tells them to declare the language. strict_en fails validation in
+rem the English run only: --strict must fail the export although the default
+rem run was clean, and so must check.bat's -f --strict, which exports nothing
+rem and once validated the default language alone. Matching the esyluban.*
+rem codes also proves those codes reach the JSON report instead of being
+rem swallowed.
 set HARD_FAILED=0
-call :ExpectFail dup_key          "error.data.duplicate_key"             "hard: duplicate primary key"
-call :ExpectFail mode_one         "error.data.singleton_count"           "hard: mode=one with 2 rows"
-call :ExpectFail b1_variant       "error.def.table.variant_not_set"      "hard: B1 variant without a default"
-call :ExpectFail same_name        "esyluban.b1.duplicate_full_name"      "hard: two B1 default versions"
-call :ExpectFail variant_dup      "esyluban.b1.duplicate_variant"        "hard: one variant defined twice"
-call :ExpectFail variant_mismatch "esyluban.b1.variant_mismatch"         "hard: variant with another mode"
-call :ExpectFail variants_key     "esyluban.b1.variants_key"             "hard: variants= in B1"
+set HARD_TOTAL=0
+call :ExpectFail dup_key             "error.data.duplicate_key"             "hard: duplicate primary key"
+call :ExpectFail mode_one            "error.data.singleton_count"           "hard: mode=one with 2 rows"
+call :ExpectFail same_name           "esyluban.b1.duplicate_full_name"      "hard: two B1 tables with one name"
+call :ExpectFail b1_variant          "esyluban.b1.variant_key"              "hard: variant= in B1"
+call :ExpectFail variants_key        "esyluban.b1.variant_key"              "hard: variants= in B1"
+call :ExpectFail variant_dup         "error.data.patch_override_multiple"   "hard: one key twice in a variant"
+call :ExpectFail variant_mismatch    "esyluban.b1.variant_mismatch"         "hard: variant with another mode"
+call :ExpectFail no_default          "esyluban.variant.no_default"          "hard: variant without a default"
+call :ExpectFail undeclared_language "esyluban.variant.undeclared_language" "hard: variant_fr not declared"
+call :ExpectFail nested              "esyluban.variant.nested"              "hard: variant_ inside variant_"
+call :ExpectFail default_language    "esyluban.variant.default_language"    "hard: variant_ of the default language"
+call :ExpectFail duplicate_language  "esyluban.l10n.duplicate_language"     "hard: a language listed twice"
+call :ExpectFail forgot_languages    "esyluban.b1.duplicate_full_name"      "hard: variant_en without l10n.languages"
+call :ExpectFail strict_en           "error.cli.validation_fail"            "hard: --strict, only en invalid" "-d json --strict"
+call :ExpectFail strict_en           "error.cli.validation_fail"            "hard: check.bat, only en invalid" "-f --strict"
 if !HARD_FAILED! gtr 0 (
-  echo [FAIL] hard-failure negatives: !HARD_FAILED! case^(s^) did not abort as expected
+  echo [FAIL] hard-failure negatives: !HARD_FAILED! of !HARD_TOTAL! case^(s^) did not abort as expected
   set /a FAILED+=1
 ) else (
-  echo [OK]   hard-failure negatives: all 7 aborted with the expected error
+  echo [OK]   hard-failure negatives: all !HARD_TOTAL! aborted with the expected error
   set /a CHECKS+=1
 )
 
@@ -428,29 +450,103 @@ if !LIST_FAILED! gtr 0 (
   set /a CHECKS+=1
 )
 
-rem B1 table variants. examples/b1_variants: TbItem has a default version
-rem (item/items.xlsx) and an en variant (item/items_en.xlsx), TbOther stands
-rem alone; its luban.conf passes --variant demo.TbItem=en to the right-click.
-rem Without --variant the default data comes out, with it the en data. The
-rem right-click exports the variant the conf names whichever of the two files
-rem was clicked: the variant is a project setting, the click only picks which
-rem tables. The listing names TbItem once, from either file.
-set VAR_FAILED=0
-if exist "!VAR_ROOT!\TestOutputs" rmdir /s /q "!VAR_ROOT!\TestOutputs"
-mkdir "!VAR_ROOT!\TestOutputs"
-pushd "!VAR_ROOT!\Tools\Luban"
-call :ExpectVariantData ""                         "default" "sword"    "sword-en"
-call :ExpectVariantData "--variant demo.TbItem=en" "en"      "sword-en" ""
-call :ExpectListing "../../DataTables/item/items_en.xlsx" "demo.TbItem" VAR_FAILED
-call :ExpectListing "../../DataTables/item"               "demo.TbItem" VAR_FAILED
+rem Multi-language projects. examples/languages declares l10n.languages=zh,en
+rem and keeps what English does differently in variant_en folders: rows that
+rem override by primary key (TbItem 2) or add keys (TbItem 9001), a singleton
+rem (TbMotd) and a list table (TbNews) replaced whole, a table only English
+rem fills (TbEvent, empty by default), and a text table whose variant_en
+rem overrides one key and adds another. TbDrop's English row refers to the
+rem English-only item, so passing --strict proves validation saw the merged
+rem table. One export writes TestOutputs\data (zh) and TestOutputs\data\en.
+rem
+rem The second export plants a stale file in each directory, and both must go.
+rem Each language cleans its own directory; the default language's cleanup must
+rem neither delete data\en nor refuse to run because of it. A refusal leaves
+rem data\stale.json behind, a deletion makes the English run write [new] files.
+set LANG_FAILED=0
+if exist "!LANG_ROOT!\TestOutputs" rmdir /s /q "!LANG_ROOT!\TestOutputs"
+mkdir "!LANG_ROOT!\TestOutputs"
+set "LANG_DATA=!LANG_ROOT!\TestOutputs\data"
+set "LANG_LOG=!LANG_ROOT!\TestOutputs\export.log"
+set "LANG_LOG2=!LANG_ROOT!\TestOutputs\export_again.log"
+pushd "!LANG_ROOT!\Tools\Luban"
+"!LUBAN_EXE!" --conf luban.conf -t all -d json -c cs-simple-json --strict > "!LANG_LOG!" 2>&1
+if errorlevel 1 (
+  echo        [languages] export failed; see !LANG_LOG!
+  set /a LANG_FAILED+=1
+)
 popd
-call :ExpectVariantClick "item\items_en.xlsx"
-call :ExpectVariantClick "item\items.xlsx"
-if !VAR_FAILED! gtr 0 (
-  echo [FAIL] B1 table variants: !VAR_FAILED! case^(s^) wrong
+call :ExpectText "demo_tbitem.json"     "shield"            "lantern-en"
+call :ExpectText "en\demo_tbitem.json"  "buckler-en"        "shield"
+call :ExpectText "en\demo_tbitem.json"  "lantern-en"        ""
+call :ExpectText "demo_tbmotd.json"     "welcome"           ""
+call :ExpectText "en\demo_tbmotd.json"  "hello-en"          "welcome"
+call :ExpectText "demo_tbnews.json"     "news-a"            "headline-en"
+call :ExpectText "en\demo_tbnews.json"  "headline-en"       "news-a"
+call :ExpectText "demo_tbevent.json"    ""                  "event-en"
+call :ExpectText "en\demo_tbevent.json" "event-en"          ""
+call :ExpectText "demo_tbnamed.json"    "text-shield-zh"    "text-lantern-en"
+call :ExpectText "en\demo_tbnamed.json" "text-sword-en"     "text-shield-en"
+call :ExpectText "en\demo_tbnamed.json" "special-shield-en" ""
+call :ExpectText "en\demo_tbnamed.json" "text-lantern-en"   ""
+rem Code does not depend on the language: begin + end of one code target.
+set LANG_CODE_LINES=0
+for /f %%N in ('findstr /l /c:"process code target" "!LANG_LOG!" ^| find /c /v ""') do set LANG_CODE_LINES=%%N
+if not "!LANG_CODE_LINES!"=="2" (
+  echo        [languages] code target logged !LANG_CODE_LINES! lines instead of 2; code must be generated once
+  set /a LANG_FAILED+=1
+)
+if exist "!LANG_DATA!\en" (
+  echo stale> "!LANG_DATA!\stale.json"
+  echo stale> "!LANG_DATA!\en\stale.json"
+)
+pushd "!LANG_ROOT!\Tools\Luban"
+"!LUBAN_EXE!" --conf luban.conf -t all -d json > "!LANG_LOG2!" 2>&1
+if errorlevel 1 (
+  echo        [languages] second export failed; see !LANG_LOG2!
+  set /a LANG_FAILED+=1
+)
+popd
+if exist "!LANG_DATA!\stale.json" (
+  echo        [languages] data\stale.json survived: the default language did not clean up
+  set /a LANG_FAILED+=1
+)
+if exist "!LANG_DATA!\en\stale.json" (
+  echo        [languages] data\en\stale.json survived: English did not clean up
+  set /a LANG_FAILED+=1
+)
+findstr /l /c:"[new]" "!LANG_LOG2!" >nul
+if not errorlevel 1 (
+  echo        [languages] the second export wrote new files: the default language deleted data\en; see !LANG_LOG2!
+  set /a LANG_FAILED+=1
+)
+if !LANG_FAILED! gtr 0 (
+  echo [FAIL] languages: !LANG_FAILED! case^(s^) wrong
   set /a FAILED+=1
 ) else (
-  echo [OK]   B1 table variants: default and en export, right-click follows extraArgs
+  echo [OK]   languages: data and data\en from one export, variants merged, code once, each cleans its own
+  set /a CHECKS+=1
+)
+
+rem What one right-click exports in a multi-language project: what is selected
+rem or inside the clicked folder, in every language it affects. A default table
+rem affects every language, a table in variant_en only English, and a text
+rem table every table (texts are replaced at export). The listing writes these
+rem as table, table@en and * -- a text table must not put hundreds of -o on the
+rem command line.
+set LCLICK_FAILED=0
+pushd "!LANG_ROOT!\Tools\Luban"
+call :ExpectListing "../../DataTables/item/variant_en" "demo.TbItem@en" LCLICK_FAILED
+call :ExpectListing "../../DataTables/l10n/variant_en" "*@en"           LCLICK_FAILED
+popd
+call :ExpectLanguageClick "item\variant_en\items.xlsx" "en\demo_tbitem.json"                      "demo_tbitem.json en\demo_tbother.json"
+call :ExpectLanguageClick "item"                       "demo_tbitem.json en\demo_tbitem.json"     "demo_tbother.json en\demo_tbother.json"
+call :ExpectLanguageClick "l10n\variant_en\texts.xlsx" "en\demo_tbnamed.json en\demo_tbother.json" "demo_tbnamed.json demo_tbother.json"
+if !LCLICK_FAILED! gtr 0 (
+  echo [FAIL] languages right-click: !LCLICK_FAILED! case^(s^) wrong
+  set /a FAILED+=1
+) else (
+  echo [OK]   languages right-click: selection and the languages it affects, nothing more
   set /a CHECKS+=1
 )
 
@@ -617,7 +713,8 @@ endlocal & set /a RC_TOTAL+=%RC_N%
 exit /b 0
 
 :ExpectFail
-rem %1 conf base name under negatives_hard, %2 required error code, %3 label
+rem %1 conf base name under negatives_hard, %2 required error code, %3 label,
+rem %4 arguments in place of the default -d json (optional).
 rem Passing is a NON-ZERO exit plus that error code in the log. Checking only the
 rem exit code would let any unrelated crash count as a pass.
 rem
@@ -626,14 +723,17 @@ rem them: the zh singleton message now puts a full-width comma after mode=one,
 rem so the old ASCII fragment "mode=one," failed on a Chinese Windows while an
 rem English runner sailed through. --errorFormat json reports the stable
 rem message key, which is ASCII and the same in every language.
+set /a HARD_TOTAL+=1
 setlocal EnableDelayedExpansion
 set "HCONF=%~1"
 set "FRAG=%~2"
 set "LABEL=%~3"
+set "HARGS=%~4"
+if "!HARGS!"=="" set "HARGS=-d json"
 set "HLOG=!HARD_ROOT!\TestOutputs\!HCONF!.log"
 if not exist "!HARD_ROOT!\TestOutputs" mkdir "!HARD_ROOT!\TestOutputs"
 pushd "!HARD_ROOT!\Tools\Luban"
-"!LUBAN_EXE!" --conf "!HCONF!.conf" -t all -d json --errorFormat json > "!HLOG!" 2>&1
+"!LUBAN_EXE!" --conf "!HCONF!.conf" -t all --errorFormat json !HARGS! > "!HLOG!" 2>&1
 set "HCODE=!errorlevel!"
 popd
 if "!HCODE!"=="0" (
@@ -677,56 +777,55 @@ if not "!GOT!"==" !WANT!" (
 endlocal
 exit /b 0
 
-:ExpectVariantData
-rem Run from b1_variants\Tools\Luban. %1 extra arguments, %2 output folder name,
-rem %3 text demo_tbitem.json must contain, %4 text it must not (empty to skip).
+:ExpectText
+rem %1 file under languages\TestOutputs\data, %2 text it must contain (empty:
+rem only that it was exported), %3 text it must not contain (empty to skip).
 setlocal EnableDelayedExpansion
-set "VDIR=!VAR_ROOT!\TestOutputs\%~2"
-"!LUBAN_EXE!" --conf luban.conf -t all -d json -x outputDataDir="!VDIR!" %~1 > "!VDIR!.log" 2>&1
-if errorlevel 1 (
-  echo        [variant %~2] export failed; see !VDIR!.log
-  endlocal & set /a VAR_FAILED+=1
+set "TFILE=!LANG_DATA!\%~1"
+if not exist "!TFILE!" (
+  echo        [languages] %~1 was not exported
+  endlocal & set /a LANG_FAILED+=1
   exit /b 0
 )
-findstr /c:"%~3" "!VDIR!\demo_tbitem.json" >nul
-if errorlevel 1 (
-  echo        [variant %~2] demo_tbitem.json does not contain %~3
-  endlocal & set /a VAR_FAILED+=1
-  exit /b 0
+if not "%~2"=="" (
+  findstr /l /c:"%~2" "!TFILE!" >nul
+  if errorlevel 1 (
+    echo        [languages] %~1 does not contain %~2
+    endlocal & set /a LANG_FAILED+=1
+    exit /b 0
+  )
 )
-if not "%~4"=="" (
-  findstr /c:"%~4" "!VDIR!\demo_tbitem.json" >nul
+if not "%~3"=="" (
+  findstr /l /c:"%~3" "!TFILE!" >nul
   if not errorlevel 1 (
-    echo        [variant %~2] demo_tbitem.json still contains %~4
-    endlocal & set /a VAR_FAILED+=1
+    echo        [languages] %~1 still contains %~3
+    endlocal & set /a LANG_FAILED+=1
     exit /b 0
   )
 )
 endlocal
 exit /b 0
 
-:ExpectVariantClick
-rem %1 file under b1_variants\DataTables to right-click, through the same
-rem implementation script users run. The corpus conf passes --variant
-rem demo.TbItem=en in extraArgs, so the en data must come out, and only TbItem.
+:ExpectLanguageClick
+rem %1 file or folder under languages\DataTables to right-click, through the
+rem same implementation script users run. %2 files that must come out, %3 files
+rem that must not; space-separated, relative to the right-click output folder.
 setlocal EnableDelayedExpansion
-set "CDIR=!VAR_ROOT!\TestOutputs\contextmenu"
+set "CDIR=!LANG_ROOT!\TestOutputs\contextmenu"
+set "CLOG=!LANG_ROOT!\TestOutputs\click.log"
 if exist "!CDIR!" rmdir /s /q "!CDIR!"
-call "%~dp0..\contextmenu\run_luban_context_menu_data.bat" "!VAR_ROOT!\DataTables\%~1" > "!VAR_ROOT!\TestOutputs\click.log" 2>&1
+call "%~dp0..\contextmenu\run_luban_context_menu_data.bat" "!LANG_ROOT!\DataTables\%~1" > "!CLOG!" 2>&1
 if errorlevel 1 (
-  echo        [variant right-click %~1] export failed; see !VAR_ROOT!\TestOutputs\click.log
-  endlocal & set /a VAR_FAILED+=1
+  echo        [right-click %~1] export failed; see !CLOG!
+  endlocal & set /a LCLICK_FAILED+=1
   exit /b 0
 )
-findstr /c:"sword-en" "!CDIR!\demo_tbitem.json" >nul
-if errorlevel 1 (
-  echo        [variant right-click %~1] did not export the en variant named in extraArgs
-  endlocal & set /a VAR_FAILED+=1
-  exit /b 0
-)
-if exist "!CDIR!\demo_tbother.json" (
-  echo        [variant right-click %~1] exported TbOther, which is outside the selection
-  endlocal & set /a VAR_FAILED+=1
+set "WRONG="
+for %%F in (%~2) do if not exist "!CDIR!\%%F" set "WRONG=!WRONG! missing:%%F"
+for %%F in (%~3) do if exist "!CDIR!\%%F" set "WRONG=!WRONG! extra:%%F"
+if defined WRONG (
+  echo        [right-click %~1]!WRONG!
+  endlocal & set /a LCLICK_FAILED+=1
   exit /b 0
 )
 endlocal

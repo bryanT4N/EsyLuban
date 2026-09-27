@@ -61,13 +61,14 @@
 git diff --name-status upstream/main -- src
 ```
 
-目前修改了三个上游文件，其余全是新增：
+目前修改了四个上游文件，其余全是新增：
 
 | 被修改的上游文件 | 改动内容与不得不改的理由 |
 |---|---|
 | `Luban.DataLoader.Builtin/Excel/SheetLoadUtil.cs` | 识别 A1 的 `##export` 标记，并把它造成的行偏移一路带到合并单元格与报错坐标。Excel 读取是纯静态方法，没有扩展点可绕。 |
-| `Luban/Program.cs` | 新增 `--listTables`（右键局部导表要先知道选中范围内有哪些表），以及「表 target 前缀的 xargs 键」告警。命令行选项无处注册。 |
+| `Luban/Program.cs` | 新增 `--listTables`（右键局部导表要先知道选中范围内有哪些表）、「表 target 前缀的 xargs 键」告警，以及按 `l10n.languages` 每种语言各跑一遍导出。命令行选项和整次运行的流程都无处注册。 |
 | `Luban.Core/CustomBehaviour/CustomBehaviourManager.cs` | 加一个 `HasBehaviour<C>()` 纯查询方法，供上面那条告警判断某名字是不是已注册的 dataTarget/codeTarget。 |
+| `Luban.Core/DataLoader/DataLoaderManager.cs` | 多语言版本要把 `variant_<语言>` 里的差异行交给上游现成的按主键合并。数据加载是一段固定流程，没有扩展点，只改了读完每张表的那一行。 |
 
 其余功能全部由**新增文件**经 Luban 的特性注册机制自注册实现：
 
@@ -76,7 +77,9 @@ git diff --name-status upstream/main -- src
 | `src/Luban.Core/Utils/B1Parser.cs` | 解析 B1 的表元数据串 |
 | `src/Luban.Schema.Builtin/SelfContainedTableImporter.cs` | `[TableImporter(Priority=100)]`，扫描并发现自包含表 |
 | `src/Luban.Schema.Builtin/SelfContainedSchemaCollector.cs` | `[SchemaCollector(Priority=100)]`，加载内联 `__beans__` / `__enums__` |
-| `src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs` | `[OutputSaver("local", Priority=100)]`，给输出目录清理加安全闸 |
+| `src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs` | `[OutputSaver("local", Priority=100)]`，给输出目录清理加安全闸；多语言项目里把各语言的数据放进各自的子目录 |
+| `src/Luban.L10N/LanguageTextProvider.cs` | `[TextProvider("default", Priority=100)]`，读文本表，多语言项目里再叠加 `variant_<语言>` 里的文本表 |
+| `src/Luban.Core/LanguageVariants.cs` | 多语言版本的规则：声明的语言、`variant_` 文件夹、差异行的叠加。由上面的 `DataLoaderManager.cs` 和 `Program.cs` 调用 |
 | `src/Luban.Tests/` | 上游的测试工程，`B1ParserTests.cs` 是我们放进去的 |
 
 `Priority=100` 是关键：Luban 按优先级选取扩展点实现，高优先级的同名实现会覆盖内置的，

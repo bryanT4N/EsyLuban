@@ -25,8 +25,8 @@
 
 装一次即可，之后随项目升级。多个项目可以各装一套，互不干扰。
 
-数据输出与上游逐字节相同，由回归基线保证。对上游代码只新增、不修改，完整改动面
-登记在 [`upstream_boundary.txt`](esyluban/upstream_boundary.txt) 并由回归逐条比对。
+数据输出与上游逐字节相同，由回归基线保证。对上游代码以新增为主，只改了四个绕不开的源文件，
+完整改动面登记在 [`upstream_boundary.txt`](esyluban/upstream_boundary.txt) 并由回归逐条比对。
 
 MIT 许可；上游 Luban 版权归 Code Philosophy Technology Ltd. 所有。
 

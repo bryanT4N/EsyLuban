@@ -381,7 +381,7 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 
 | 字段 | 真实影响 |
 |---|---|
-| `full_name` | 表的唯一身份。决定默认输出文件名、生成代码里的访问名。**表名在整个工程内唯一**，不同模块下同名也不行。两张 sheet 写了同一个 `full_name` 又都没写 `variant` 会报错，并列出每一处；写了 `variant` 的是同一张表的另一份，见下面 `variant` 一行 |
+| `full_name` | 表的唯一身份。决定默认输出文件名、生成代码里的访问名。**表名在整个工程内唯一**，不同模块下同名也不行。两张 sheet 写了同一个 `full_name` 会报错，并列出每一处。唯一的例外是 `variant_<语言>` 文件夹里某种语言的版本，它和默认版同名，见[写一张表](writing-tables.md#某种语言的版本要不一样的数据) |
 | `value_type` | 记录的结构类型。缺省由表名推导（`TbItem` → `Item`）；`read_schema_from_file="true"` 且没写命名空间时，自动补上表所在的命名空间 |
 | `index` | 见下 |
 | `mode` | `map` / `list` / `one`，写别的会报错（`esyluban.b1.bad_mode`） |
@@ -391,7 +391,7 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 | `group` | 逗号或分号分隔。留空时，是否导出取决于当前 target 的 group 里有没有被标记为默认的组 |
 | `comment` | 注释，进生成代码。`read_schema_from_file="true"` 时也会成为记录类的注释 |
 | `tags` | `#` 分隔的自定义键值对，如 `tags="priority=high#category=core"` |
-| `variant` | 表变体：同一个 `full_name` 的另一份定义，导出时用 `--variant` 选。写一个或几个变体名，如 `variant="en"`、`variant="en,jp"`；不写的是默认版，最多一份。几份的 `output`、`mode`、`index` 要写成一样的，没写也算一种写法。见[本地化](localization.md)。写成 `variants` 会报错，那是字段变体的写法 |
+| `variant` | 不写。写了（包括 `variants`）会报 `esyluban.b1.variant_key`。某种语言的版本由 `variant_<语言>` 文件夹决定，那一份的 B1 照抄默认版，`output`、`mode`、`index` 写得不一样会报错，没写也算一种写法 |
 
 **`index` 的语义随 `mode` 变，这一点很容易踩：**
 

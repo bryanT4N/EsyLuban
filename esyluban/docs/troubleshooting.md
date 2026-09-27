@@ -17,6 +17,7 @@
 | 表改了，产物没变 | 改的表不在右键选中的范围内；或 A1 被写成了 `##export=false` |
 | `No exportable tables found under: ...` | 右键的范围里没有带 `##export` 的表 |
 | 某个目录下的表全部被忽略 | 目录名以 `_`、`.` 或 `~` 开头。这是 Luban 的规则：这类路径段一律跳过。改名即可 |
+| 改了 `variant_en` 里的表，输出目录里的产物没变 | `variant_<语言>` 里的差异只进那种语言的产物，在输出目录下以语言命名的子目录里，比如 `Data/en/` |
 
 ## 报了具体的错
 
@@ -53,16 +54,18 @@
 | `B1 的 x 写成了 'y'`<br>`B1 x is 'y'` | `esyluban.b1.bad_bool` | `read_schema_from_file` 只接受 `true`、`false`、`1`、`0` |
 | `B1 里的双引号没有配对`<br>`B1 has an unmatched double quote` | `esyluban.b1.unmatched_quote` | 多半是输入法打出了中文引号“”。B1 里的引号一律用英文的 `"` |
 | `B1 里的 'x' 缺少 =`<br>`B1 item 'x' has no '='` | `esyluban.b1.missing_equals` | 每一项都写成 `key="value"`，项与项之间用 ` & ` 隔开，`&` 两边各一个空格 |
-| `表 x 有 N 份都没写 variant`<br>`Table x has N definitions without a variant` | `esyluban.b1.duplicate_full_name` | 两张 sheet 的 B1 写了同一个 `full_name`，都没写 `variant`。多半是复制 sheet 后忘了改 `full_name`；想做成表变体的，给其中一份写上 `variant`。报错会列出每一处的 sheet 和文件 |
-| `表 x 的变体 y 有 N 份`<br>`Table x has N definitions of variant y` | `esyluban.b1.duplicate_variant` | 同一个变体名写在了两张 sheet 上。见[本地化 · 表变体](localization.md) |
-| `表 x 的几份定义 y 不一致`<br>`The definitions of table x disagree on y` | `esyluban.b1.variant_mismatch` | 默认版和各个变体的 `output`、`mode`、`index` 要写成一样的，没写也算一种写法（报错里写作 `''`）。报错会列出每一份的值 |
-| `B1 写的是 variants`<br>`B1 sets variants` | `esyluban.b1.variants_key` | 表变体写 `variant`，不带 s。字段变体不在 B1 里写，而是在数据表里加 `name@en` 这样的列，见[表格式](table-format.md) |
-| `定义了变体但未设置当前变体，且没有 fallback`<br>`declares variants but current variant is not set, and no fallback exists` | `error.def.table.variant_not_set` | 这张表只有变体、没有默认版，导出时又没带 `--variant`。要么加上 `--variant`（右键就写进 `extraArgs`），要么留一份不写 `variant` 的默认版 |
-| `不在已声明列表 [x] 中，且没有 fallback`<br>`is not in declared list [x], and no fallback exists` | `error.def.table.variant_not_in_list` | `--variant` 选的名字这张表没有，也没有默认版可退 |
-| `variant:'x' 重复定义`<br>`variant:'x' is duplicated` | `error.def.table.variant_duplicate` | 同一个变体名出现了两次：一张 sheet 的 `variant` 里写了两遍，或者 B1 和 XML 里各有一份。报错下面的 `file:`、`sheet:` 指出是哪一处 |
-| `存在多个无 variant 的 fallback 定义`<br>`has multiple fallback definitions without variant` | `error.def.table.variant_fallback_duplicate` | 两份默认版，一份在 B1、一份在 XML 或 `__tables__.xlsx`（两份都在 B1 报的是上面的 `esyluban.b1.duplicate_full_name`）。常见于表迁到 B1 之后忘了从 `__tables__.xlsx` 删掉 |
-| `未设置 variant，使用 fallback 定义`<br>`not set variant, using fallback definition` | `warn.def.table.variant_not_set` | 只是告警：没带 `--variant`，导出的是默认版。右键时看 `luban.conf` 里 `contextMenu` 的 `extraArgs` |
-| `variantKey:'x' 已存在，但 variantName 'y' 不在`<br>`variantKey:'x' exists, but variantName 'y' is not in` | `error.def.field.variant_not_in_list` | 字段变体里没有选中的名字，它没有默认版可退。`--variant default=en` 也管字段变体，项目里用了字段变体的，表变体按表指定（`--variant TbItem=en`） |
+| `表 x 被定义了 N 次`<br>`Table x is defined N times` | `esyluban.b1.duplicate_full_name` | 两张 sheet 的 B1 写了同一个 `full_name`。多半是复制 sheet 后忘了改 `full_name`；想做成某种语言的版本，放进 `variant_<语言>` 文件夹，见[写一张表](writing-tables.md#某种语言的版本要不一样的数据)。已经放进 `variant_` 文件夹还报这条，是 `luban.conf` 里没写 `l10n.languages`：没声明语言时 `variant_` 只是普通文件夹。报错会列出每一处的 sheet 和文件 |
+| `存在多个无 variant 的 fallback 定义`<br>`has multiple fallback definitions without variant` | `error.def.table.variant_fallback_duplicate` | 同一张表定义了两次，一份在 B1、一份在 XML 或 `__tables__.xlsx`（两份都在 B1 报的是上面那条）。常见于表迁到 B1 之后忘了从 `__tables__.xlsx` 删掉 |
+| `B1 不写 variant`<br>`B1 does not take variant` | `esyluban.b1.variant_key` | B1 里写了 `variant` 或 `variants`。某种语言的版本放进 `variant_<语言>` 文件夹，B1 照抄默认版 |
+| `表 x 在默认版和 variant_<语言> 里的 y 写得不一样`<br>`Table x: y differs between the default version and variant_<language>` | `esyluban.b1.variant_mismatch` | 两份的 `output`、`mode`、`index` 要写成一样的，没写也算一种写法（报错里写作 `''`）。报错会列出两份的值 |
+| `variant_<语言> 里的表 x 在默认版里找不到`<br>`Table x in variant_<language> has no default version` | `esyluban.variant.no_default` | 某种语言独有的表，要在默认版里建一张只有表头的空表；表名写错了也是这条 |
+| `文件夹 variant_<语言> 的语言 x 没有在 luban.conf 的 l10n.languages 里声明`<br>`Folder variant_<language>: language x is not declared in l10n.languages` | `esyluban.variant.undeclared_language` | 文件夹名打错了，或者新语言还没让程序员加进 `l10n.languages`。语言名要和声明的完全一样，区分大小写 |
+| `x 是默认语言（l10n.languages 的第一种），不需要 variant_<语言> 文件夹`<br>`x is the default language (the first in l10n.languages) and needs no variant_<language> folder` | `esyluban.variant.default_language` | 默认语言的数据直接写在默认版里。`variant_` 文件夹里的东西默认语言不会读，放了也没效果 |
+| `x 在两层 variant_ 文件夹里`<br>`x is inside two variant_ folders` | `esyluban.variant.nested` | 一个 `variant_` 文件夹放进了另一个里面。每种语言的文件夹都和默认版放在同一层 |
+| `被 patch 多次覆盖`<br>`is overridden by patch multiple times` | `error.data.patch_override_multiple` | 同一种语言的 `variant_` 里，同一个主键写了两次。报错里的 patch 指的就是 `variant_` 里的差异 |
+| `l10n.languages 里 x 写了两次`<br>`l10n.languages lists x twice` | `esyluban.l10n.duplicate_language` | `luban.conf` 的 `l10n.languages` 里有重复的语言 |
+| `-o x 里的语言 y 没有在 luban.conf 的 l10n.languages 里声明`<br>`-o x: language y is not declared in l10n.languages` | `esyluban.output.undeclared_language` | 命令行 `-o 表名@语言` 的语言不在 `l10n.languages` 里 |
+| `variantKey:'x' 已存在，但 variantName 'y' 不在`<br>`variantKey:'x' exists, but variantName 'y' is not in` | `error.def.field.variant_not_in_list` | 字段变体（数据表里 `name@en` 这样的列）里没有 `--variant` 选中的名字，它没有默认版可退，见[表格式](table-format.md) |
 | `导入表失败`<br>`Failed to import tables` | `esyluban.import.failed` | 有个 Excel 文件读不出来。报错下面的 `file:` 是哪个文件，再下一条是原因，常见的是文件损坏、设了打开密码，或者根本不是 Excel、只是扩展名叫 `.xlsx` |
 | `tableImporter.scanPath 指向的路径不存在`<br>`tableImporter.scanPath points to a path that does not exist` | `esyluban.import.scan_path_not_found` | `-x tableImporter.scanPath=` 给的路径不对。相对路径按运行 Luban 时的当前目录算 |
 

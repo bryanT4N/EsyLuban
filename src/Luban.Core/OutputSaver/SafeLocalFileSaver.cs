@@ -32,6 +32,15 @@ public class SafeLocalFileSaver : OutputSaverBase
 
     public const string ForceCleanUpOutputDir = "forceCleanUpOutputDir";
 
+    // 多语言项目里，非默认语言的数据放在默认语言的数据目录下，一种语言一个子目录
+    protected override string GetOutputDir(OutputFileManifest manifest)
+    {
+        string dir = base.GetOutputDir(manifest);
+        return manifest.OutputType == OutputType.Data && LanguageVariants.IsVariantRun
+            ? $"{dir}/{LanguageVariants.Current}"
+            : dir;
+    }
+
     protected override void BeforeSave(OutputFileManifest outputFileManifest, string outputDir)
     {
         if (!EnvManager.Current.GetBoolOptionOrDefault($"{BuiltinOptionNames.OutputSaver}.{outputFileManifest.TargetName}", BuiltinOptionNames.CleanUpOutputDir,
@@ -41,14 +50,39 @@ public class SafeLocalFileSaver : OutputSaverBase
         }
 
         var savedFiles = outputFileManifest.DataFiles.Select(f => f.File).ToList();
-        if (!IsCleanupSane(outputDir, savedFiles, outputFileManifest.TargetName))
+        // 默认语言那一遍不清各语言的子目录，它们由各自那一遍清理
+        var keptFiles = outputFileManifest.OutputType == OutputType.Data
+            ? savedFiles.Concat(OtherLanguageFiles(outputDir)).ToList()
+            : savedFiles;
+        if (!IsCleanupSane(outputDir, savedFiles.Count, keptFiles, outputFileManifest.TargetName))
         {
             return;
         }
-        FileCleaner.Clean(outputDir, savedFiles);
+        FileCleaner.Clean(outputDir, keptFiles);
     }
 
-    private static bool IsCleanupSane(string outputDir, List<string> savedFiles, string targetName)
+    private static IEnumerable<string> OtherLanguageFiles(string outputDir)
+    {
+        if (LanguageVariants.IsVariantRun)
+        {
+            yield break;
+        }
+        string fullRoot = Path.GetFullPath(outputDir);
+        foreach (string language in LanguageVariants.Declared.Skip(1))
+        {
+            string languageDir = Path.Combine(fullRoot, language);
+            if (!Directory.Exists(languageDir))
+            {
+                continue;
+            }
+            foreach (string file in Directory.GetFiles(languageDir, "*", SearchOption.AllDirectories))
+            {
+                yield return Path.GetRelativePath(fullRoot, file).Replace('\\', '/');
+            }
+        }
+    }
+
+    private static bool IsCleanupSane(string outputDir, int produced, List<string> keptFiles, string targetName)
     {
         if (EnvManager.Current.GetBoolOptionOrDefault("", ForceCleanUpOutputDir, true, false))
         {
@@ -59,8 +93,7 @@ public class SafeLocalFileSaver : OutputSaverBase
             return true;
         }
 
-        int produced = savedFiles.Count;
-        int toDelete = CountDoomedFiles(outputDir, savedFiles);
+        int toDelete = CountDoomedFiles(outputDir, keptFiles);
         if (toDelete == 0)
         {
             return true;

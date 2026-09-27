@@ -85,21 +85,41 @@ public static class EsyMessages
         "B1 的 {0} 写成了 '{1}'，只能是 true、false、1 或 0。",
         "B1 {0} is '{1}', expected true, false, 1 or 0.");
 
-    public static readonly EsyMessage B1VariantsKey = new("esyluban.b1.variants_key",
-        "B1 写的是 variants。表变体写 variant，不带 s；字段变体不在 B1 里写，而是在数据表里加 name@en 这样的列。",
-        "B1 sets variants. A table variant is written variant, without the s; field variants are not declared in B1 but as columns such as name@en in the data sheet.");
+    public static readonly EsyMessage B1VariantKey = new("esyluban.b1.variant_key",
+        "B1 不写 variant。某种语言的版本放进 variant_<语言> 文件夹，表名和默认版一样。",
+        "B1 does not take variant. Put a language's version of the table in a variant_<language> folder, under the same table name as the default.");
 
     public static readonly EsyMessage B1DuplicateFullName = new("esyluban.b1.duplicate_full_name",
-        "表 {0} 有 {1} 份都没写 variant：{2}。默认版只能有一份。复制 sheet 后忘了改 full_name 的，改掉；想做成变体的，写上 variant。",
-        "Table {0} has {1} definitions without a variant: {2}. Only one of them can be the default version. If you copied a sheet, change its full_name; if it is meant to be a variant, add variant.");
-
-    public static readonly EsyMessage B1DuplicateVariant = new("esyluban.b1.duplicate_variant",
-        "表 {0} 的变体 {1} 有 {2} 份：{3}。每个变体只能有一份。",
-        "Table {0} has {2} definitions of variant {1}: {3}. Each variant can have only one.");
+        "表 {0} 被定义了 {1} 次：{2}。每张表的 full_name 必须唯一：复制 sheet 后忘了改 full_name 的，改掉；想做成某种语言的版本，放进 variant_<语言> 文件夹，并在 luban.conf 的 l10n.languages 里声明这种语言。",
+        "Table {0} is defined {1} times: {2}. Each table needs its own full_name: if you copied a sheet, change its full_name; for a language's version, put it in a variant_<language> folder and declare the language in l10n.languages in luban.conf.");
 
     public static readonly EsyMessage B1VariantMismatch = new("esyluban.b1.variant_mismatch",
-        "表 {0} 的几份定义 {1} 不一致：{2}（'' 表示没写）。同一张表的默认版和各个变体，output、mode、index 要写成一样的，没写也算一种写法；否则换一个变体，导出的文件名或生成的代码就可能变。",
-        "The definitions of table {0} disagree on {1}: {2} ('' means not written). The default version and every variant of a table must write output, mode and index the same way, and leaving one out counts as a way of writing it; otherwise switching the variant can change the exported file name or the generated code.");
+        "表 {0} 在默认版和 variant_{1} 里的 {2} 写得不一样：{3}（'' 表示没写）。两份的 output、mode、index 要写成一样的，没写也算一种写法；否则换一种语言，导出的文件名或生成的代码就可能变。",
+        "Table {0}: {2} differs between the default version and variant_{1}: {3} ('' means not written). Both must write output, mode and index the same way, and leaving one out counts as a way of writing it; otherwise switching the language can change the exported file name or the generated code.");
+
+    public static readonly EsyMessage DuplicateLanguage = new("esyluban.l10n.duplicate_language",
+        "l10n.languages 里 {0} 写了两次。",
+        "l10n.languages lists {0} twice.");
+
+    public static readonly EsyMessage UndeclaredLanguage = new("esyluban.variant.undeclared_language",
+        "文件夹 variant_{0} 的语言 {0} 没有在 luban.conf 的 l10n.languages 里声明。先声明这种语言，或者改正文件夹名。",
+        "Folder variant_{0}: language {0} is not declared in l10n.languages in luban.conf. Declare the language, or fix the folder name.");
+
+    public static readonly EsyMessage DefaultLanguageVariant = new("esyluban.variant.default_language",
+        "{0} 是默认语言（l10n.languages 的第一种），不需要 variant_{0} 文件夹。默认语言的数据直接写在默认版里。",
+        "{0} is the default language (the first in l10n.languages) and needs no variant_{0} folder. Put its data in the default version.");
+
+    public static readonly EsyMessage NestedVariant = new("esyluban.variant.nested",
+        "{0} 在两层 variant_ 文件夹里。variant_ 文件夹不能套在另一个 variant_ 文件夹里面。",
+        "{0} is inside two variant_ folders. A variant_ folder cannot be nested inside another.");
+
+    public static readonly EsyMessage VariantWithoutDefault = new("esyluban.variant.no_default",
+        "variant_{0} 里的表 {1} 在默认版里找不到。某种语言独有的表，要在默认版里建一张只有表头的空表。",
+        "Table {1} in variant_{0} has no default version. For a table that only one language has, create an empty table with just the header in the default version.");
+
+    public static readonly EsyMessage UndeclaredOutputLanguage = new("esyluban.output.undeclared_language",
+        "-o {0} 里的语言 {1} 没有在 luban.conf 的 l10n.languages 里声明。",
+        "-o {0}: language {1} is not declared in l10n.languages in luban.conf.");
 
     // {0} 是 dataTarget / codeTarget（json、cs-simple-json…），不是 targets 里的那个 target，
     // 所以叫它「输出目标」，免得照着去查错东西。

@@ -28,9 +28,14 @@ BASE	df34215d2e22035073d1af83d44e3ac0744dc3b3
 # CustomBehaviourManager.cs
 #                    加一个 HasBehaviour<C>() 纯查询方法，供上面那条告警判断
 #                    某名字是不是已注册的 dataTarget/codeTarget。
+# DataLoaderManager.cs
+#                    多语言版本要把 variant_<语言> 里的差异行交给上游 TableDataInfo
+#                    现成的按主键合并。数据加载是一段固定流程，没有扩展点，只能改
+#                    读完每张表的那一行；逻辑都在 LanguageVariants.cs。
 M	README.md
 M	README_EN.md
 M	src/Luban.Core/CustomBehaviour/CustomBehaviourManager.cs
+M	src/Luban.Core/DataLoader/DataLoaderManager.cs
 M	src/Luban.DataLoader.Builtin/Excel/SheetLoadUtil.cs
 M	src/Luban/Program.cs
 
@@ -189,6 +194,10 @@ A	.github/ISSUE_TEMPLATE/config.yml
 # EsyLuban 自己的报错与告警（码 + 中英模板）。没加进上游的 messages_*.json，
 # 那两个文件属于上游，每次跟进都得合并。
 A	src/Luban.Core/Diagnostics/EsyMessages.cs
+# 多语言版本：l10n.languages、variant_<语言> 文件夹、差异行的叠加。文本表的叠加
+# 靠 LanguageTextProvider 以 Priority=100 接管 "default" 文本提供者。
+A	src/Luban.Core/LanguageVariants.cs
+A	src/Luban.L10N/LanguageTextProvider.cs
 A	src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs
 A	src/Luban.Core/Utils/B1Parser.cs
 A	src/Luban.Schema.Builtin/SelfContainedSchemaCollector.cs
@@ -196,5 +205,5 @@ A	src/Luban.Schema.Builtin/SelfContainedTableImporter.cs
 # src/Luban.Tests/ 从 v5.1.0 起是上游自己的测试工程（集成测试 + golden），
 # 我们只往里放自己的测试文件，工程文件沿用上游的，不再各自维护一份。
 A	src/Luban.Tests/B1ParserTests.cs
-A	src/Luban.Tests/B1VariantTests.cs
 A	src/Luban.Tests/EsyMessagesTests.cs
+A	src/Luban.Tests/LanguageVariantTests.cs

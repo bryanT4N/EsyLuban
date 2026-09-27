@@ -77,8 +77,8 @@ code more comfortably than Chinese, these are the two things worth knowing:
   when the structure is declared in this sheet's own `##var`/`##type` rows.
 - **Upstream boundary** — every change this fork makes to upstream code is listed in
   [`upstream_boundary.txt`](esyluban/upstream_boundary.txt), and the regression
-  asserts that list matches reality. Three upstream files are modified; everything
-  else is additive, registered through Luban's `Priority` mechanism.
+  asserts that list matches reality. Four upstream source files are modified;
+  everything else is additive, registered through Luban's `Priority` mechanism.
 
 Full documentation: [esyluban/docs/](esyluban/docs/README.md) (Chinese).
 

@@ -45,7 +45,7 @@ $scanDirs = @(
     'scripts', 'templates', 'baselines', 'docs',
     'examples\dev\DataTables', 'examples\dev\Tools',
     'examples\release\DataTables', 'examples\release\Tools',
-    'examples\negatives_hard'
+    'examples\negatives_hard', 'examples\listing_scope', 'examples\languages'
 )
 $sourceExt = @('.bat', '.ps1', '.py', '.md', '.json', '.conf',
                '.xlsx', '.xlsm', '.csv', '.xml', '.cs', '.sbn', '.txt', '.sh')

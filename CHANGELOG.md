@@ -6,7 +6,26 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 ## [未发布]
 
-暂无。
+不写 `l10n.languages` 的项目，写表和导出方式不变。
+
+### 升级须知
+
+- 用了 0.3.0 B1 表变体的：把写了 `variant` 的 sheet 挪进 `variant_<语言>` 文件夹、删掉 B1 里的 `variant`，在 `luban.conf` 写 `l10n.languages`，再删掉 `contextMenu` 的 `extraArgs` 里的 `--variant`。
+
+### 新增
+
+- 多语言：`luban.conf` 写 `l10n.languages=zh,en`，一次导出每种语言各出一份，默认语言在输出目录本身，其它语言在以语言命名的子目录里；代码只生成一份，`--strict` 下任何一种语言校验失败都算失败。见 `docs/localization.md`。
+- 某种语言在翻译以外的差异放进 `variant_<语言>` 文件夹，表名不变：主键相同的行覆盖默认版，新主键追加，单例表和 list 表整张替换；文本表也一样。见 `docs/writing-tables.md`。
+- 右键只导选中的表影响到的语言：选中 `variant_en` 里的表只导英文，改默认版的表每种语言都导。
+- `-o 表名@语言` 只导那种语言，`-o *` 表示全部的表。
+
+### 变更
+
+- 文本在导出时替换成文案（`convertTextKeyToValue=1`）时，右键选中文本表会重导全部的表，以前提示范围里没有可导出的表。
+
+### 移除
+
+- B1 的 `variant`（0.3.0 加入），写了会报 `esyluban.b1.variant_key`。按语言区分的数据改用 `variant_<语言>` 文件夹。
 
 ## [0.3.0+luban5.1.0] - 2026-09-26
 

@@ -72,11 +72,10 @@ public class SelfContainedTableImporter : ITableImporter
     }
 
     /// <summary>
-    /// 枚举扫描根下所有**数据表** Excel：跳过 Luban 的忽略项（'.'、'_'、'~' 开头）
-    /// 与 schema 定义表。SelfContainedSchemaCollector 复用同一枚举，
-    /// 确保"哪些文件算数据表"只有一处定义。
+    /// 枚举扫描根下所有数据 Excel：跳过 Luban 的忽略项（'.'、'_'、'~' 开头）与 schema 定义表。
+    /// 默认版的表和 variant_ 文件夹里的差异都从这里来。
     /// </summary>
-    internal static IEnumerable<string> EnumerateDataExcelFiles(string scanRoot)
+    private static IEnumerable<string> EnumerateExcelFiles(string scanRoot)
     {
         string dataDir = GenerationContext.GlobalConf.InputDataDir;
 
@@ -112,71 +111,143 @@ public class SelfContainedTableImporter : ITableImporter
         }
     }
 
+    /// <summary>
+    /// 默认版的**数据表** Excel，多语言项目里不含 variant_ 文件夹里的。SelfContainedSchemaCollector
+    /// 复用同一枚举，确保"哪些文件算数据表"只有一处定义；内联的 bean / enum 也只从默认版里读。
+    /// </summary>
+    internal static IEnumerable<string> EnumerateDataExcelFiles(string scanRoot)
+    {
+        string dataDir = GenerationContext.GlobalConf.InputDataDir;
+        return EnumerateExcelFiles(scanRoot).Where(file => LanguageVariants.VariantOf(dataDir, file) == null);
+    }
+
     public List<RawTable> LoadImportTables()
     {
         string scanRoot = GetScanRoot();
+        string dataDir = GenerationContext.GlobalConf.InputDataDir;
 
         var tables = new List<RawTable>();
-        foreach (string file in EnumerateDataExcelFiles(scanRoot))
+        var variantFiles = new List<(string File, string Language)>();
+        foreach (string file in EnumerateExcelFiles(scanRoot))
         {
-            tables.AddRange(LoadTablesFromFile(file));
+            string language = LanguageVariants.VariantOf(dataDir, file);
+            if (language == null)
+            {
+                tables.AddRange(LoadTablesFromFile(file));
+            }
+            else
+            {
+                variantFiles.Add((file, language));
+            }
         }
-        CheckVariants(tables);
+        CheckDuplicates(tables);
+        CheckDeclared(variantFiles.Select(v => v.Language), LanguageVariants.Declared);
+
+        // 默认语言那一遍只要默认版；其它语言那一遍把 variant_<语言> 里的表挂到同名的默认版上，
+        // 读数据时再按主键叠加（见 LanguageVariants）。表本身仍是默认版那一张，所以表名、
+        // 产物文件名、生成的类在各语言里都一样。
+        if (LanguageVariants.IsVariantRun)
+        {
+            string language = LanguageVariants.Current;
+            var overlays = variantFiles.Where(v => v.Language == language).SelectMany(v => LoadTablesFromFile(v.File));
+            foreach (var (fullName, overlay) in MatchOverlays(tables, overlays, language))
+            {
+                LanguageVariants.RegisterOverlay(fullName, overlay.InputFiles);
+            }
+        }
 
         s_logger.Info("self-contained table importer: {} table(s) found under {}", tables.Count, scanRoot);
         return tables;
     }
 
     /// <summary>
-    /// 同名的几张 B1 表只能是同一张表的几个变体：最多一份不写 variant（默认版），
-    /// 每个变体名只出现一次，output、mode、index 都相同。
-    ///
-    /// 前两条上游的变体解析也查，但只点出其中一处，这里在解析之前拦下，每一处都列出来。
-    /// 第三条上游不查，它允许各份完全不同；对策划来说，换个变体运行时就找不到文件、
-    /// 生成的代码跟着变，几乎只有坏处。只看 B1 里的定义，和 XML 之间的交给上游。
-    ///
-    /// 不带 SchemaOrigin：它只装得下一处，而这里每一处都要点名。
+    /// 右键列表用：扫描范围里 variant_ 文件夹中的表各是哪种语言的。默认版可能不在范围里，
+    /// 所以这里不查对不对得上，交给随后的导出。
     /// </summary>
-    public static void CheckVariants(IEnumerable<RawTable> tables)
+    internal static List<(string FullName, string Language)> ListVariantTables()
+    {
+        string dataDir = GenerationContext.GlobalConf.InputDataDir;
+        var result = new List<(string, string)>();
+        foreach (string file in EnumerateExcelFiles(GetScanRoot()))
+        {
+            string language = LanguageVariants.VariantOf(dataDir, file);
+            if (language != null)
+            {
+                result.AddRange(LoadTablesFromFile(file).Select(t => (TypeUtil.MakeFullName(t.Namespace, t.Name), language)));
+            }
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// 两张默认版的 B1 表同名，几乎总是复制 sheet 后忘了改 full_name。上游也会报同名，
+    /// 但只点出其中一处；这里把每一处都列出来。不带 SchemaOrigin：它只装得下一处。
+    /// </summary>
+    public static void CheckDuplicates(IEnumerable<RawTable> tables)
     {
         foreach (var group in tables.GroupBy(t => TypeUtil.MakeFullName(t.Namespace, t.Name)))
         {
             var definitions = group.ToList();
-            if (definitions.Count == 1)
+            if (definitions.Count > 1)
             {
-                continue;
+                throw new EsyLubanException(EsyMessages.B1DuplicateFullName, null, group.Key, definitions.Count, Places(definitions));
             }
-
-            var defaults = definitions.Where(t => t.Variants.Count == 0).ToList();
-            if (defaults.Count > 1)
-            {
-                throw new EsyLubanException(EsyMessages.B1DuplicateFullName, null, group.Key, defaults.Count, Places(defaults));
-            }
-            // 一张 sheet 里写了两遍（variant="en,en"）不在这里算：列出来会是同一处两遍，
-            // 上游解析器会报它，并指出是哪张 sheet
-            foreach (var variant in definitions.SelectMany(t => t.Variants.Distinct(), (t, v) => (Table: t, Name: v)).GroupBy(x => x.Name))
-            {
-                if (variant.Count() > 1)
-                {
-                    throw new EsyLubanException(EsyMessages.B1DuplicateVariant, null,
-                        group.Key, variant.Key, variant.Count(), Places(variant.Select(x => x.Table)));
-                }
-            }
-
-            // 比的是写法：output、index 没写时的缺省值要到后面才定（index 取表头第一个字段），
-            // 这里算不出来，所以没写也算一种写法。mode 在解析时已经换成了枚举，没写就是 map。
-            CheckSame(group.Key, definitions, "output", t => t.OutputFile);
-            CheckSame(group.Key, definitions, "mode", t => t.Mode.ToString().ToLowerInvariant());
-            CheckSame(group.Key, definitions, "index", t => t.Index);
         }
     }
 
-    private static void CheckSame(string fullName, List<RawTable> definitions, string key, Func<RawTable, string> value)
+    /// <summary>
+    /// variant_ 后面的名字必须是 l10n.languages 里声明过的语言，打错的文件夹名就在这里拦下。
+    /// 默认语言没有差异可言，它的 variant_ 文件夹不会被读，也要拦下，免得改了没效果还找不到原因。
+    /// </summary>
+    public static void CheckDeclared(IEnumerable<string> variantLanguages, List<string> declared)
     {
-        if (definitions.Select(value).Distinct().Count() > 1)
+        foreach (string language in variantLanguages.Distinct())
         {
-            throw new EsyLubanException(EsyMessages.B1VariantMismatch, null,
-                fullName, key, string.Join(", ", definitions.Select(t => $"{t.Source.Display}='{value(t)}'")));
+            if (!declared.Contains(language))
+            {
+                throw new EsyLubanException(EsyMessages.UndeclaredLanguage, null, language);
+            }
+            if (language == declared[0])
+            {
+                throw new EsyLubanException(EsyMessages.DefaultLanguageVariant, null, language);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 把 variant_&lt;语言&gt; 里的表按 full_name 对上默认版。对不上报错：某种语言独有的表
+    /// 要在默认版里建一张只有表头的空表，这样各语言生成的代码才一样。
+    ///
+    /// 表的定义以默认版为准，差异那份只贡献数据行，所以 output、mode、index 写得和默认版
+    /// 不一样就报错，免得有人以为在这里能改。比的是写法：output、index 没写时的缺省值要到
+    /// 后面才定（index 取表头第一个字段），这里算不出来，所以没写也算一种写法。mode 在解析时
+    /// 已经换成了枚举，没写就是 map。
+    /// </summary>
+    public static List<(string FullName, RawTable Overlay)> MatchOverlays(List<RawTable> defaults, IEnumerable<RawTable> overlays, string language)
+    {
+        var byName = defaults.ToDictionary(t => TypeUtil.MakeFullName(t.Namespace, t.Name));
+        var matched = new List<(string, RawTable)>();
+        foreach (var overlay in overlays)
+        {
+            string fullName = TypeUtil.MakeFullName(overlay.Namespace, overlay.Name);
+            if (!byName.TryGetValue(fullName, out var def))
+            {
+                throw new EsyLubanException(EsyMessages.VariantWithoutDefault, overlay.Source, language, fullName);
+            }
+            CheckSame(fullName, language, def, overlay, "output", t => t.OutputFile);
+            CheckSame(fullName, language, def, overlay, "mode", t => t.Mode.ToString().ToLowerInvariant());
+            CheckSame(fullName, language, def, overlay, "index", t => t.Index);
+            matched.Add((fullName, overlay));
+        }
+        return matched;
+    }
+
+    private static void CheckSame(string fullName, string language, RawTable def, RawTable overlay, string key, Func<RawTable, string> value)
+    {
+        if (value(def) != value(overlay))
+        {
+            throw new EsyLubanException(EsyMessages.B1VariantMismatch, null, fullName, language, key,
+                $"{def.Source.Display}='{value(def)}', {overlay.Source.Display}='{value(overlay)}'");
         }
     }
 
@@ -265,11 +336,11 @@ public class SelfContainedTableImporter : ITableImporter
         // 要么上游本就有合理缺省。写得越少越好。
         string fullName = metadata["full_name"];
 
-        // variants 是 XML 和 __beans__ 里字段变体的写法，写进 B1 多半是想要表变体。
-        // B1Parser 不限制键名，不在这里拦的话它会被静默忽略。
-        if (metadata.ContainsKey("variants"))
+        // 某种语言的版本由 variant_<语言> 文件夹决定，不写在 B1 里。B1Parser 不限制键名，
+        // 不在这里拦的话 variant= 会被静默忽略；variants 是字段变体的写法，写进 B1 也是想要这个。
+        if (metadata.ContainsKey("variant") || metadata.ContainsKey("variants"))
         {
-            throw new EsyLubanException(EsyMessages.B1VariantsKey, source);
+            throw new EsyLubanException(EsyMessages.B1VariantKey, source);
         }
 
         string namespaceName = TypeUtil.GetNamespace(fullName);
@@ -320,9 +391,6 @@ public class SelfContainedTableImporter : ITableImporter
             Groups = ParseGroups(GetOptional(metadata, "group", "")),
             Tags = DefUtil.ParseAttrs(GetOptional(metadata, "tags", "")),
             OutputFile = GetOptional(metadata, "output", ""),
-            // 表变体：同一个 full_name 的几张 sheet，各写一个变体名，不写的那份是默认版，
-            // 导出时由 --variant 选。和 XML 的 variant 属性同一套写法和解析。
-            Variants = DefUtil.ParseVariant(GetOptional(metadata, "variant", "")),
             // 表级报错（index 字段不存在、value_type 找不到等）靠它指出是哪个文件的哪张
             // sheet；--errorFormat json 与 schema-json 也从这里取位置。
             Source = source,

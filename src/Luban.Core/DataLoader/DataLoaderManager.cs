@@ -65,7 +65,10 @@ public class DataLoaderManager
         {
             records.AddRange(task.Result);
         }
-        ctx.AddDataTable(table, records, null);
+        // [EsyLuban] 多语言版本：variant_<语言> 里的差异行在这里叠加到默认版上，合并交给
+        // TableDataInfo 现成的 patch 逻辑。加载流程没有扩展点，只能改这一行（见 LanguageVariants）
+        var (mainRecords, patchRecords) = LanguageVariants.Apply(table, records);
+        ctx.AddDataTable(table, mainRecords, patchRecords);
     }
 
     public List<Record> LoadTableFile(DefTable table, string file, string subAssetName, Dictionary<string, string> options)

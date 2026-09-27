@@ -158,7 +158,8 @@ schema 定义的入口。`type` 留空表示按文件内容自己声明，`bean`
 | `l10n.provider` | 本地化提供者，内置为 `default` |
 | `l10n.textFile.path` | 文案表路径 |
 | `l10n.textFile.keyFieldName` | key 列的列名 |
-| `l10n.textFile.languageFieldName` | 取哪一列作为译文 |
+| `l10n.languages` | 项目支持的语言，第一种是默认语言，每种各导出一份 |
+| `l10n.textFile.languageFieldName` | 只有一种语言时，取哪一列作为译文 |
 | `l10n.convertTextKeyToValue` | 导出时把 key 静态替换成文案 |
 | `l10n.textListFile` | 文案清单输出 |
 
@@ -220,11 +221,11 @@ tableImporter 默认扫 `dataDir` 全目录，自动跳过：
 | `-t` | `--target` | 表 target，取自 `targets`。**必填** |
 | `-d` | `--dataTarget` | 数据格式 |
 | `-c` | `--codeTarget` | 生成语言 |
-| `-o` | `--outputTable` | 只输出指定的表（可多次） |
+| `-o` | `--outputTable` | 只输出指定的表（可多次）。多语言项目里写 `表名@语言` 只导那种语言，`*` 表示全部的表 |
 | `-x` | `--xargs` | 运行参数，`-x key=val`，可多次 |
 | `-f` | `--forceLoadTableDatas` | 没有 dataTarget 时也加载数据。纯校验用 |
 | `-i` / `-e` | `--includeTag` / `--excludeTag` | 按记录 tag 过滤 |
-| | `--variant` | 选变体。表变体如 `--variant TbItem=en`（B1、XML、`__tables__.xlsx` 里声明的都算），字段变体如 `--variant Item.name=en`；`default=en` 两种都管，见[本地化](localization.md) |
+| | `--variant` | 选字段变体，如 `--variant Item.name=en`，见[表格式](table-format.md)。多语言用 `l10n.languages`，见[本地化](localization.md) |
 | | `--timeZone` | datetime 的时区 |
 | | `--strict` | 有校验失败就以退出码 1 结束。Luban 5 之前叫 `--validationFailAsError`，旧名字现在是未知参数，会让整次运行直接失败 |
 | | `--locale` | 报错与告警的语言，`zh` 或 `en`。不写时跟随 Windows 界面语言。`gen.bat`、`check.bat` 会原样传给 Luban，右键菜单写进 `contextMenu` 的 `extraArgs` |
