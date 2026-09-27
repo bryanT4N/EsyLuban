@@ -189,21 +189,23 @@ internal static class Program
                 xargs["tableImporter.scanPath"] = opts.ListTables;
             }
 
-            // [EsyLuban] 多语言版本：l10n.languages 声明了几种语言就每种各跑一遍，
-            // 每一遍在自己的 PipelineScope 里（见 LanguageVariants 与 PlanLanguageRuns）
-            var languages = LanguageVariants.Parse(xargs.GetValueOrDefault("l10n.languages", ""));
+            // [EsyLuban] 变体：esyluban.variants 声明了几个变体，就在默认版之后每个各跑一遍，
+            // 每一遍在自己的 PipelineScope 里（见 VariantFolders 与 PlanVariantRuns）
+            var variants = VariantFolders.Parse(xargs.GetValueOrDefault("esyluban.variants", ""));
             var runs = listTablesOnly
-                ? new List<(string Language, List<string> OutputTables)> { (null, null) }
-                : PlanLanguageRuns(opts, languages);
+                ? new List<(string Variant, List<string> OutputTables)> { (null, null) }
+                : PlanVariantRuns(opts, variants);
             bool anyValidatorFail = false;
             for (int i = 0; i < runs.Count; i++)
             {
                 var runXargs = new Dictionary<string, string>(xargs);
-                if (runs[i].Language != null)
+                if (runs[i].Variant != null)
                 {
-                    runXargs["esyluban.language"] = runs[i].Language;
-                    runXargs["l10n.textFile.languageFieldName"] = runs[i].Language;
-                    s_logger.Info("language: {}", runs[i].Language);
+                    runXargs[VariantFolders.CurrentVariantOption] = runs[i].Variant;
+                }
+                if (variants.Count > 0 && !listTablesOnly)
+                {
+                    s_logger.Info("variant: {}", runs[i].Variant ?? "(default)");
                 }
 
                 using var scope = PipelineScope.Create(runXargs);
@@ -226,7 +228,7 @@ internal static class Program
 
                     var pipeline = scope.Pipelines.CreatePipeline(opts.Pipeline);
                     scope.Pipeline = pipeline;
-                    // 代码与语言无关，只在第一遍生成
+                    // 代码与变体无关，只在第一遍生成
                     pipeline.Run(CreatePipelineArgs(opts, config, runs[i].OutputTables, includeCode: i == 0));
                     anyValidatorFail |= scope.GenerationContext?.AnyValidatorFail == true;
                 }
@@ -270,8 +272,8 @@ internal static class Program
     }
 
     /// <summary>
-    /// [EsyLuban] 输出所选路径下的表全名，每行一个，然后结束。多语言项目里一行也可能是
-    /// 「表名@语言」或 *，含义见 PlanLanguageRuns。
+    /// [EsyLuban] 输出所选路径下的表全名，每行一个，然后结束。用了变体的项目里一行也可能是
+    /// 「表名@变体」，含义见 PlanVariantRuns。
     ///
     /// 只收集表名，不编译、不校验、不生成，也不解析表变体 —— 因此即便所选范围之外存在
     /// 跨表引用、或同名表的其它几份定义也不会中止（真正导出时仍是全量加载 schema，
@@ -492,48 +494,40 @@ internal static class Program
     /// <summary>
     /// [EsyLuban] 这次调用跑哪几遍、每一遍导哪些表。
     ///
-    /// 没声明 l10n.languages 时跑一遍，和原来一样。声明了就每种语言一遍，默认语言在前；
-    /// 只生成代码时只跑默认语言那一遍，代码与语言无关。check.bat 用 -f 只校验不导出，数据
-    /// 照样加载，每种语言都要校验，所以也是每种语言一遍。-o 可以写成「表名@语言」，表示只在
-    /// 那种语言里导出：右键就是这样把「选中的是 variant_en 里的表」传过来的。没写 @ 的表
-    /// 每种语言都导；给了 -o 却一张都不涉及的语言，这一遍不跑。表名写成 * 表示全部的表，
-    /// 右键选中文本表时这样传（见 SelfContainedSchemaCollector.ListTableNamesInScope）。
+    /// 没声明 esyluban.variants 时跑一遍，和原来一样。声明了就先跑默认版，再每个变体一遍；
+    /// 只生成代码时只跑默认版那一遍，代码与变体无关。check.bat 用 -f 只校验不导出，数据照样
+    /// 加载，每个变体都要校验，所以也是每个变体一遍。-o 可以写成「表名@变体」，表示只在那个
+    /// 变体里导出：右键就是这样把「选中的是 variant_en 里的表」传过来的。没写 @ 的表默认版和
+    /// 每个变体都导；给了 -o 却一张都不涉及的那一遍，不跑。
     /// </summary>
-    private static List<(string Language, List<string> OutputTables)> PlanLanguageRuns(CommandOptions opts, List<string> languages)
+    private static List<(string Variant, List<string> OutputTables)> PlanVariantRuns(CommandOptions opts, List<string> variants)
     {
-        // 上游的 -o 为空就是全部的表
-        static List<string> Tables(IEnumerable<string> names)
-        {
-            var tables = names.Distinct().ToList();
-            return tables.Contains("*") ? new List<string>() : tables;
-        }
-
         var requested = (opts.OutputTables ?? Enumerable.Empty<string>())
             .Select(t => t.Split('@', 2))
-            .Select(parts => (Table: parts[0], Language: parts.Length > 1 ? parts[1] : null))
+            .Select(parts => (Table: parts[0], Variant: parts.Length > 1 ? parts[1] : null))
             .ToList();
-        foreach (var (table, language) in requested)
+        foreach (var (table, variant) in requested)
         {
-            if (language != null && !languages.Contains(language))
+            if (variant != null && !variants.Contains(variant))
             {
-                throw new EsyLubanException(EsyMessages.UndeclaredOutputLanguage, null, $"{table}@{language}", language);
+                throw new EsyLubanException(EsyMessages.UndeclaredOutputVariant, null, $"{table}@{variant}", variant);
             }
         }
 
         bool loadsData = opts.ForceLoadTableDatas || (opts.DataTargets?.Any() ?? false);
-        if (languages.Count == 0 || !loadsData)
+        if (variants.Count == 0 || !loadsData)
         {
-            return new() { (languages.FirstOrDefault(), Tables(requested.Select(r => r.Table))) };
+            return new() { (null, requested.Select(r => r.Table).Distinct().ToList()) };
         }
         var runs = new List<(string, List<string>)>();
-        foreach (string language in languages)
+        foreach (string variant in variants.Prepend(null))
         {
-            var involved = requested.Where(r => r.Language == null || r.Language == language).ToList();
+            var involved = requested.Where(r => r.Variant == null || r.Variant == variant).ToList();
             if (requested.Count > 0 && involved.Count == 0)
             {
                 continue;
             }
-            runs.Add((language, Tables(involved.Select(r => r.Table))));
+            runs.Add((variant, involved.Select(r => r.Table).Distinct().ToList()));
         }
         return runs;
     }

@@ -32,12 +32,12 @@ public class SafeLocalFileSaver : OutputSaverBase
 
     public const string ForceCleanUpOutputDir = "forceCleanUpOutputDir";
 
-    // 多语言项目里，非默认语言的数据放在默认语言的数据目录下，一种语言一个子目录
+    // 变体的数据放在默认版的数据目录下，一个变体一个子目录
     protected override string GetOutputDir(OutputFileManifest manifest)
     {
         string dir = base.GetOutputDir(manifest);
-        return manifest.OutputType == OutputType.Data && LanguageVariants.IsVariantRun
-            ? $"{dir}/{LanguageVariants.Current}"
+        return manifest.OutputType == OutputType.Data && VariantFolders.IsVariantRun
+            ? $"{dir}/{VariantFolders.Current}"
             : dir;
     }
 
@@ -50,9 +50,9 @@ public class SafeLocalFileSaver : OutputSaverBase
         }
 
         var savedFiles = outputFileManifest.DataFiles.Select(f => f.File).ToList();
-        // 默认语言那一遍不清各语言的子目录，它们由各自那一遍清理
+        // 默认版那一遍不清各变体的子目录，它们由各自那一遍清理
         var keptFiles = outputFileManifest.OutputType == OutputType.Data
-            ? savedFiles.Concat(OtherLanguageFiles(outputDir)).ToList()
+            ? savedFiles.Concat(VariantFiles(outputDir)).ToList()
             : savedFiles;
         if (!IsCleanupSane(outputDir, savedFiles.Count, keptFiles, outputFileManifest.TargetName))
         {
@@ -61,21 +61,21 @@ public class SafeLocalFileSaver : OutputSaverBase
         FileCleaner.Clean(outputDir, keptFiles);
     }
 
-    private static IEnumerable<string> OtherLanguageFiles(string outputDir)
+    private static IEnumerable<string> VariantFiles(string outputDir)
     {
-        if (LanguageVariants.IsVariantRun)
+        if (VariantFolders.IsVariantRun)
         {
             yield break;
         }
         string fullRoot = Path.GetFullPath(outputDir);
-        foreach (string language in LanguageVariants.Declared.Skip(1))
+        foreach (string variant in VariantFolders.Declared)
         {
-            string languageDir = Path.Combine(fullRoot, language);
-            if (!Directory.Exists(languageDir))
+            string variantDir = Path.Combine(fullRoot, variant);
+            if (!Directory.Exists(variantDir))
             {
                 continue;
             }
-            foreach (string file in Directory.GetFiles(languageDir, "*", SearchOption.AllDirectories))
+            foreach (string file in Directory.GetFiles(variantDir, "*", SearchOption.AllDirectories))
             {
                 yield return Path.GetRelativePath(fullRoot, file).Replace('\\', '/');
             }

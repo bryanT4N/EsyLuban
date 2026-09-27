@@ -20,6 +20,10 @@ Tools\Luban\gen.bat -t client -d json
 看到 `Generated\Data\` 下出现 json 文件，说明这个包在你的机器上是好的。先确认这
 一步，再去改配置 —— 否则出了问题分不清是包的问题还是配置的问题。
 
+示例表演示的是一个中英双语的项目：`Generated\Data\` 是默认的一份，`Generated\Data\en\`
+是英文版，文字在 `text_tbtext.json` 里、每种语言一列。怎么组织见
+[写一张表](docs/writing-tables.md)和[多语言](docs/localization.md)。
+
 跑不起来：
 
 | 现象 | 处置 |
@@ -57,7 +61,10 @@ Tools/Luban/
   runtime/           Luban 本体
   contextmenu/       右键菜单的安装脚本与导表实现
 DataTables/          示例表，可以直接改成你自己的
+  text/              文本表
+  variant_en/        英文版不一样的数据
 docs/                完整文档
+CHANGELOG.md         每个版本改了什么，升级时要你动手的写在最前面
 ```
 
 `contextmenu/` 是**运行时依赖**，每次右键导表都会调用它，不是「装完就能删的安装
@@ -70,4 +77,4 @@ docs/                完整文档
 右键菜单**不必重装** —— 注册表里指向的是转发器，真正的脚本在这个目录里，替换目录
 就等于升级了行为。
 
-需要你动手的改动会写在 CHANGELOG 里。
+需要你动手的改动写在包里 `CHANGELOG.md` 每个版本的「升级须知」下。

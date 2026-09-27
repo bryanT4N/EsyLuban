@@ -45,20 +45,21 @@ esyluban\scripts\test\check_gitignore_traps.bat     :: 已含在全回归里，�
 - **负例** —— 语料里有故意写坏的记录。校验器对 SHA256 完全不可见（它们全部失效
   的话，输出字节一模一样），所以按来源分类计数：哪一族校验器不工作了，一眼看出。
   另有几类会中止整个导出的硬失败（重复主键、`mode="one"` 多行、两张 B1 表同名，以及
-  多语言的几种写错：B1 里写 `variant`、同一种语言里一个主键写两次、变体的 `mode` 和默认版
-  不同、变体没有默认版、没声明的语言、`variant_` 套 `variant_`、默认语言的 `variant_`
-  文件夹、`l10n.languages` 里重复的语言、有 `variant_` 文件夹却没声明语言、只有英文那一遍
-  校验失败时 `--strict` 和 `check.bat` 也要失败），
-  单独放在 `examples/negatives_hard/`，断言方向相反 —— 必须失败，且必须因为那条错误失败。
+  变体的几种写错：B1 里写 `variant`、同一个变体里一个主键写两次、变体的 `mode` 和默认版
+  不同、变体没有默认版、没声明的变体、`variant_` 套 `variant_`、`esyluban.variants` 里
+  重复的名字、有 `variant_` 文件夹却没声明、只有 en 那一遍校验失败时 `--strict` 和
+  `check.bat` 也要失败），单独放在 `examples/negatives_hard/`，断言方向相反 —— 必须失败，
+  且必须因为那条错误失败。
 - **使用者入口** —— 回归走 `gen.bat` 和右键菜单，不直接调 `Luban.exe`。曾经有
   一次冒烟测试绕过 `gen.bat`，于是 `gen.bat` 自己根本跑不起来却一路绿灯。右键第一步
   「列出选中的表」另有一套小语料 `examples/listing_scope/`：B1 默认版加 XML 变体、
-  只在 XML 里定义的老表，断言每个选中范围只列出自己的表。多语言也有一套
-  `examples/languages/`：一次导出出 `data/` 和 `data/en/`，各种表的叠加、文本表的叠加
-  （每种语言一列和每种语言一张表两种写法）、
-  代码只生成一次、两次导出之间各语言各清各的，再走一遍真的右键脚本，断言导的是选中的表
-  和它影响到的语言。这套语料和上面多语言的硬失败都由
-  `scripts/authoring/create_language_cases.py` 生成，改语料先改它。
+  只在 XML 里定义的老表，断言每个选中范围只列出自己的表。变体也有一套
+  `examples/variants/`：一次导出出 `data/` 和 `data/en/`，各种表的叠加、文字字段用 `ref`
+  引用文本表、每种语言一张文本表的写法、代码只生成一次、两次导出之间各版本各清各的，再走
+  一遍真的右键脚本，断言导的是选中的表和它影响到的版本。这套语料和上面变体的硬失败都由
+  `scripts/authoring/create_variant_cases.py` 生成，改语料先改它。发布包里的示例工程
+  （`templates/`）也按包的布局搭出来导一遍，由 `scripts/authoring/create_template_tables.py`
+  生成，`writing-tables.md` 里讲的就是它的数据。
 - **守卫** —— 见下一节。
 
 ### 怎么新增一条断言

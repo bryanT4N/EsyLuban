@@ -125,7 +125,7 @@
 | `float` | `float32` | |
 | `double` | `float64` | |
 | `string` | | 空单元格 = 空字符串 |
-| `text` | | 等价于 `string#text=1`，见下面的 `text` 校验器 |
+| `text` | | 等价于 `string#text=1`，属于上游的本地化。EsyLuban 推荐文字字段写 `string#ref=text.TbText`，见[多语言](localization.md) |
 | `datetime` | `time` | `yyyy-M-d HH:mm:ss` / `yyyy-M-d HH:mm` / `yyyy-M-d HH` / `yyyy-M-d` |
 
 `vec2` / `vec3` / `vec4` **不是内置类型**，它们是示例工程在
@@ -367,8 +367,8 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 **`index` 只对 array / list 生成额外的索引映射代码**；挂在 `set` 上能通过校验，
 但不产生任何生成代码。
 
-**`text` 是唯一一个依赖外部配置的校验器。** 没配文本表时它静默跳过，
-`l10n.convertTextKeyToValue=1` 时也不走这条路径 —— 见[本地化](localization.md)。
+**`text` 是唯一一个依赖外部配置的校验器。** 它属于上游的本地化，配了 `l10n.*` 才生效，
+没配时静默跳过。EsyLuban 推荐的文字字段用 `ref` 校验 key，见[多语言](localization.md)。
 
 以上校验器的类型限制都在**编译期**（读 schema 时）就报出来，不用等到有数据。
 
@@ -381,7 +381,7 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 
 | 字段 | 真实影响 |
 |---|---|
-| `full_name` | 表的唯一身份。决定默认输出文件名、生成代码里的访问名。**表名在整个工程内唯一**，不同模块下同名也不行。两张 sheet 写了同一个 `full_name` 会报错，并列出每一处。唯一的例外是 `variant_<语言>` 文件夹里某种语言的版本，它和默认版同名，见[写一张表](writing-tables.md#某种语言的版本要不一样的数据) |
+| `full_name` | 表的唯一身份。决定默认输出文件名、生成代码里的访问名。**表名在整个工程内唯一**，不同模块下同名也不行。两张 sheet 写了同一个 `full_name` 会报错，并列出每一处。唯一的例外是 `variant_<名字>` 文件夹里同一张表的另一个版本，它和默认版同名，见[写一张表](writing-tables.md#同一张表要有几个版本) |
 | `value_type` | 记录的结构类型。缺省由表名推导（`TbItem` → `Item`）；`read_schema_from_file="true"` 且没写命名空间时，自动补上表所在的命名空间 |
 | `index` | 见下 |
 | `mode` | `map` / `list` / `one`，写别的会报错（`esyluban.b1.bad_mode`） |
@@ -391,7 +391,7 @@ A 列是字段名，B 列是类型，C 列是注释，**D 列起每一列是一�
 | `group` | 逗号或分号分隔。留空时，是否导出取决于当前 target 的 group 里有没有被标记为默认的组 |
 | `comment` | 注释，进生成代码。`read_schema_from_file="true"` 时也会成为记录类的注释 |
 | `tags` | `#` 分隔的自定义键值对，如 `tags="priority=high#category=core"` |
-| `variant` | 不写。写了（包括 `variants`）会报 `esyluban.b1.variant_key`。某种语言的版本由 `variant_<语言>` 文件夹决定，那一份的 B1 照抄默认版，`output`、`mode`、`index` 写得不一样会报错，没写也算一种写法 |
+| `variant` | 不写。写了（包括 `variants`）会报 `esyluban.b1.variant_key`。一张表的其它版本由 `variant_<名字>` 文件夹决定，那一份的 B1 照抄默认版，`output`、`mode`、`index` 写得不一样会报错，没写也算一种写法 |
 
 **`index` 的语义随 `mode` 变，这一点很容易踩：**
 

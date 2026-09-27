@@ -11,7 +11,8 @@
 | 一个字段要填一串东西：列表、字典、嵌套结构 | [填复杂结构](filling-structures.md) |
 | 每种类型字段都不一样（技能、buff、AI） | [填复杂结构 · 多态](filling-structures.md) |
 | 表太大要拆文件、数据是工具生成的 | [数据从哪来](data-sources.md) |
-| 某种语言的版本要不一样的数据 | [写一张表 · 多语言版本](writing-tables.md#某种语言的版本要不一样的数据) |
+| 游戏要出几种语言，文字怎么填 | [写一张表 · 玩家看得到的文字](writing-tables.md#玩家看得到的文字填-key文字写在文本表里) |
+| 同一张表要有几个版本（比如英文版的配音不同） | [写一张表 · 同一张表要有几个版本](writing-tables.md#同一张表要有几个版本) |
 | 类型怎么写、有哪些校验器 | [表格式参考](table-format.md) |
 
 策划只需要上面这几份。下面的都是程序员配环境用的。
@@ -23,13 +24,12 @@
 | 把 EsyLuban 装进我的工程 | [接入你的项目](setup.md) |
 | **客户端和服务端要不同字段** | [常见需求怎么配](recipes.md) |
 | **产物按模块分到不同目录** | [常见需求怎么配](recipes.md) |
-| **做多语言，每种语言一份产物** | [常见需求怎么配](recipes.md) |
+| **做多语言，玩家在游戏里随时切换** | [多语言](localization.md) |
 | **测试数据不进正式包** | [常见需求怎么配](recipes.md) |
 | **把校验接进提交流程 / CI** | [常见需求怎么配](recipes.md) |
 | 弄清楚 `luban.conf` 每一项在做什么 | [配置参考](configuration.md) |
 | 决定导出什么格式、格式怎么配套 | [目标与输出](targets-and-output.md) |
 | 配右键菜单，或者它不工作 | [右键菜单](context-menu.md) |
-| 本地化的更多细节 | [本地化](localization.md) |
 | 想知道从 Excel 到产物中间发生了什么 | [它是怎么工作的](how-it-works.md) |
 | 改 EsyLuban 本身、提 PR | [参与开发](contributing.md) |
 

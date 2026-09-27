@@ -152,20 +152,13 @@ schema 定义的入口。`type` 留空表示按文件内容自己声明，`bean`
 
 不写这两个键最省事：默认值就是开启，写出来只带来上面这个风险。清理的危险与安全闸见[目标与输出](targets-and-output.md#输出目录会被清空)。
 
-### 校验与本地化
+### 校验、变体与多语言
 
 | 键 | 作用 |
 |---|---|
 | `pathValidator.rootDir` | `path` 校验器的路径基准。指向**工程根**，不是 `Assets` 本身 |
-| `l10n.provider` | 本地化提供者，内置为 `default` |
-| `l10n.textFile.path` | 文案表路径 |
-| `l10n.textFile.keyFieldName` | key 列的列名 |
-| `l10n.languages` | **EsyLuban 加的。** 项目支持的语言，第一种是默认语言，每种各导出一份。放在 `l10n.` 下是因为语言名要和文本表的列名一致，上游的本地化模块并不读它 |
-| `l10n.textFile.languageFieldName` | 只有一种语言时，取哪一列作为译文 |
-| `l10n.convertTextKeyToValue` | 导出时把 key 静态替换成文案 |
-| `l10n.textListFile` | 文案清单输出 |
-
-细节在[本地化](localization.md)。
+| `esyluban.variants` | **EsyLuban 加的。** 声明有哪些变体，如 `esyluban.variants=en`，逗号隔开。默认版之外，每个变体导出完整的一份，放在输出目录下以变体命名的子目录里。没写它时 `variant_` 只是普通文件夹 |
+| `l10n.*` | 上游 Luban 的本地化：导出时把 key 换成文字，每种语言一套数据。EsyLuban 推荐的多语言做法不用它，见[多语言](localization.md) |
 
 ### 代码风格
 
@@ -223,11 +216,11 @@ tableImporter 默认扫 `dataDir` 全目录，自动跳过：
 | `-t` | `--target` | 表 target，取自 `targets`。**必填** |
 | `-d` | `--dataTarget` | 数据格式 |
 | `-c` | `--codeTarget` | 生成语言 |
-| `-o` | `--outputTable` | 只输出指定的表（可多次）。多语言项目里写 `表名@语言` 只导那种语言，`*` 表示全部的表，这两种写法是 **EsyLuban 加的** |
+| `-o` | `--outputTable` | 只输出指定的表（可多次）。用了变体的项目里写 `表名@变体` 只导那个变体，这个写法是 **EsyLuban 加的** |
 | `-x` | `--xargs` | 运行参数，`-x key=val`，可多次 |
 | `-f` | `--forceLoadTableDatas` | 没有 dataTarget 时也加载数据。纯校验用 |
 | `-i` / `-e` | `--includeTag` / `--excludeTag` | 按记录 tag 过滤 |
-| | `--variant` | 选字段变体，如 `--variant Item.name=en`，见[表格式](table-format.md)。多语言用 `l10n.languages`，见[本地化](localization.md) |
+| | `--variant` | 上游的字段变体，如 `--variant Item.name=en`，见[表格式](table-format.md)。和 `esyluban.variants`、`variant_` 文件夹无关 |
 | | `--timeZone` | datetime 的时区 |
 | | `--strict` | 有校验失败就以退出码 1 结束。Luban 5 之前叫 `--validationFailAsError`，旧名字现在是未知参数，会让整次运行直接失败 |
 | | `--locale` | 报错与告警的语言，`zh` 或 `en`。不写时跟随 Windows 界面语言。`gen.bat`、`check.bat` 会原样传给 Luban，右键菜单写进 `contextMenu` 的 `extraArgs` |

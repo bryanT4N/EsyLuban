@@ -51,8 +51,8 @@ public class SelfContainedSchemaCollector : DefaultSchemaCollector
     /// B1 表按 B1 所在的 sheet 算，由导入器按 tableImporter.scanPath 扫出。XML 和
     /// __tables__.xlsx 里定义的表按 input 是否和选中范围重叠算，否则它们会混进每一次右键。
     ///
-    /// 多语言项目里，每一行还要说明影响哪些语言：默认版的表影响每一种语言，写表名；只在
-    /// variant_&lt;语言&gt; 里选中的表只影响那种语言，写成「表名@语言」（见 Program.PlanLanguageRuns）。
+    /// 用了变体的项目里，每一行还要说明影响哪些版本：默认版的表影响默认版和每个变体，写表名；
+    /// 只在 variant_&lt;名字&gt; 里选中的表只影响那个变体，写成「表名@变体」（见 Program.PlanVariantRuns）。
     /// </summary>
     public List<string> ListTableNamesInScope(LubanConfig config)
     {
@@ -84,47 +84,13 @@ public class SelfContainedSchemaCollector : DefaultSchemaCollector
             .Select(t => TypeUtil.MakeFullName(t.Namespace, t.Name))
             .Distinct()
             .ToList();
-        // 默认版也选中了的表已经每种语言都导，不用再按语言列一遍
-        var languageOnly = SelfContainedTableImporter.ListVariantTables()
+        // 默认版也选中了的表已经在每个版本里都导，不用再按变体列一遍
+        var variantOnly = SelfContainedTableImporter.ListVariantTables()
             .Where(v => !names.Contains(v.FullName))
-            .Select(v => $"{v.FullName}@{v.Language}")
+            .Select(v => $"{v.FullName}@{v.Variant}")
             .Distinct()
             .ToList();
-        return names.Concat(languageOnly).Concat(TextTablesInScope(config, scope)).ToList();
-    }
-
-    /// <summary>
-    /// 文本在导出时替换成文案的项目，文本表影响所有用到文本的表：选中默认版的文本表，每种
-    /// 语言都要重导全部的表；选中 variant_&lt;语言&gt; 里的文本表，只重导那种语言的。全部的表
-    /// 写成 *，免得命令行上列出几百张表。
-    ///
-    /// 文本表的路径相对 luban.conf 所在目录（导出时 gen.bat 和右键都先进入这个目录）；
-    /// 右键列表时当前目录是右键的位置，所以这里先换成绝对路径。
-    /// </summary>
-    private static IEnumerable<string> TextTablesInScope(LubanConfig config, string scope)
-    {
-        var env = EnvManager.Current;
-        if (!env.TryGetOption(BuiltinOptionNames.L10NFamily, BuiltinOptionNames.L10NProviderName, false, out _)
-            || !DataUtil.ParseBool(env.GetOptionOrDefault(BuiltinOptionNames.L10NFamily, BuiltinOptionNames.L10NConvertTextKeyToValue, false, "false"))
-            || !env.TryGetOption(BuiltinOptionNames.L10NFamily, BuiltinOptionNames.L10NTextFilePath, false, out string textFiles))
-        {
-            yield break;
-        }
-        textFiles = string.Join(",", textFiles.Split(';', ',').Select(entry => Path.Combine(config.ConfigDir, entry)));
-        bool InScope(string textFile) => IsUnder(Path.GetFullPath(FileUtil.SplitFileAndSheetName(FileUtil.Standardize(textFile)).Item1), scope);
-
-        if (LanguageVariants.TextFiles(textFiles, null).Defaults.Any(InScope))
-        {
-            yield return "*";
-            yield break;
-        }
-        foreach (string language in LanguageVariants.Declared.Skip(1))
-        {
-            if (LanguageVariants.TextFiles(textFiles, language).Overlays.Any(InScope))
-            {
-                yield return $"*@{language}";
-            }
-        }
+        return names.Concat(variantOnly).ToList();
     }
 
     /// <summary>

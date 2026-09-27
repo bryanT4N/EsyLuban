@@ -98,15 +98,12 @@ runtime\Luban.exe --conf luban.conf -t <targets 里的第一个> --listTables <�
 它只收集表名，逐行打到 stdout（日志走 stderr），不生成任何东西。算「在范围内」的有两种：
 B1 所在的 sheet 在范围内的表；XML 或 `__tables__.xlsx` 里定义、`input` 指向范围内文件的表。
 
-多语言项目（写了 `l10n.languages`）里，每一行还说明这张表影响哪些语言：
+用了变体（写了 `esyluban.variants`）的项目里，每一行还说明这张表影响哪些版本：
 
 | 这一行 | 什么时候 | 导出时 |
 |---|---|---|
-| `demo.TbItem` | 默认版的表在范围内 | 每种语言都导 |
-| `demo.TbItem@en` | 只有 `variant_en` 里的那份在范围内 | 只导英文 |
-| `*` / `*@en` | 文本在导出时替换成文案，而默认版 / `variant_en` 里的文本表在范围内 | 全部的表，每种语言 / 只有英文 |
-
-`*` 代替全部表名，免得几百个 `-o` 撑爆命令行。
+| `demo.TbItem` | 默认版的表在范围内 | 默认版和每个变体都导 |
+| `demo.TbItem@en` | 只有 `variant_en` 里的那份在范围内 | 只导 `en` 这个变体 |
 
 **四，把拿到的每个表名拼成一个 `-o`，再逐个 target 正式导出一次：**
 

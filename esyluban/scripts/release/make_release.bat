@@ -95,7 +95,9 @@ copy /y "%ESY_ROOT%\templates\gen.bat"    "%STAGE%\Tools\Luban\" >nul || goto :F
 copy /y "%ESY_ROOT%\templates\check.bat"  "%STAGE%\Tools\Luban\" >nul || goto :FAIL
 
 copy /y "%ESY_ROOT%\scripts\contextmenu\*.bat" "%STAGE%\Tools\Luban\contextmenu\" >nul || goto :FAIL
-copy /y "%ESY_ROOT%\templates\DataTables\*.xlsx" "%STAGE%\DataTables\" >nul || goto :FAIL
+rem Whole tree: the samples keep their text table in text\ and the English
+rem version in variant_en\. A flat *.xlsx copy would drop both without a word.
+xcopy /e /i /y /q "%ESY_ROOT%\templates\DataTables" "%STAGE%\DataTables" >nul || goto :FAIL
 
 rem Ship the whole docs directory, not a hand-picked file.
 rem
@@ -109,6 +111,9 @@ rem docs\internal is development notes: untracked, and it must not ship either.
 rem xcopy has no exclude-by-name, so remove it after the copy.
 if exist "%STAGE%\docs\internal" rmdir /s /q "%STAGE%\docs\internal"
 copy /y "%SCRIPT_DIR%RELEASE_README.md" "%STAGE%\README.md" >nul || goto :FAIL
+rem The README sends upgraders to the CHANGELOG for the changes that need
+rem their hands, so it has to be in the package they unzipped.
+copy /y "%REPO_ROOT%\CHANGELOG.md" "%STAGE%\CHANGELOG.md" >nul || goto :FAIL
 
 rem Assert what the package contains before zipping it.
 rem
@@ -146,6 +151,10 @@ if not "%GEN_ERR%"=="0" (
 )
 if not exist "%STAGE%\Generated\Data\demo_tbitem.json" (
   echo [ERROR] Smoke test produced no output. Expected Generated\Data\demo_tbitem.json
+  exit /b 1
+)
+if not exist "%STAGE%\Generated\Data\en\demo_tbnpc.json" (
+  echo [ERROR] Smoke test produced no data for the en variant. Expected Generated\Data\en\demo_tbnpc.json
   exit /b 1
 )
 

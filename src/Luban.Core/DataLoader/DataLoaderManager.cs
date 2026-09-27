@@ -65,9 +65,9 @@ public class DataLoaderManager
         {
             records.AddRange(task.Result);
         }
-        // [EsyLuban] 多语言版本：variant_<语言> 里的差异行在这里叠加到默认版上，合并交给
-        // TableDataInfo 现成的 patch 逻辑。加载流程没有扩展点，只能改这一行（见 LanguageVariants）
-        var (mainRecords, patchRecords) = LanguageVariants.Apply(table, records);
+        // [EsyLuban] 变体：variant_<名字> 里的差异行在这里叠加到默认版上，合并交给
+        // TableDataInfo 现成的 patch 逻辑。加载流程没有扩展点，只能改这一行（见 VariantFolders）
+        var (mainRecords, patchRecords) = VariantFolders.Apply(table, records);
         ctx.AddDataTable(table, mainRecords, patchRecords);
     }
 

@@ -49,14 +49,17 @@ dotnet --list-runtimes
 Tools\Luban\gen.bat -t client -d json
 ```
 
-`Generated\Data\` 下应当出现两个文件：
+`Generated\Data\` 下应当出现这些文件：
 
 ```
 demo_tbitem.json
 demo_tbmonster.json
+demo_tbnpc.json
+text_tbtext.json
+en\                  英文版，同样这四个文件
 ```
 
-它们来自包里自带的 `DataTables\items.xlsx` 与 `monsters.xlsx`。
+它们来自包里自带的示例表。示例演示的是一个中英双语的项目，怎么组织见[多语言](localization.md)。
 **看到它们就说明工具链完整可用**，剩下的步骤只是把路径改成你项目的。
 
 这一步跑不出来几乎只有一个原因：用了小包但机器上没有 .NET 8。`gen.bat` 会直接报出缺什么。
@@ -74,8 +77,9 @@ demo_tbmonster.json
 ```
 你的开发目录/
 ├─ DataTables/               <- 从包里拷来。策划的地盘，Excel 都放这
-│  ├─ items.xlsx
-│  └─ monsters.xlsx
+│  ├─ items.xlsx ...          示例表，换成你自己的
+│  ├─ text/                   文本表
+│  └─ variant_en/             英文版不一样的数据
 ├─ Tools/                    <- 从包里拷来
 │  └─ Luban/
 │     ├─ runtime/             工具本体，不要动
@@ -111,7 +115,7 @@ demo_tbmonster.json
 
 ## 改 `luban.conf`
 
-打开 `Tools\Luban\luban.conf`，与你的项目有关的只有输出路径这两行：
+打开 `Tools\Luban\luban.conf`，与你的项目有关的主要是输出路径这两行：
 
 ```json
 {
@@ -135,6 +139,9 @@ demo_tbmonster.json
 ```
 
 `dataDir` 通常不用改，`../../DataTables` 在推荐布局下已经是对的。
+
+示例配置里还有一行 `esyluban.variants=en`，对应示例表里的 `variant_en` 文件夹。你的项目有
+要按语言分开的数据时照着改，见[多语言](localization.md)；没有就连同 `variant_en` 一起删掉。
 
 > **`outputDataDir` 必须是一个 Luban 专用目录。**
 > 全量导出前，Luban 会清空输出目录里所有不属于本次产物的文件 —— 不管是不是它生成的。
