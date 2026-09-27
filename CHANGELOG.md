@@ -6,6 +6,10 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 ## [未发布]
 
+暂无。
+
+## [0.4.1+luban5.1.0] - 2026-09-27
+
 ### 变更
 
 - A1 写 `##export=true` 和 `##export` 一样导出。0.3.0 起它会告警、不导出；还留着这种写法的表，升级后会开始导出。
@@ -123,7 +127,8 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 首个公开版本之前的开发历史不列在这里，`git log` 里每条提交都写了什么坏了、为什么。
 
-[未发布]: https://github.com/bryanT4N/EsyLuban/compare/v0.4.0%2Bluban5.1.0...HEAD
+[未发布]: https://github.com/bryanT4N/EsyLuban/compare/v0.4.1%2Bluban5.1.0...HEAD
+[0.4.1+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.4.0%2Bluban5.1.0...v0.4.1%2Bluban5.1.0
 [0.4.0+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.3.0%2Bluban5.1.0...v0.4.0%2Bluban5.1.0
 [0.3.0+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.2.0%2Bluban5.1.0...v0.3.0%2Bluban5.1.0
 [0.2.0+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.1.1%2Bluban4.10.2...v0.2.0%2Bluban5.1.0
