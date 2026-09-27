@@ -12,7 +12,7 @@ namespace Luban.Schema.Builtin;
 /// <summary>
 /// 自包含表导入器 —— EsyLuban 发现表的唯一入口。
 ///
-/// 扫描数据目录下的所有 Excel，凡 A1 恰为 <c>##export</c> 的 sheet，即按 B1 的
+/// 扫描数据目录下的所有 Excel，凡 A1 为 <c>##export</c> 的 sheet（写法见 ClassifyA1），即按 B1 的
 /// 元数据串生成表定义。每张表自描述，不再需要集中式的 <c>__tables__.xlsx</c>。
 ///
 /// <para>
@@ -257,19 +257,20 @@ public class SelfContainedTableImporter : ITableImporter
     }
 
     /// <summary>
-    /// A1 恰为 ##export 才导出；##export=false 表示显式关闭。
+    /// A1 为 ##export 才导出；##export=false 表示显式关闭。有 =false 就会有人写 ##export=true，
+    /// 意思不会有歧义，所以它也导出。
     ///
     /// 大小写不敏感：策划手打出 ##Export 的概率不低，而此前它会让整张表无声消失 —— 没有报错、
     /// 没有告警，导出照常成功，只是少了一张表。
     ///
-    /// 以 # 开头、带着 export，却不是这两种写法的，几乎不可能是有意为之，算写错并告警：
-    /// ##exportt、## export、少一个 # 的 #export，还有 ##export=true（它不导出，写它的人多半
-    /// 以为会导出）。##var 这类正常的非自包含表不带 export，仍静默跳过。
+    /// 以 # 开头、带着 export，却不是这几种写法的，几乎不可能是有意为之，算写错并告警：
+    /// ##exportt、## export、少一个 # 的 #export、##export=1。##var 这类正常的非自包含表
+    /// 不带 export，仍静默跳过。
     /// </summary>
     public static A1Marker ClassifyA1(string a1)
     {
         string lower = a1.Trim().ToLowerInvariant();
-        if (lower == "##export")
+        if (lower == "##export" || lower == "##export=true")
         {
             return A1Marker.Export;
         }

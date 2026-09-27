@@ -65,7 +65,7 @@
 | `bean:'x' 缺失列:'y'`<br>`bean:'x' missing column:'y'` | `error.excel.missing_column` | 表头里少了 `y` 这一列：字段名写错了或漏了。用了变体的项目里最常见的是默认版加了列，`variant_` 里的同名表没跟着加。报错上面几行写着是哪个文件、哪张 sheet |
 | `esyluban.variants 里 x 写了两次`<br>`esyluban.variants lists x twice` | `esyluban.variant.duplicate` | `luban.conf` 的 `esyluban.variants` 里有重复的名字 |
 | `-o x 里的变体 y 没有在 luban.conf 的 esyluban.variants 里声明`<br>`-o x: variant y is not declared in esyluban.variants` | `esyluban.output.undeclared_variant` | 命令行 `-o 表名@变体` 的变体不在 `esyluban.variants` 里 |
-| `variantKey:'x' 已存在，但 variantName 'y' 不在`<br>`variantKey:'x' exists, but variantName 'y' is not in` | `error.def.field.variant_not_in_list` | 字段变体（数据表里 `name@en` 这样的列）里没有 `--variant` 选中的名字，它没有默认版可退，见[表格式](table-format.md) |
+| `variantKey:'x' 已存在，但 variantName 'y' 不在`<br>`variantKey:'x' exists, but variantName 'y' is not in` | `error.def.field.variant_not_in_list` | 字段变体（数据表里 `name@en` 这样的列）里没有 `--variant` 选中的名字，它没有默认版可退。字段变体是上游的功能，EsyLuban 不推荐用：同一份数据的几个版本放进 `variant_<名字>` 文件夹，见[写一张表](writing-tables.md#同一张表要有几个版本) |
 | `导入表失败`<br>`Failed to import tables` | `esyluban.import.failed` | 有个 Excel 文件读不出来。报错下面的 `file:` 是哪个文件，再下一条是原因，常见的是文件损坏、设了打开密码，或者根本不是 Excel、只是扩展名叫 `.xlsx` |
 | `tableImporter.scanPath 指向的路径不存在`<br>`tableImporter.scanPath points to a path that does not exist` | `esyluban.import.scan_path_not_found` | `-x tableImporter.scanPath=` 给的路径不对。相对路径按运行 Luban 时的当前目录算 |
 

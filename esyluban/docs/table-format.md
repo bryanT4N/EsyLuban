@@ -21,7 +21,7 @@
 
 | 行标签 | 作用 |
 |---|---|
-| `##export` / `##export=false` | 只能出现在 A1 单元格，声明这张 sheet 导不导出。大小写不敏感 |
+| `##export` / `##export=false` | 只能出现在 A1 单元格，声明这张 sheet 导不导出。大小写不敏感，写成 `##export=true` 也导出 |
 | `##var`（别名 `##field`） | 字段名行。可以出现多次，第二次起是子字段名 |
 | `##type` | 类型行 |
 | `##+` | 子字段名行，等价于再写一行 `##var` |
@@ -458,7 +458,7 @@ full_name="matrix.TbMatrixList" & output="matrix/nested/TbMatrixList"
 | `group` | 分组 |
 | `*fields` | 字段列表，跨多行 |
 
-`*fields` 的子列：`name`、`alias`、`type`、`group`、`comment`、`tags`、`variants`。
+`*fields` 的子列：`name`、`alias`、`type`、`group`、`comment`、`tags`、`variants`（给上游的字段变体用，不推荐，见下面[字段变体](#字段变体上游功能不推荐)）。
 
 ### `__enums__.xlsx`
 
@@ -485,7 +485,7 @@ full_name="matrix.TbMatrixList" & output="matrix/nested/TbMatrixList"
 <module name="item">
   <bean name="Item">
     <var name="id" type="int" />
-    <var name="name" type="string" variants="zh,en" />
+    <var name="name" type="string" />
   </bean>
 </module>
 ```
@@ -506,16 +506,16 @@ full_name="matrix.TbMatrixList" & output="matrix/nested/TbMatrixList"
 
 ---
 
-## 字段变体
+## 字段变体（上游功能，不推荐）
+
+> **不推荐使用。** 同一份数据要有几个版本（比如按语言），EsyLuban 只推荐 `variant_<名字>` 文件夹，
+> 见[写一张表](writing-tables.md#同一张表要有几个版本)；文字的翻译见[多语言](localization.md)。
+>
+> 字段变体是上游 Luban 的功能，每次导出只取其中一个值，要几个版本就得导几次。和 `variant_` 文件夹
+> 一起用时，`--variant` 在默认版和每个变体里选的都是同一个值，一个格子最后导出什么，要同时看两处
+> 才知道。下面的写法只为看懂已经在用它的表。
 
 同一字段为不同地区 / 版本提供不同值。
-
-这是上游的功能：每次导出只取其中一个值，要几个版本就得导几次。EsyLuban 推荐的做法是把不同版本的
-数据放进 `variant_<名字>` 文件夹，一次导出出全部版本，见[写一张表](writing-tables.md#同一张表要有几个版本)；
-文字的翻译见[多语言](localization.md)。
-
-**不推荐和 `variant_` 文件夹混用。** 两样都叫变体，却互不相干：`--variant` 在默认版和每个变体里
-选的都是同一个值，一个格子最后导出什么，要同时看这两处才知道。
 
 **定义**：在 `__beans__.xlsx` 的 `variants` 列或 XML 的 `variants` 属性里
 列出可选变体名：

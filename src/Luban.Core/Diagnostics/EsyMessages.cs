@@ -50,8 +50,8 @@ public static class EsyMessages
         "Failed to import tables");
 
     public static readonly EsyMessage BadExportMarker = new("esyluban.import.bad_export_marker",
-        "[bad A1] sheet '{0}'@{1} 的 A1 是 '{2}'，不是有效的 ##export 标记，这张 sheet 没有导出。有效写法只有 ##export 与 ##export=false，不分大小写。",
-        "[bad A1] sheet '{0}'@{1}: A1 is '{2}', which is not a valid ##export marker, so the sheet was not exported. The only valid forms are ##export and ##export=false, in any letter case.");
+        "[bad A1] sheet '{0}'@{1} 的 A1 是 '{2}'，不是有效的 ##export 标记，这张 sheet 没有导出。要导出写 ##export，不导出写 ##export=false，不分大小写。",
+        "[bad A1] sheet '{0}'@{1}: A1 is '{2}', which is not a valid ##export marker, so the sheet was not exported. Write ##export to export it or ##export=false to switch it off, in any letter case.");
 
     public static readonly EsyMessage EmptyB1 = new("esyluban.import.empty_b1",
         "[empty B1] sheet '{0}'@{1} 的 A1 是 ##export，B1 却是空的，这张 sheet 不会作为表导出。要导出就在 B1 写上 full_name；如果它由别处读取（文本表、XML 里定义的表、别的表的 input），这条可以不管。",

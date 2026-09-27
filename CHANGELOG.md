@@ -6,6 +6,10 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 ## [未发布]
 
+### 变更
+
+- A1 写 `##export=true` 和 `##export` 一样导出。0.3.0 起它会告警、不导出；还留着这种写法的表，升级后会开始导出。
+
 ### 修复
 
 - A1 写成 `#export`（少一个 `#`）时也给 `[bad A1]` 告警。以前只有 `##` 开头的写错才告警，这张表会悄悄不导出。
@@ -14,7 +18,7 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 - 改正：`sep` 写在类型里是生效的，要加括号写成 `(list#sep=;),int`，原来踩坑一节说「写在类型上不生效」是错的；A1 不分大小写，`##Export` 也会导出。
 - 补上变体漏写的几处：变体的产物在输出目录下以变体命名的子目录里（`docs/targets-and-output.md`）；导表流程图去掉了本地化那一步（`docs/how-it-works.md`）。
-- 上游的字段变体和表变体标明不推荐和 `variant_` 文件夹混用（`docs/table-format.md`）；README 的「与 Luban 的区别」加上变体这一行。
+- 标明不推荐用上游的字段变体和表变体（`--variant`），同一份数据的几个版本只用 `variant_` 文件夹（`docs/table-format.md`）；README 的「与 Luban 的区别」加上变体这一行。
 
 ## [0.4.0+luban5.1.0] - 2026-09-27
 

@@ -16,6 +16,8 @@ public class A1MarkerTests
     [InlineData("##Export")]
     [InlineData("##EXPORT")]
     [InlineData("  ##export  ")]
+    [InlineData("##export=true")]
+    [InlineData("##Export=TRUE")]
     public void Exports(string a1) => Assert.Equal(A1Marker.Export, ClassifyA1(a1));
 
     [Theory]
@@ -35,7 +37,8 @@ public class A1MarkerTests
     [InlineData("# export")]
     [InlineData("##exportt")]
     [InlineData("## export")]
-    [InlineData("##export=true")]
+    [InlineData("##export=1")]
+    [InlineData("##export=yes")]
     [InlineData("###export")]
     public void WarnsOnTypos(string a1) => Assert.Equal(A1Marker.Bad, ClassifyA1(a1));
 }
