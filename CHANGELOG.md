@@ -6,6 +6,10 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 ## [未发布]
 
+暂无。
+
+## [0.4.0+luban5.1.0] - 2026-09-27
+
 不写 `esyluban.variants` 的项目，写表和导出方式不变。
 
 ### 升级须知
@@ -27,6 +31,7 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 ### 文档
 
 - 多语言改为推荐运行时按语言取文字，玩家能在游戏里随时切换：文字字段填 key、用 `ref` 校验，文本表作为普通的表原样导出；文本表可以每种语言一列，也可以每种语言一张。不再推荐 Luban 自带的本地化（导出时把 key 换成文字）。见 `docs/localization.md`。
+- 仓库里的 Unity 示例（`examples/release`）也改成这套做法：不再配 `l10n.*`，文本表作为普通的表导出，`Main.cs` 演示按语言取文字。
 
 ## [0.3.0+luban5.1.0] - 2026-09-26
 
@@ -106,7 +111,8 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 首个公开版本之前的开发历史不列在这里，`git log` 里每条提交都写了什么坏了、为什么。
 
-[未发布]: https://github.com/bryanT4N/EsyLuban/compare/v0.3.0%2Bluban5.1.0...HEAD
+[未发布]: https://github.com/bryanT4N/EsyLuban/compare/v0.4.0%2Bluban5.1.0...HEAD
+[0.4.0+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.3.0%2Bluban5.1.0...v0.4.0%2Bluban5.1.0
 [0.3.0+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.2.0%2Bluban5.1.0...v0.3.0%2Bluban5.1.0
 [0.2.0+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.1.1%2Bluban4.10.2...v0.2.0%2Bluban5.1.0
 [0.1.1+luban4.10.2]: https://github.com/bryanT4N/EsyLuban/compare/v0.1.0%2Bluban4.10.2...v0.1.1%2Bluban4.10.2
