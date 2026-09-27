@@ -6,7 +6,10 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 ## [未发布]
 
-暂无。
+### 文档
+
+- 改正：`sep` 写在类型里是生效的，要加括号写成 `(list#sep=;),int`，原来踩坑一节说「写在类型上不生效」是错的；A1 不分大小写，`##Export` 也会导出，`#export` 不导出，也没有告警。
+- 补上变体漏写的几处：变体的产物在输出目录下以变体命名的子目录里（`docs/targets-and-output.md`）；上游的字段变体和 `variant_` 文件夹是两回事（`docs/table-format.md`）；导表流程图去掉了本地化那一步（`docs/how-it-works.md`）。
 
 ## [0.4.0+luban5.1.0] - 2026-09-27
 

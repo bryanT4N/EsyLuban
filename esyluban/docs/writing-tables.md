@@ -320,8 +320,8 @@ DataTables/
 
 ## 不归你管的
 
-以下都在 `luban.conf` 里，由程序员维护：输出目录、校验参数、本地化配置、
-各 target 导出哪些 group。
+以下都在 `luban.conf` 里，由程序员维护：输出目录、校验参数、有哪些变体
+（`esyluban.variants`，也就是 `variant_` 后面能写哪些名字）、各 target 导出哪些 group。
 
 `##type` 行里 `#` 后面的东西（`#path=unity`、`#ref=`、`#range=` 之类）
 是程序员加的校验规则，改了会让校验失效或直接报错。

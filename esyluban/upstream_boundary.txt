@@ -23,8 +23,10 @@ BASE	df34215d2e22035073d1af83d44e3ac0744dc3b3
 #
 # SheetLoadUtil.cs   识别 A1 的 ##export 标记，并把它造成的行偏移一路带到
 #                    合并单元格与报错坐标。Excel 读取是纯静态方法，无扩展点。
-# Program.cs         新增 --listTables（右键局部导表要先知道选中范围有哪些表）
-#                    与「表 target 前缀的 xargs 键」告警。命令行选项无处注册。
+# Program.cs         新增 --listTables（右键局部导表要先知道选中范围有哪些表）、
+#                    「表 target 前缀的 xargs 键」告警，以及按 esyluban.variants
+#                    在默认版之后每个变体各跑一遍导出。命令行选项和整次运行的流程
+#                    都无处注册。
 # CustomBehaviourManager.cs
 #                    加一个 HasBehaviour<C>() 纯查询方法，供上面那条告警判断
 #                    某名字是不是已注册的 dataTarget/codeTarget。

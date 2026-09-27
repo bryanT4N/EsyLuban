@@ -134,6 +134,17 @@ gen.bat -t server -d json -x outputDataDir=../../Run/Data/server
 
 共用目录的后果和上一节相同：并行的清理器互删对方的产物。
 
+### 用了变体时
+
+`luban.conf` 声明了 `esyluban.variants` 时，上面解析出的数据目录放默认版，每个变体在它下面多一层以变体命名的子目录：
+
+```
+Generated/Data/        默认版
+Generated/Data/en/     en 这个变体，完整的一份
+```
+
+这不是 xargs 的又一层，每个 target、每种数据格式解析出的目录下都是这样。只有数据分子目录，代码只生成一份。清理也各管各的：默认版那一遍不动变体的子目录，每个变体的子目录由它自己那一遍清理。变体怎么声明、游戏怎么读，见[多语言](localization.md#个别数据要按语言分开)。
+
 ---
 
 ## 输出目录会被清空

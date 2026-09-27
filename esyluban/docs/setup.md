@@ -19,7 +19,7 @@
 | `EsyLuban-<版本>-win-x64-standalone.zip` | 约 34 MB | 无，解压即用 | 约 76 MB |
 | `EsyLuban-<版本>-win-x64.zip` | 约 2 MB | 机器上要有 .NET 8 运行时 | 约 6 MB |
 
-> 版本号形如 `0.1.0+luban4.10.2` —— 前半是 EsyLuban 自己的版本，`+luban` 之后是
+> 版本号形如 `0.4.0+luban5.1.0` —— 前半是 EsyLuban 自己的版本，`+luban` 之后是
 > 它基于的上游 Luban 代码基线。同一个上游基线下可以有多个 EsyLuban 版本。
 
 

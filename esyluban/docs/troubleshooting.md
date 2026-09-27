@@ -12,7 +12,7 @@
 
 | 现象 | 原因与处置 |
 |---|---|
-| 整张表没产物，**也没报错** | A1 写错了。只有恰好是 `##export` 才导出，`##Export` 这类大小写变体也接受，但 `##exportt`、`#export` 不行。日志里会有一条 `[bad A1]` 告警点出这张 sheet |
+| 整张表没产物，**也没报错** | A1 写错了。只有恰好是 `##export` 才导出，`##Export` 这类大小写变体也接受，但 `##exportt`、`## export`、`#export` 不行。`##` 开头、带着 export 的写错，日志里会有一条 `[bad A1]` 告警点出这张 sheet；少了一个 `#` 的 `#export` 连告警都没有 |
 | 表没产物，A1 确实是 `##export` | B1 空着，日志里会有一条 `[empty B1]` 告警。B1 至少要有 `full_name="模块.表名"` |
 | 表改了，产物没变 | 改的表不在右键选中的范围内；或 A1 被写成了 `##export=false` |
 | `No exportable tables found under: ...` | 右键的范围里没有带 `##export` 的表 |

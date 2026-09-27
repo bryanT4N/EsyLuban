@@ -27,8 +27,8 @@ esyluban\scripts\build.bat
 三条命令，CI 里跑的也是这三条：
 
 ```bat
-esyluban\scripts\test\run_unit_tests.bat            :: 上游的单元与集成测试，外加 B1 元数据解析
-esyluban\scripts\test\run_full_tests_example.bat    :: 全回归，约 30 秒
+esyluban\scripts\test\run_unit_tests.bat            :: 上游的单元与集成测试，外加 B1 解析、报错文案、变体文件夹
+esyluban\scripts\test\run_full_tests_example.bat    :: 全回归，约 1 分钟
 esyluban\scripts\test\check_gitignore_traps.bat     :: 已含在全回归里，也可单跑
 ```
 
@@ -102,7 +102,8 @@ esyluban\scripts\test\refresh_baselines.bat [coverage | xml | code | l10n | all]
 |---|---|
 | `check_upstream_boundary.ps1` | 对上游的改动面必须与 [`upstream_boundary.txt`](../upstream_boundary.txt) 完全一致 |
 | `check_tool_copies.ps1` | 三份 `gen.bat`/`check.bat` 副本必须一致（发布给用户的是 `templates/` 那份） |
-| `check_doc_facts.ps1` | 文档里可被源码证否的说法：target 数量、右键的实现机制、安装器行为、模板可用性、引用的路径是否存在 |
+| `check_doc_facts.ps1` | 文档里可被源码证否的说法：target 数量、右键的实现机制、安装器行为、模板可用性、引用的路径是否存在、提到的报错码是否存在、出错了怎么办里的中英文报错原文、VERSION 与 CHANGELOG 是否一致 |
+| `check_xml_comments.ps1` | 示例里那几份来自上游的 XML 找回来的注释还在、没混进 `<table>` 声明，且 dev 与 release 两份逐字节一致 |
 | `check_gitignore_traps.ps1` | 自有源文件不被 `.gitignore` 静默吞掉 |
 
 **改了上游文件怎么办？** 允许，但要先在 `upstream_boundary.txt` 里写下它和「为什么

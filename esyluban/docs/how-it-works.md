@@ -34,10 +34,6 @@ luban.conf + 命令行参数
    9 个校验器                       │
         │                          │
         ▼                          │
-   L10N Processor                  │
-   文本 key 替换                    │
-        │                          │
-        ▼                          │
     DataTarget                     │
     序列化成 json / bin / xml       │
         │                          │
@@ -47,6 +43,10 @@ luban.conf + 命令行参数
               清理输出目录 + 落盘
 ```
 
+用了变体时，这条链路默认版和每个变体各跑一遍：DataLoader 读完每张表，叠加上这个变体在
+`variant_` 文件夹里的差异；CodeTarget 只在第一遍跑；OutputSaver 把变体的数据写进以变体命名的
+子目录。见下面[变体比普通导出多做了什么](#变体比普通导出多做了什么)。
+
 按阶段定位问题：
 
 | 现象 | 出在哪一阶段 |
@@ -54,8 +54,8 @@ luban.conf + 命令行参数
 | 表根本没被发现 | SchemaCollector / TableImporter |
 | `invalid type` | DefAssembly（结构没找到） |
 | 某个单元格的值报错 | DataLoader |
+| 变体的数据不对 | DataLoader 叠加变体差异的那一步（`VariantFolders`） |
 | `error.validator.regex.mismatch` / `error.validator.set.not_in_set` / `error.validator.path.not_found` 这类校验报错 | DataValidator |
-| 产物里是 key 不是文案 | L10N Processor（`convertTextKeyToValue`） |
 | 产物形状不对 | DataTarget |
 | 输出目录里别的文件不见了 | OutputSaver |
 
@@ -91,7 +91,7 @@ luban.conf + 命令行参数
 | 文件 | 为什么绕不开 |
 |---|---|
 | `Excel/SheetLoadUtil.cs` | Excel 读取是纯静态方法，没有扩展点。要认出 A1 的 `##export` 标记，并把它造成的行偏移一路带到合并单元格与报错坐标，只能改这里 |
-| `Luban/Program.cs` | 命令行选项没有注册机制。`--listTables` 与「无效 xargs 键」告警都加在这 |
+| `Luban/Program.cs` | 命令行选项和整次运行的流程都没有注册机制。`--listTables`、「无效 xargs 键」告警，以及按 `esyluban.variants` 在默认版之后每个变体各跑一遍导出，都加在这 |
 | `CustomBehaviourManager.cs` | 加了一个 `HasBehaviour<C>()` 纯查询方法，供上面那条告警判断某个名字是不是已注册的 dataTarget/codeTarget |
 | `DataLoader/DataLoaderManager.cs` | 数据加载是一段固定流程，没有扩展点。变体要把 `variant_` 文件夹里的差异行交给上游现成的按主键合并，只能在读完每张表的那一行改（见下面「变体」一节） |
 
@@ -103,10 +103,11 @@ luban.conf + 命令行参数
 右键要「只导选中的那些表」，但**不能只加载选中范围的 schema** —— 范围外的跨表
 引用会悬空，导出直接中止。所以它分两步：
 
-1. `--listTables <所选路径>` —— 只收集表名，输出该范围内的表全名，每行一个。
-   不编译、不校验、不生成，也不选表变体，因此范围外的引用、同名表范围外的其它几份
-   定义都不会造成中止。
-2. 正常导出，但用 `-o <表名>` 逐个限定输出。schema 仍是全量加载的。
+1. `--listTables <所选路径>` —— 只收集表名，输出该范围内的表全名，每行一个；选中的只是
+   `variant_<名字>` 里的表时写成 `表名@变体`。不编译、不校验、不生成，也不选上游的表变体，
+   因此范围外的引用、同名表范围外的其它几份定义都不会造成中止。
+2. 正常导出，但用 `-o <表名>` 逐个限定输出，`-o 表名@变体` 只导那个变体。schema 仍是
+   全量加载的。
 
 这也是为什么右键**不修改** `tableImporter.scanPath`：那会真的缩小加载范围。
 

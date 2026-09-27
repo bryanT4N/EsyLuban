@@ -510,6 +510,10 @@ full_name="matrix.TbMatrixList" & output="matrix/nested/TbMatrixList"
 
 同一字段为不同地区 / 版本提供不同值。
 
+这是上游的功能：每次导出只取其中一个值，要几个版本就得导几次。EsyLuban 里要同时出几个版本的数据，
+用 `variant_<名字>` 文件夹，见[写一张表](writing-tables.md#同一张表要有几个版本)；文字的翻译见
+[多语言](localization.md)。字段变体和 `variant_` 文件夹、`esyluban.variants` 互不相干。
+
 **定义**：在 `__beans__.xlsx` 的 `variants` 列或 XML 的 `variants` 属性里
 列出可选变体名：
 

@@ -14,7 +14,7 @@
 
 Luban 只读这五个：`groups`、`schemaFiles`、`dataDir`、`targets`、`xargs`。多写的字段被静默忽略 —— `contextMenu` 就是这样一个，Luban 不看它，右键脚本看。
 
-能直接用的最小配置（`esyluban/templates/luban.conf` 的骨架，那份还多一段 `contextMenu`）：
+能直接用的最小配置。`esyluban/templates/luban.conf` 就是它，外加一段 `contextMenu`，和示例表的英文版要用的 `esyluban.variants=en`：
 
 ```json
 {
@@ -189,7 +189,7 @@ schema 定义的入口。`type` 留空表示按文件内容自己声明，`bean`
 
 `outputSaver`、`dataExporter`、`codePostprocess`、`dataPostprocess`、`schemaCollector`、`tableImporter`、类型映射（`{类型}.type` / `{类型}.constructor`）—— 保持默认，更换属于二次开发。
 
-EsyLuban 自身就是用这套扩展点实现的（`outputSaver` 与 `tableImporter` 被 `Priority` 覆盖），换掉它们会连带丢掉安全闸与自包含表支持。
+EsyLuban 自身就是用这套扩展点实现的（`outputSaver`、`tableImporter`、`schemaCollector` 被 `Priority` 覆盖，见[它是怎么工作的](how-it-works.md)），换掉它们会连带丢掉安全闸、自包含表和变体。
 
 ---
 
@@ -230,7 +230,6 @@ tableImporter 默认扫 `dataDir` 全目录，自动跳过：
 | `-s` | `--schemaCollector` | schema 收集器 |
 | `-p` | `--pipeline` | 流水线 |
 | `-l` | `--logConfig` | nlog 配置，缺省 `nlog.xml` |
-| `-w` | `--watchDir` | 监视目录，变更即重新生成 |
 | `-v` | `--verbose` | 详细日志 |
 
 `--listTables` 把表名写到 stdout（每行一个），日志走 stderr，方便调用方按行读。
