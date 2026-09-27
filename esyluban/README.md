@@ -79,7 +79,8 @@ git diff --name-status upstream/main -- src
 | `src/Luban.Schema.Builtin/SelfContainedSchemaCollector.cs` | `[SchemaCollector(Priority=100)]`，加载内联 `__beans__` / `__enums__` |
 | `src/Luban.Core/OutputSaver/SafeLocalFileSaver.cs` | `[OutputSaver("local", Priority=100)]`，给输出目录清理加安全闸；把各变体的数据放进各自的子目录 |
 | `src/Luban.Core/VariantFolders.cs` | 变体的规则：声明的变体、`variant_` 文件夹、差异行的叠加。由上面的 `DataLoaderManager.cs` 和 `Program.cs` 调用 |
-| `src/Luban.Tests/` | 上游的测试工程，`B1ParserTests.cs` 是我们放进去的 |
+| `src/Luban.Core/Diagnostics/EsyMessages.cs` | EsyLuban 自己的报错与告警：错误码和中英文两份文字 |
+| `src/Luban.Tests/` | 上游的测试工程。我们只往里加了自己的测试文件，是哪几个见 `upstream_boundary.txt` |
 
 `Priority=100` 是关键：Luban 按优先级选取扩展点实现，高优先级的同名实现会覆盖内置的，
 因此无需改动上游的注册代码。

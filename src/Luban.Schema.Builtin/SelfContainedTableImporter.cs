@@ -246,6 +246,40 @@ public class SelfContainedTableImporter : ITableImporter
 
     private static string Places(IEnumerable<RawTable> tables) => string.Join(", ", tables.Select(t => t.Source.Display));
 
+    /// <summary>A1 决定一张 sheet 怎么处理。</summary>
+    public enum A1Marker
+    {
+        Export,
+        /// <summary>不导出，也不告警：##export=false，以及 ##var 开头的老式表、草稿这类本来就不是自包含表的 sheet。</summary>
+        Skip,
+        /// <summary>不导出，并告警：看着像想写 ##export，却写错了。</summary>
+        Bad,
+    }
+
+    /// <summary>
+    /// A1 恰为 ##export 才导出；##export=false 表示显式关闭。
+    ///
+    /// 大小写不敏感：策划手打出 ##Export 的概率不低，而此前它会让整张表无声消失 —— 没有报错、
+    /// 没有告警，导出照常成功，只是少了一张表。
+    ///
+    /// 以 # 开头、带着 export，却不是这两种写法的，几乎不可能是有意为之，算写错并告警：
+    /// ##exportt、## export、少一个 # 的 #export，还有 ##export=true（它不导出，写它的人多半
+    /// 以为会导出）。##var 这类正常的非自包含表不带 export，仍静默跳过。
+    /// </summary>
+    public static A1Marker ClassifyA1(string a1)
+    {
+        string lower = a1.Trim().ToLowerInvariant();
+        if (lower == "##export")
+        {
+            return A1Marker.Export;
+        }
+        if (lower == "##export=false")
+        {
+            return A1Marker.Skip;
+        }
+        return lower.StartsWith('#') && lower.Contains("export") ? A1Marker.Bad : A1Marker.Skip;
+    }
+
     private static List<RawTable> LoadTablesFromFile(string file)
     {
         var result = new List<RawTable>();
@@ -275,24 +309,13 @@ public class SelfContainedTableImporter : ITableImporter
                 string a1 = reader.GetValue(0)?.ToString()?.Trim() ?? "";
                 string b1 = reader.FieldCount > 1 ? reader.GetValue(1)?.ToString()?.Trim() ?? "" : "";
 
-                // A1 恰为 ##export 才导出；##export=false 表示显式关闭。
-                //
-                // 大小写不敏感：策划手打出 ##Export 的概率不低，而此前它会让整张表
-                // 无声消失 —— 没有报错、没有告警，导出照常成功，只是少了一张表。
-                // 对"看着像想写 export 却不合法"的写法给一句告警，是因为这类 A1
-                // 几乎不可能是有意为之；而 ##var 这类正常的非自包含表仍静默跳过。
-                // ##export=true 也在告警之列：它不导出，而写它的人多半以为会导出。
-                string a1Lower = a1.ToLowerInvariant();
-                if (a1Lower == "##export=false")
+                var marker = ClassifyA1(a1);
+                if (marker == A1Marker.Bad)
                 {
-                    continue;
+                    s_logger.Warn(EsyMessages.BadExportMarker.Format(sheetName, file, a1));
                 }
-                if (a1Lower != "##export")
+                if (marker != A1Marker.Export)
                 {
-                    if (a1Lower.StartsWith("##") && a1Lower.Contains("export"))
-                    {
-                        s_logger.Warn(EsyMessages.BadExportMarker.Format(sheetName, file, a1));
-                    }
                     continue;
                 }
 

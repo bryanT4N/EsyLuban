@@ -220,7 +220,7 @@ tableImporter 默认扫 `dataDir` 全目录，自动跳过：
 | `-x` | `--xargs` | 运行参数，`-x key=val`，可多次 |
 | `-f` | `--forceLoadTableDatas` | 没有 dataTarget 时也加载数据。纯校验用 |
 | `-i` / `-e` | `--includeTag` / `--excludeTag` | 按记录 tag 过滤 |
-| | `--variant` | 上游的字段变体，如 `--variant Item.name=en`，见[表格式](table-format.md)。和 `esyluban.variants`、`variant_` 文件夹无关 |
+| | `--variant` | 上游的字段变体，如 `--variant Item.name=en`，见[表格式](table-format.md)。和 `esyluban.variants`、`variant_` 文件夹无关，不推荐混用 |
 | | `--timeZone` | datetime 的时区 |
 | | `--strict` | 有校验失败就以退出码 1 结束。Luban 5 之前叫 `--validationFailAsError`，旧名字现在是未知参数，会让整次运行直接失败 |
 | | `--locale` | 报错与告警的语言，`zh` 或 `en`。不写时跟随 Windows 界面语言。`gen.bat`、`check.bat` 会原样传给 Luban，右键菜单写进 `contextMenu` 的 `extraArgs` |
