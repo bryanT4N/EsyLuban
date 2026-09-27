@@ -6,6 +6,8 @@
 
 **不该在这里找什么**：选哪种数据格式、哪种生成语言、产物落在哪个目录 —— 那些在[目标与输出](targets-and-output.md)。表怎么填在[写一张表](writing-tables.md)，右键菜单的配置在[右键菜单](context-menu.md)。
 
+下面标着 **EsyLuban 加的** 的键和参数是这个 fork 自己的，上游 Luban 没有，去上游文档里查不到；其余的都是上游的。
+
 ---
 
 ## luban.conf 的五个字段
@@ -144,7 +146,7 @@ schema 定义的入口。`type` 留空表示按文件内容自己声明，`bean`
 |---|---|
 | `cleanUpOutputDir` | 导出前删掉输出目录里不属于本次产物的文件。**默认开启** |
 | `outputSaver.{dataTarget}.cleanUpOutputDir` | 同上，按格式细分 |
-| `forceCleanUpOutputDir` | 绕过 EsyLuban 的安全闸，强行清理 |
+| `forceCleanUpOutputDir` | **EsyLuban 加的。** 绕过 EsyLuban 的安全闸，强行清理 |
 
 ⚠ **带命名空间的键会压过命令行的全局键。** 命令行 `-x` 只在**键完全相同**时覆盖 conf 里的同名键；而查找是先试带前缀的。所以 conf 里写死 `outputSaver.json.cleanUpOutputDir=1`，会让命令行的 `-x cleanUpOutputDir=0` 失效 —— 右键局部导表会重新变成「删光其他所有表」。右键脚本为此同时传了两层的关闭键。
 
@@ -158,7 +160,7 @@ schema 定义的入口。`type` 留空表示按文件内容自己声明，`bean`
 | `l10n.provider` | 本地化提供者，内置为 `default` |
 | `l10n.textFile.path` | 文案表路径 |
 | `l10n.textFile.keyFieldName` | key 列的列名 |
-| `l10n.languages` | 项目支持的语言，第一种是默认语言，每种各导出一份 |
+| `l10n.languages` | **EsyLuban 加的。** 项目支持的语言，第一种是默认语言，每种各导出一份。放在 `l10n.` 下是因为语言名要和文本表的列名一致，上游的本地化模块并不读它 |
 | `l10n.textFile.languageFieldName` | 只有一种语言时，取哪一列作为译文 |
 | `l10n.convertTextKeyToValue` | 导出时把 key 静态替换成文案 |
 | `l10n.textListFile` | 文案清单输出 |
@@ -186,7 +188,7 @@ schema 定义的入口。`type` 留空表示按文件内容自己声明，`bean`
 
 | 键 | 作用 |
 |---|---|
-| `tableImporter.scanPath` | 限制扫描范围，只导这个文件或目录下的表 |
+| `tableImporter.scanPath` | **EsyLuban 加的。** 限制扫描范围，只导这个文件或目录下的表 |
 
 写死在 `xargs` 里会永久缩小全局扫描范围，全量导出就再也不全了。它的正常用法是命令行临时传入。
 
@@ -221,7 +223,7 @@ tableImporter 默认扫 `dataDir` 全目录，自动跳过：
 | `-t` | `--target` | 表 target，取自 `targets`。**必填** |
 | `-d` | `--dataTarget` | 数据格式 |
 | `-c` | `--codeTarget` | 生成语言 |
-| `-o` | `--outputTable` | 只输出指定的表（可多次）。多语言项目里写 `表名@语言` 只导那种语言，`*` 表示全部的表 |
+| `-o` | `--outputTable` | 只输出指定的表（可多次）。多语言项目里写 `表名@语言` 只导那种语言，`*` 表示全部的表，这两种写法是 **EsyLuban 加的** |
 | `-x` | `--xargs` | 运行参数，`-x key=val`，可多次 |
 | `-f` | `--forceLoadTableDatas` | 没有 dataTarget 时也加载数据。纯校验用 |
 | `-i` / `-e` | `--includeTag` / `--excludeTag` | 按记录 tag 过滤 |
@@ -231,7 +233,7 @@ tableImporter 默认扫 `dataDir` 全目录，自动跳过：
 | | `--locale` | 报错与告警的语言，`zh` 或 `en`。不写时跟随 Windows 界面语言。`gen.bat`、`check.bat` 会原样传给 Luban，右键菜单写进 `contextMenu` 的 `extraArgs` |
 | | `--customTemplateDir` | 自定义模板目录 |
 | `-w` | `--watchDir` | 盯住一个目录，文件一变就重新导出。**开发期挂在后台很省事** —— 策划存盘即可在游戏里看到，不必每次去点右键 |
-| | `--listTables` | 列出指定路径下的表全名后退出，不编译不校验 |
+| | `--listTables` | **EsyLuban 加的。** 列出指定路径下的表全名后退出，不编译不校验 |
 | `-s` | `--schemaCollector` | schema 收集器 |
 | `-p` | `--pipeline` | 流水线 |
 | `-l` | `--logConfig` | nlog 配置，缺省 `nlog.xml` |

@@ -3,25 +3,39 @@
 examples/languages/        one project with l10n.languages=zh,en: map / singleton / list
                            tables with a variant_en overlay, an English-only table, a text
                            table with its own variant_en, and a table no overlay touches.
+                           PerLanguageText/ (per_language_text.conf) keeps one text table per
+                           language instead of one column per language.
 examples/negatives_hard/   the language cases of the must-fail corpus, one data folder and
                            one conf each (the other cases there are not touched).
 
 Every string the regression looks for is ASCII and none contains another, so
 run_full_tests_example.bat can tell "the default row" from "the English row" with findstr.
 
+Running it again only rewrites spreadsheets whose cells changed and deletes the ones it no
+longer generates. openpyxl stamps the save time into every file, so rewriting all of them
+would show the whole corpus as modified in git.
+
     python esyluban/scripts/authoring/create_language_cases.py
 """
 import json
-import shutil
 from pathlib import Path
 
 import openpyxl
 
 EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
 
+# spreadsheets this run produced, and the folders it owns (anything else in them is stale)
+GENERATED = set()
+OWNED_DIRS = []
+
+
+def cells(wb):
+    # an empty string is written as a blank cell and reads back as None
+    return [(ws.title, [[None if v == "" else v for v in row] for row in ws.iter_rows(values_only=True)])
+            for ws in wb.worksheets]
+
 
 def book(path, b1, header, types, rows, sheet="Sheet1"):
-    path.parent.mkdir(parents=True, exist_ok=True)
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = sheet
@@ -32,7 +46,18 @@ def book(path, b1, header, types, rows, sheet="Sheet1"):
     ws.append(["##type"] + types)
     for row in rows:
         ws.append([None] + row)
+    GENERATED.add(path.resolve())
+    if path.exists() and cells(openpyxl.load_workbook(path)) == cells(wb):
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
+
+
+def prune_stale():
+    for directory in OWNED_DIRS:
+        for path in directory.rglob("*.xlsx"):
+            if path.resolve() not in GENERATED:
+                path.unlink()
 
 
 def b1(full_name, extra=""):
@@ -56,8 +81,8 @@ def conf(path, data_dir, xargs, context_menu=None):
 
 def languages_corpus():
     root = EXAMPLES / "languages"
-    shutil.rmtree(root / "DataTables", ignore_errors=True)
     data = root / "DataTables"
+    OWNED_DIRS.append(data)
 
     item = b1("demo.TbItem")
     header, types = ["id", "name"], ["int", "string"]
@@ -105,9 +130,28 @@ def languages_corpus():
                  "outputDataDir": {"all": "../../TestOutputs/contextmenu"}}})
 
 
+def per_language_text():
+    """One text table per language instead of one column per language: the default text table
+    has only a zh column and English keeps its whole table in variant_en."""
+    root = EXAMPLES / "languages"
+    data = root / "PerLanguageText"
+    OWNED_DIRS.append(data)
+    book(data / "named/named.xlsx", b1("demo.TbNamed"), ["id", "title"], ["int", "text"], [[1, "/sword"]])
+    book(data / "l10n/texts.xlsx", None, ["key", "zh"], ["string", "string"], [["/sword", "per-sword-zh"]])
+    book(data / "l10n/variant_en/texts.xlsx", None, ["key", "en"], ["string", "string"], [["/sword", "per-sword-en"]])
+    conf(root / "Tools/Luban/per_language_text.conf", "../../PerLanguageText", [
+        "outputDataDir=../../TestOutputs/per_language_text",
+        "l10n.languages=zh,en",
+        "l10n.provider=default",
+        "l10n.textFile.path=../../PerLanguageText/l10n/texts.xlsx",
+        "l10n.textFile.keyFieldName=key",
+        "l10n.convertTextKeyToValue=1",
+    ])
+
+
 def negative(name, files, languages="zh,en"):
     root = EXAMPLES / "negatives_hard"
-    shutil.rmtree(root / "DataTables" / name, ignore_errors=True)
+    OWNED_DIRS.append(root / "DataTables" / name)
     for relative, meta, rows in files:
         book(root / "DataTables" / name / relative, meta, ["id", "name"], ["int", "string"], rows)
     xargs = [f"outputDataDir=../../TestOutputs/{name}"]
@@ -130,8 +174,8 @@ def negatives():
 
     # only the English run fails validation; --strict has to fail the whole export
     root = EXAMPLES / "negatives_hard"
-    shutil.rmtree(root / "DataTables" / "strict_en", ignore_errors=True)
     data = root / "DataTables" / "strict_en"
+    OWNED_DIRS.append(data)
     drop = b1("hard.TbDrop")
     book(data / "items.xlsx", b1("hard.TbItem"), ["id", "name"], ["int", "string"], [[1, "a"]])
     book(data / "drops.xlsx", drop, ["id", "item"], ["int", "int#ref=hard.TbItem"], [[1, 1]])
@@ -142,5 +186,7 @@ def negatives():
 
 if __name__ == "__main__":
     languages_corpus()
+    per_language_text()
     negatives()
+    prune_stale()
     print("ok")

@@ -59,7 +59,15 @@ public class LanguageTextProvider : ITextProvider
         var recordType = CreateRecordType();
         foreach (string file in defaults)
         {
-            LoadTexts(recordType, file, null);
+            try
+            {
+                LoadTexts(recordType, file, null);
+            }
+            catch (LubanException e) when (overlays.Count > 0 && IsMissingColumn(e, _valueFieldName))
+            {
+                // 每种语言一张文本表的项目：默认版的文本表只有默认语言那一列，这种语言的文案
+                // 全在 variant_<语言> 里。没有自己文本表的语言不走这里，缺列照常报错。
+            }
         }
         var overlaid = new HashSet<string>();
         foreach (string file in overlays)
@@ -139,6 +147,19 @@ public class LanguageTextProvider : ITextProvider
             }
             _texts[key] = value;
         }
+    }
+
+    private static bool IsMissingColumn(Exception e, string column)
+    {
+        for (; e != null; e = e.InnerException)
+        {
+            if (e is LubanException { MessageKey: "error.excel.missing_column" } missing
+                && missing.Args.Length > 1 && Equals(missing.Args[1], column))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void AddUnknownKey(string key)

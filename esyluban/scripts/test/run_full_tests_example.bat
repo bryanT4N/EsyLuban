@@ -520,11 +520,25 @@ if not errorlevel 1 (
   echo        [languages] the second export wrote new files: the default language deleted data\en; see !LANG_LOG2!
   set /a LANG_FAILED+=1
 )
+rem One text table per language instead of one column per language: the
+rem default text table has only a zh column and English keeps its whole table
+rem in variant_en, so the English run must not demand an en column from it.
+set "LANG_DATA=!LANG_ROOT!\TestOutputs\per_language_text"
+pushd "!LANG_ROOT!\Tools\Luban"
+"!LUBAN_EXE!" --conf per_language_text.conf -t all -d json > "!LANG_DATA!.log" 2>&1
+if errorlevel 1 (
+  echo        [languages] export with one text table per language failed; see !LANG_DATA!.log
+  set /a LANG_FAILED+=1
+)
+popd
+call :ExpectText "demo_tbnamed.json"    "per-sword-zh" "per-sword-en"
+call :ExpectText "en\demo_tbnamed.json" "per-sword-en" "per-sword-zh"
+set "LANG_DATA=!LANG_ROOT!\TestOutputs\data"
 if !LANG_FAILED! gtr 0 (
   echo [FAIL] languages: !LANG_FAILED! case^(s^) wrong
   set /a FAILED+=1
 ) else (
-  echo [OK]   languages: data and data\en from one export, variants merged, code once, each cleans its own
+  echo [OK]   languages: data and data\en from one export, variants merged, code once, each cleans its own, text per column or per table
   set /a CHECKS+=1
 )
 

@@ -18,6 +18,8 @@
 | `No exportable tables found under: ...` | 右键的范围里没有带 `##export` 的表 |
 | 某个目录下的表全部被忽略 | 目录名以 `_`、`.` 或 `~` 开头。这是 Luban 的规则：这类路径段一律跳过。改名即可 |
 | 改了 `variant_en` 里的表，输出目录里的产物没变 | `variant_<语言>` 里的差异只进那种语言的产物，在输出目录下以语言命名的子目录里，比如 `Data/en/` |
+| 放进 `variant_en` 的文本表没生效 | 它要放在文本表旁边的 `variant_en` 文件夹里，文件名和文本表一样 |
+| 英文版的列表表或单例表只剩几行 | `mode="list"` 和 `mode="one"` 的表没有 id 可对，`variant_en` 里的那份会整张替换默认版，要填全 |
 
 ## 报了具体的错
 
@@ -63,6 +65,7 @@
 | `x 是默认语言（l10n.languages 的第一种），不需要 variant_<语言> 文件夹`<br>`x is the default language (the first in l10n.languages) and needs no variant_<language> folder` | `esyluban.variant.default_language` | 默认语言的数据直接写在默认版里。`variant_` 文件夹里的东西默认语言不会读，放了也没效果 |
 | `x 在两层 variant_ 文件夹里`<br>`x is inside two variant_ folders` | `esyluban.variant.nested` | 一个 `variant_` 文件夹放进了另一个里面。每种语言的文件夹都和默认版放在同一层 |
 | `被 patch 多次覆盖`<br>`is overridden by patch multiple times` | `error.data.patch_override_multiple` | 同一种语言的 `variant_` 里，同一个主键写了两次。报错里的 patch 指的就是 `variant_` 里的差异 |
+| `bean:'x' 缺失列:'y'`<br>`bean:'x' missing column:'y'` | `error.excel.missing_column` | 表头里少了 `y` 这一列：字段名写错了或漏了。多语言项目里最常见的是默认版加了列，`variant_` 里的同名表没跟着加。报错上面几行写着是哪个文件、哪张 sheet |
 | `l10n.languages 里 x 写了两次`<br>`l10n.languages lists x twice` | `esyluban.l10n.duplicate_language` | `luban.conf` 的 `l10n.languages` 里有重复的语言 |
 | `-o x 里的语言 y 没有在 luban.conf 的 l10n.languages 里声明`<br>`-o x: language y is not declared in l10n.languages` | `esyluban.output.undeclared_language` | 命令行 `-o 表名@语言` 的语言不在 `l10n.languages` 里 |
 | `variantKey:'x' 已存在，但 variantName 'y' 不在`<br>`variantKey:'x' exists, but variantName 'y' is not in` | `error.def.field.variant_not_in_list` | 字段变体（数据表里 `name@en` 这样的列）里没有 `--variant` 选中的名字，它没有默认版可退，见[表格式](table-format.md) |

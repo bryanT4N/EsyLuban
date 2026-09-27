@@ -50,7 +50,7 @@ l10n.convertTextKeyToValue=1
 | `provider` | 保持 `default`。换掉它需要自己实现接口，属于二次开发 |
 | `textFile.path` | 文本表路径，相对 `luban.conf` 所在目录 |
 | `keyFieldName` | 文本表里哪一列是 key |
-| `languages` | 项目支持的语言，和文本表的列名一致，第一种是默认语言。每种语言各导出一份，见下面「每种语言导出一份」 |
+| `languages` | **EsyLuban 加的，上游 Luban 没有。** 项目支持的语言，和文本表的列名一致，第一种是默认语言。每种语言各导出一份，见下面「每种语言导出一份」 |
 | `textFile.languageFieldName` | 只有一种语言时写它，代替 `languages` |
 | `convertTextKeyToValue` | 见下 |
 
@@ -100,11 +100,6 @@ check.bat -t client -x l10n.convertTextKeyToValue=0
 判断 key 是否存在。也就是说，**不配 l10n 就等于关掉了这项校验**，表里的 key
 写错了不会有人告诉你。
 
-## 一个容易漏掉的点
-
-`languageFieldName` 是**导出时**的参数，不是表里的属性。同一份表配不同的语言列
-重导，就得到不同语言的产物 —— 它们的文件名是一样的，所以必须分别导到不同目录。
-
 ## 每种语言导出一份
 
 `languages` 写了几种语言，导出时就每种各出一份，不用每种语言手动导一次：
@@ -127,5 +122,6 @@ Generated/Data/en/    en
 放进 `variant_en` 文件夹，怎么放见[写一张表](writing-tables.md#某种语言的版本要不一样的数据)。
 导出时英文那一份带上这些差异，其它语言不受影响。
 
-`variant_` 后面的名字必须是 `languages` 里写了的语言，写错了会报错。右键导出的范围由
-选中的文件和它影响到的语言决定，不用另外配置。
+`variant_` 后面的名字必须是 `languages` 里写了的语言，写错了会报错；没写 `languages`
+的项目里，`variant_` 只是普通文件夹。右键导出的范围由选中的文件和它影响到的语言决定，
+不用另外配置。

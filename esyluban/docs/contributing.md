@@ -54,7 +54,8 @@ esyluban\scripts\test\check_gitignore_traps.bat     :: 已含在全回归里，�
   一次冒烟测试绕过 `gen.bat`，于是 `gen.bat` 自己根本跑不起来却一路绿灯。右键第一步
   「列出选中的表」另有一套小语料 `examples/listing_scope/`：B1 默认版加 XML 变体、
   只在 XML 里定义的老表，断言每个选中范围只列出自己的表。多语言也有一套
-  `examples/languages/`：一次导出出 `data/` 和 `data/en/`，各种表的叠加、文本表的叠加、
+  `examples/languages/`：一次导出出 `data/` 和 `data/en/`，各种表的叠加、文本表的叠加
+  （每种语言一列和每种语言一张表两种写法）、
   代码只生成一次、两次导出之间各语言各清各的，再走一遍真的右键脚本，断言导的是选中的表
   和它影响到的语言。这套语料和上面多语言的硬失败都由
   `scripts/authoring/create_language_cases.py` 生成，改语料先改它。
