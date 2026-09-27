@@ -214,16 +214,20 @@ for ($i = 0; $i -lt $guideLines.Count; $i++) {
     }
 }
 
-# ---- the version in VERSION must head the CHANGELOG -------------------------
+# ---- VERSION must be the newest release in the CHANGELOG --------------------
 # Two hand-maintained copies of the same number drift. This one matters because
 # the package filename is built from VERSION while readers look up what changed
 # in the CHANGELOG -- a mismatch means the release notes describe a build nobody
 # can identify.
+#
+# The CHANGELOG follows Keep a Changelog: an unreleased section sits on top and
+# names no version, so read the first heading that starts with one, bracketed
+# or not ("## [0.3.0+luban5.1.0] - 2026-09-26").
 $versionFile = Join-Path $esy 'VERSION'
 $changelog   = Read-Text 'CHANGELOG.md'
 if ((Test-Path -LiteralPath $versionFile) -and $null -ne $changelog) {
     $ver = ([System.IO.File]::ReadAllText($versionFile)).Trim()
-    $firstEntry = [regex]::Match($changelog, '(?m)^##\s+(\S+)')
+    $firstEntry = [regex]::Match($changelog, '(?m)^##\s+\[?(\d[^\]\s]*)')
     if (-not $firstEntry.Success) {
         Write-Host "[FAIL] doc facts: CHANGELOG.md has no version heading"
         $failed++

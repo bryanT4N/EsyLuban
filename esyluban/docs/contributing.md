@@ -122,6 +122,20 @@ esyluban\scripts\test\refresh_baselines.bat [coverage | xml | code | l10n | all]
 类型用 `feat` / `fix` / `test` / `docs` / `refactor` / `chore` / `ci`。
 标题写**修好了什么问题**，不是**改了什么文件**。
 
+## 更新日志与发版
+
+[CHANGELOG](../../CHANGELOG.md) 按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 写：
+
+- 使用者看得到的改动合进 main 时，在顶部「未发布」一节加一两行：对使用者变了什么；
+  怎么用写文档路径，为什么这么改写在提交说明里。
+- 分组：升级须知（要使用者动手的，有才写，放最前）、新增、变更、修复，需要时加移除、
+  弃用、文档。
+- 发版时把「未发布」改成 `[版本号] - 日期`，上面补一个新的空「未发布」，文件末尾补上
+  比较链接，再改 `esyluban/VERSION`。回归会查 VERSION 与 CHANGELOG 最新的版本号一致。
+
+GitHub 发布页：一两句概括，接着原样贴 CHANGELOG 那一节，最后一行说明两个包的区别。
+不要再写一份更长的说明。
+
 ## 文档
 
 文档有自己的规矩，写在 [文档索引](README.md) 末尾。核心一条：

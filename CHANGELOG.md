@@ -1,200 +1,93 @@
 # 更新日志
 
-这份日志回答一个问题：**换新版本，我这边要不要跟着改？**
+EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)：「升级须知」写换版本时要你动手的事，有才写；其余按新增、变更、修复分组。
 
-升级方式是替换项目里的 `Tools/Luban/`（`runtime/` + `contextmenu/` + 脚本），
-`luban.conf` 与表格文件保持不动。凡是需要你动手的地方，下面都会明确写出来。
+升级方式：替换项目里的整个 `Tools/Luban/`，`luban.conf` 和表格不动。版本号形如 `0.3.0+luban5.1.0`，加号后面是本 fork 基于的上游 Luban 版本。
 
-版本号形如 `EsyLuban-<自己的版本>+luban<上游版本>`。上游版本指本 fork 基于的
-Luban 代码基线 —— 两者不是一回事，同一个上游基线下可以有多个 EsyLuban 版本。
+## [未发布]
 
----
+暂无。
 
-## 0.3.0+luban5.1.0
+## [0.3.0+luban5.1.0] - 2026-09-26
 
-升级照常替换整个 `Tools/Luban/`，`luban.conf` 和表格保持不动。
+不用表变体的话，写表和导出方式不变，数据输出与 0.2.0 逐字节相同。
 
-### 新增能力
+### 新增
 
-**B1 表支持表变体。** 同一个 `full_name` 再建一张 sheet，B1 加上 `variant="en"`，就是这张
-表的 en 版；不写 `variant` 的那份是默认版。导出时用 `--variant item.TbItem=en` 选；右键则由
-`luban.conf` 里 `contextMenu` 的 `extraArgs` 决定，点哪个文件都一样。同一张表的几份
-`output`、`mode`、`index` 要写成一样的（没写也算一种写法），否则换一个变体，文件名或
-生成的代码就可能变。每个变体要各跑一次 `check.bat`。写法和注意事项见
-`docs/localization.md`。
+- B1 表支持表变体：同一个 `full_name` 再建一张 sheet，B1 写 `variant="en"`；导出用 `--variant` 选，右键由 `contextMenu` 的 `extraArgs` 决定。同一张表各份的 `output`、`mode`、`index` 要写成一样的。见 `docs/localization.md`。
+- EsyLuban 自己的报错带 `esyluban.*` 错误码，`--errorFormat json` 里可见。
 
-0.2.0 里 B1 写 `variant` 会报错，现在不报了；写成 `variants`（字段变体的写法）仍会报错，
-并说明该怎么写。
+### 变更
 
-### 你会注意到的变化
-
-**EsyLuban 自己的报错和告警也跟随系统语言。** 0.2.0 起上游的报错跟着 Windows 界面
-语言走，EsyLuban 自己的那几条（B1 写错、同名表、`[skip cleanup]`、`[dead xargs]` 等）
-却有的只有中文、有的只有英文。现在它们按同一个规则选语言，`--locale` 同样管用。
-
-**B1 写错时直接指出文件和 sheet。** 以前先报一句「从某个文件导入失败」，下一行才是
-原因，而且不说是哪张 sheet。现在第一行就是哪里写错了，后面跟 `file:`、`sheet:` 两行。
-
-**EsyLuban 的报错有了错误码**，以 `esyluban.` 开头，比如 `esyluban.b1.bad_mode`，
-`--errorFormat json` 的输出里能看到。排错页的速查表列出了每一条的中英文原文。
-
-**两条告警改成以标签开头。** 「A1 不是有效的 `##export`」现在以 `[bad A1]` 开头，
-「A1 是 `##export` 但 B1 为空」以 `[empty B1]` 开头，和 `[skip cleanup]`、
-`[dead xargs]` 一样，在日志里按标签搜，中英文系统都一样。EsyLuban 的报错文字都重写
-了，要是有脚本按旧文字（如 `no table metadata in B1`）匹配日志，改成匹配错误码或标签。
-
-**右键菜单只导选中范围里的表。** 以前有两处不对：
-
-- 照文档的办法按地区换整张表（默认那份留在 B1，其余几份在 XML 里标 `variant`）之后，
-  右键任何别的目录都会报「没有 fallback」而中止，除非在 `extraArgs` 里固定一个变体；
-  固定了，XML 里那张表又会混进每一次右键。
-- 还在用 `__tables__.xlsx` 或 XML 定义的老表，每次右键都会跟着导出，不管选的是什么。
-
-现在「列出选中的表」只看范围：B1 所在的 sheet 在范围里，或者 `input` 指向范围里的
-文件，才算选中。用哪一份变体交给导出那一步，照旧由 `--variant` 决定。
-
-**A1 写 `##export=true` 会告警。** 以前 `##export=` 后面写什么都被当成关闭，而且不给
-任何提示，写 `##export=true` 的表就这样悄悄没了。导不导出的规则没变：只有 `##export`
-导出，`##export=false` 关闭，其它写法现在都会给 `[bad A1]` 告警。
-
-### 文档
-
-- 排错页新增「产物里是 key，不是文案」：`convertTextKeyToValue=1` 时，写错的文本 key
-  不算校验失败，会原样写进产物。本地化一页写了怎样用 `check.bat` 把它拦下来。
-- 数据源一页新增：字段里常有逗号、分号时，可以把数据放进 tsv。
-
----
-
-## 0.2.0+luban5.1.0
-
-跟进上游 Luban 5.1.0，此前基于 4.10.2。数据输出没有变：回归的五套基线里，数据
-文件逐字节相同，只有一张表的生成代码多了一段注释。
-
-升级照常替换整个 `Tools/Luban/`。这次 `gen.bat`、`check.bat` 和右键脚本都改了，
-只换 `runtime/` 不够。`luban.conf` 和表格保持不动。
-
-### 需要你动手的
-
-**`--validationFailAsError` 改名为 `--strict`。** 上游 5.0 改的名，旧名字现在是未知
-参数，会让整次运行直接失败，而不是被忽略。照我们以前的文档把它写进了 CI、提交
-钩子、自己的脚本或 `luban.conf` 里 `contextMenu` 的 `extraArgs` 的，都要改成
-`--strict`。`check.bat` 已经改好。
-
-### 你会注意到的变化
-
-**报错语言跟随系统。** Luban 5 起报错语言跟随 Windows 界面语言，英文系统上看到的
-是英文。想看中文就加 `--locale zh`，右键菜单则写进 `contextMenu` 的 `extraArgs`。
-文档里提到报错一律改写错误码（如 `error.data.duplicate_key`），排错页的速查表同时
-列出中英文原文，照屏幕上的字搜哪种都能找到。
-
-**表级报错会指出文件和 sheet。** 比如 `index` 写了不存在的字段，报错后面会多出
-两行，写明是哪个文件的哪张 sheet。
-
-**B1 写 `variant` 会报错。** 上游 5.1 新增了表变体（同名表的几份定义，导出时选
-一份），B1 表暂不支持。以前 B1 里写了 `variant=` 会被悄悄忽略，现在直接报错，
-并给出替代做法，见 `docs/localization.md`。
-
-**两张 sheet 写了同一个 `full_name`，报错会列出每一处。** 以前报的是
-`table:'x' duplicated`，不说是哪两张。
-
-**右键菜单的 `extraArgs` 也会传给「列出选中的表」这一步。** 以前只传给导出，配了
-`--variant` 的话，两步看到的可能不是同一份表定义。
-
-**生成代码多了注释。** B1 写了 `comment`、又从数据表读结构的表，生成的记录类
-现在带上这段注释，IDE 悬停时能看到。以前这段注释只写到表类和 `Tables` 上，记录类
-的注释是空的，原因在上游，这次跟进后修好了。
-
-### 上游新增、可以按需使用的
-
-- `--errorFormat json`：报错以 JSON 写到 stderr，上游的报错带稳定的错误码，适合 CI 解析。
-  EsyLuban 自己的几条报错（B1 解析、variant、同名表）暂时只有文字，没有错误码。
-- `schema-json`：新的 codeTarget，导出一份工程结构描述，列出每张表、结构和枚举
-  定义在哪个文件的哪张 sheet，给 AI 工具或自研工具读。
-
-上游这一版的 AI 工具链（Luban.Agent、MCP）不在我们的发布包里。
-
----
-
-## 0.1.1+luban4.10.2
-
-上游基线不变，仍是 Luban 4.10.2。这一版修了一处 B1 与上游不一致的写法，并补齐了文档。
-
-升级不需要改任何东西。照常替换 `Tools/Luban/`，`luban.conf` 和表格保持不动。
-`gen.bat`、`check.bat` 和右键脚本与 0.1.0 包里的一字不差，真正变了的只有 `runtime/`
-和 `docs/`。
+- EsyLuban 的报错和告警跟随系统语言，和上游一致；B1 写错时直接给出文件和 sheet。
+- 两条告警改为以 `[bad A1]`、`[empty B1]` 开头。按旧文字（如 `no table metadata in B1`）匹配日志的脚本，要改成匹配标签或错误码。
+- 右键只导出选中范围里的表。XML 或 `__tables__.xlsx` 里定义的表，只在选中它的数据文件时导出。
+- A1 写 `##export=true` 这类无效标记会给出 `[bad A1]` 告警；导不导出的规则没变。
+- B1 写 `variants`（字段变体的写法）会报错，并说明该怎么写。
 
 ### 修复
 
-**B1 的 `group` 现在也认分号。** 上游的 `__tables__.xlsx` 和 XML 定义都接受
-`group="c;s"`。B1 此前只认逗号，会把 `c;s` 整个当成一个组名，导表随即中止并报
-`group:c;s not found`。从 `__tables__.xlsx` 搬过来的表最容易碰上。现在 B1 直接调用
-上游的同一个解析函数，逗号和分号都能用，上游以后改规则也会自动跟上。
+- 默认版留在 B1、其余几份在 XML 里标 `variant` 时，右键别的目录不再报「没有 fallback」而中止。
 
 ### 文档
 
-- 新增三份。`data-sources.md` 讲数据从哪来，比如表太大要拆文件、一张表分几个 sheet 填。
-  `filling-structures.md` 讲列表、字典和嵌套结构怎么填。`recipes.md` 收了常见需求的
-  配法，比如客户端服务端分字段、测试数据不进包、校验接进 CI。
-- 排错文档新增「没报错，但结果不对」一节。导出显示成功、退出码为 0，问题却要到程序或
-  游戏里才暴露。这类坑最费时间，之前的排错文档一条都没写。报错速查表也多收了 8 条报错原文。
-- 修正了「多格」和「多行」两种填法的示例，它们最容易被照抄。多格的示例原来用的
-  `Vector3` 在 Luban 4.x 里已经移除。两个示例现在都按真表实跑的结果重写。
-- 讲清 `editor` target 为什么绑 `c` 组而不是 `e` 组。它导出的数据与 `client` 完全相同，
-  区别只在生成代码的命名空间。
-- `setup.md` 补了项目已经在用 Luban 时怎么接入，`localization.md` 补了按语言分目录出包
-  的写法，右键菜单文档开头加了截图。
+- 新增：`convertTextKeyToValue=1` 时写错的文本 key 不算校验失败，会原样进产物；`docs/localization.md` 写了怎样用 `check.bat` 拦下。
+- 新增：字段里常有逗号、分号时，可以把数据放进 tsv，见 `docs/data-sources.md`。
 
----
+## [0.2.0+luban5.1.0] - 2026-09-26
 
-## 0.1.0+luban4.10.2
+跟进上游 Luban 5.1.0，此前基于 4.10.2。数据输出不变，只有一张表的生成代码多了一段注释。上游的 AI 工具链（Luban.Agent、MCP）不在发布包里。
 
-首个公开版本。以下按「你会感觉到什么」组织，不按提交顺序。
+### 升级须知
 
-### 新增能力
+- 这次 `gen.bat`、`check.bat` 和右键脚本都改了，要替换整个 `Tools/Luban/`，只换 `runtime/` 不够。
+- `--validationFailAsError` 改名为 `--strict`，旧名字会让整次运行直接失败。写进了 CI、提交钩子、自己的脚本或 `contextMenu` 的 `extraArgs` 的要改；`check.bat` 已经改好。
 
-**自包含表定义。** 每张 Excel 用 A1 的 `##export` 与 B1 的元数据自我描述，不再
-需要集中式的 `__tables__.xlsx`。改一张表只动那一张表，不必再去中心文件登记。
-B1 里只有 `full_name` 是必填的，其余字段都有缺省。
+### 新增
 
-**Windows 右键导表。** 在资源管理器里右键一个文件夹或一张表就能导出，不必开
-命令行。装一次即可，之后随项目升级 —— 注册表指向的是转发器，真正的脚本留在
-项目内。多个项目可以用 `--suite <名字>` 各装一套，互不干扰。
+- `--errorFormat json`（上游）：报错以 JSON 写到 stderr，带稳定的错误码，适合 CI 解析。
+- `schema-json` codeTarget（上游）：导出工程结构描述，列出每张表、结构和枚举定义在哪个文件的哪张 sheet。
 
-**内联 bean / enum 定义。** 在数据表文件里加一张名为 `__beans__` 或 `__enums__`
-的 sheet，就能在同一个文件里声明嵌套结构，不必去 schema XML 里找地方。
+### 变更
 
-**输出目录清理的安全闸。** Luban 在写入前会清空输出目录，这原本有四条路径会
-通向静默的批量删除（例如 group 把表全过滤掉、多个 target 共用一个目录）。现在
-这类情况会被拦下并说明理由，需要时用 `-x forceCleanUpOutputDir=1` 放行。
+- 报错语言跟随 Windows 界面语言，英文系统上是英文，加 `--locale zh` 切回中文（右键写进 `extraArgs`）。文档提到报错改写错误码，排错页的速查表列出中英文原文。
+- 表级报错（如 `index` 写了不存在的字段）会给出文件和 sheet。
+- 两张 sheet 写了同一个 `full_name`，报错列出每一处，以前是 `table:'x' duplicated`。
+- B1 写 `variant` 会报错：上游 5.1 的表变体 B1 表暂不支持，以前会被悄悄忽略。
+- 右键菜单的 `extraArgs` 也传给「列出选中的表」这一步。
+- B1 写了 `comment`、又从数据表读结构的表，生成的记录类带上这段注释（上游的修复）。
 
-**无效 xargs 键的告警。** 形如 `client.outputDataDir=` 的写法看着合理却永远不
-生效 —— xargs 的命名空间只认 dataTarget / codeTarget，不认 `-t` 的那个 target。
-上游对此完全沉默，现在会给出 `[dead xargs]` 警告并指出正确写法。
+## [0.1.1+luban4.10.2] - 2026-09-26
 
-### 与上游 Luban 的兼容性
+基线仍是 Luban 4.10.2。只有 `runtime/` 和 `docs/` 变了，升级不需要改任何东西。
 
-- 表定义可以两种写法**共存**：已有的 `__tables__.xlsx` 继续有效，新表用自包含
-  写法，同一个工程里混用没有问题。
-- 数据输出与上游**逐字节相同**。这一点由 `baselines/core/` 守着 —— 那是上游在
-  未迁移语料上跑出来的产物，回归每次都拿它逐文件比对 SHA256。
-- 存量项目**暂无自动迁移工具**。`scripts/authoring/migrate_xlsx.py` 仍处于禁用
-  状态，原因写在它的文件头里。
+### 修复
 
-### 限制
+- B1 的 `group` 也认分号。`group="c;s"` 以前会报 `group:c;s not found`，现在和 `__tables__.xlsx`、XML 一样解析。
 
-- **工具链仅支持 Windows。** 右键菜单是这个 fork 的核心价值，它住在 Windows
-  注册表里。构建与测试脚本也是 `.bat` + PowerShell。
-- 解析表格的核心库是普通 .NET，跨平台可用 —— CI 里有一个 Linux job 专门证明
-  这一点。但它不带任何工具链。
-- 需要 .NET 8。用 standalone 发布包则不需要预装。
+### 文档
 
----
+- 新增 `data-sources.md`（数据从哪来）、`filling-structures.md`（列表、字典、嵌套结构怎么填）、`recipes.md`（常见需求的配法）。
+- 排错文档新增「没报错，但结果不对」一节，报错速查表多收 8 条。
+- 改正「多格」「多行」两种填法的示例；多格原来用的 `Vector3` 在 Luban 4.x 里已经移除。
+- 讲清 `editor` target 为什么绑 `c` 组；`setup.md` 补已在用 Luban 的项目怎么接入；`localization.md` 补按语言分目录出包；右键菜单文档加了截图。
 
-## 关于此前的开发历史
+## [0.1.0+luban4.10.2] - 2026-07-27
 
-这个 fork 在首个公开版本之前经历了大量修复，其中不少是「本来就不该发生」的
-问题：一对互相抵消的 bug 让多行嵌套静默失效、回归测试因为没有一处检查退出码
-而"永远通过"、已修好的清理 bug 能从配置侧原样复活。
+首个公开版本，基于 Luban 4.10.2。可以和已有的 `__tables__.xlsx` 共存，数据输出与上游逐字节相同（`baselines/core/` 每次回归比对）。工具链仅支持 Windows；小包需要 .NET 8，standalone 包不需要。暂无自动迁移工具。
 
-这些内容不写进本文件 —— 它们对使用者没有意义。想了解的话，`git log` 里每条
-提交都写清了「什么坏了、为什么」。
+### 新增
+
+- 自包含表定义：A1 写 `##export`、B1 写表定义，不再需要 `__tables__.xlsx`。B1 只有 `full_name` 必填。
+- Windows 右键导表：右键文件夹或表格即可导出。注册表指向转发器，随项目升级不用重装；多个项目用 `--suite <名字>` 各装一套。
+- 内联 bean / enum：在数据表文件里加 `__beans__` 或 `__enums__` sheet，就地声明嵌套结构。
+- 输出目录清理的安全闸：一个产物都没有、或要删的比产出的多时，拒绝清理并说明理由，`-x forceCleanUpOutputDir=1` 放行。
+- 无效 xargs 键告警：`client.outputDataDir=` 这类永远不生效的写法会给出 `[dead xargs]` 警告。
+
+首个公开版本之前的开发历史不列在这里，`git log` 里每条提交都写了什么坏了、为什么。
+
+[未发布]: https://github.com/bryanT4N/EsyLuban/compare/v0.3.0%2Bluban5.1.0...HEAD
+[0.3.0+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.2.0%2Bluban5.1.0...v0.3.0%2Bluban5.1.0
+[0.2.0+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.1.1%2Bluban4.10.2...v0.2.0%2Bluban5.1.0
+[0.1.1+luban4.10.2]: https://github.com/bryanT4N/EsyLuban/compare/v0.1.0%2Bluban4.10.2...v0.1.1%2Bluban4.10.2
+[0.1.0+luban4.10.2]: https://github.com/bryanT4N/EsyLuban/releases/tag/v0.1.0%2Bluban4.10.2
