@@ -6,6 +6,12 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 ## [未发布]
 
+暂无。
+
+## [0.4.2+luban5.1.0] - 2026-09-29
+
+这一版只改了文档，工具本身和 0.4.1 相同。
+
 ### 文档
 
 - 填复杂结构改为推荐整体填：一个整体的结构填在一格里，不把字段全部平铺成很多列。几种情况各要不同参数的数据也整体填，用 Luban 的多态（可以写成 `Circle=100;Rectangle=10,20`，子类型可以起别名）或项目自己约定格式（约定写在注释行，可以加正则检查格式）都行。讲清一格的四种写法（分隔符、lite、lua、json）各怎么配、长什么样、填错了会怎样（`docs/filling-structures.md`）。
@@ -133,7 +139,8 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 首个公开版本之前的开发历史不列在这里，`git log` 里每条提交都写了什么坏了、为什么。
 
-[未发布]: https://github.com/bryanT4N/EsyLuban/compare/v0.4.1%2Bluban5.1.0...HEAD
+[未发布]: https://github.com/bryanT4N/EsyLuban/compare/v0.4.2%2Bluban5.1.0...HEAD
+[0.4.2+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.4.1%2Bluban5.1.0...v0.4.2%2Bluban5.1.0
 [0.4.1+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.4.0%2Bluban5.1.0...v0.4.1%2Bluban5.1.0
 [0.4.0+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.3.0%2Bluban5.1.0...v0.4.0%2Bluban5.1.0
 [0.3.0+luban5.1.0]: https://github.com/bryanT4N/EsyLuban/compare/v0.2.0%2Bluban5.1.0...v0.3.0%2Bluban5.1.0
