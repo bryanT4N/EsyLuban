@@ -9,7 +9,7 @@
 | 第一次填表，不知道从哪下手 | [写一张表](writing-tables.md) |
 | 填了但导不出来，报了错 | [出错了怎么办](troubleshooting.md) |
 | 一个字段要填一串东西：列表、字典、嵌套结构 | [填复杂结构](filling-structures.md) |
-| 每种类型字段都不一样（技能、buff、AI） | [填复杂结构 · 多态](filling-structures.md) |
+| 几种情况各要不同的参数（技能效果、buff、AI） | [填复杂结构 · 几种情况各要不同的参数](filling-structures.md#几种情况各要不同的参数) |
 | 表太大要拆文件、数据是工具生成的 | [数据从哪来](data-sources.md) |
 | 游戏要出几种语言，文字怎么填 | [写一张表 · 玩家看得到的文字](writing-tables.md#玩家看得到的文字填-key文字写在文本表里) |
 | 同一张表要有几个版本（比如英文版的配音不同） | [写一张表 · 同一张表要有几个版本](writing-tables.md#同一张表要有几个版本) |
