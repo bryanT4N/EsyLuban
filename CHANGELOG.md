@@ -6,7 +6,9 @@ EsyLuban 每个版本的改动，新版本在前。格式参照 [Keep a Changelo
 
 ## [未发布]
 
-暂无。
+### 文档
+
+- 用多态时，分隔符 `=,` 写在 Excel 的 `__beans__` 里要先打单引号（`'=,`）：以 `=` 开头的内容 Excel 会当成公式拒绝，格子留空，导出报错（`docs/filling-structures.md`）。
 
 ## [0.4.2+luban5.1.0] - 2026-09-29
 
